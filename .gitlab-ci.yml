@@ -15,9 +15,62 @@ build:
     - scala compile .
     - echo "Compilation complete!"
 
-parser_test:
+parser_test_basic:
   stage: test
   script:
-    - echo "Running tests..."
-    - scala test .
-    - echo "Testing complete!"
+    - scala test . -- -z "basic"
+
+parser_test_array:
+  stage: test
+  script:
+    - scala test . -- -z "array"
+
+parser_test_expressions:
+  stage: test
+  script:
+    - scala test . -- -z "expressions"
+
+parser_test_function:
+  stage: test
+  script:
+    - scala test . -- -z "function"
+
+parser_test_if:
+  stage: test
+  script:
+    - scala test . -- -z "if"
+
+parser_test_io:
+  stage: test
+  script:
+    - scala test . -- -z "io"
+
+parser_test_pairs:
+  stage: test
+  script:
+    - scala test . -- -z "pairs"
+
+parser_test_runtime:
+  stage: test
+  script:
+    - scala test . -- -z "runtime"
+
+parser_test_scope:
+  stage: test
+  script:
+    - scala test . -- -z "scope"
+
+parser_test_sequence:
+  stage: test
+  script:
+    - scala test . -- -z "sequence"
+
+parser_test_variables:
+  stage: test
+  script:
+    - scala test . -- -z "variables"
+
+parser_test_while:
+  stage: test
+  script:
+    - scala test . -- -z "while"
