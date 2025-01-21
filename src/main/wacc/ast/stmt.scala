@@ -12,9 +12,9 @@ enum Stmt {
     case Exit(e: Expr)
     case Print(e: Expr)
     case PrintLn(e: Expr)
-    case If(e: Expr, s1: Stmt, s2: Stmt)
-    case While(e: Expr, s: Stmt)
-    case Nest(s: Stmt)
+    case If(e: Expr, s1: List[Stmt], s2: List[Stmt])
+    case While(e: Expr, s: List[Stmt])
+    case Nest(s: List[Stmt])
 }
 
 object Stmt {
@@ -26,7 +26,7 @@ object Stmt {
     object Exit extends ParserBridge1[Expr, Stmt]
     object Print extends ParserBridge1[Expr, Stmt]
     object PrintLn extends ParserBridge1[Expr, Stmt]
-    object If extends ParserBridge3[Expr, Stmt, Stmt, Stmt]
-    object While extends ParserBridge2[Expr, Stmt, Stmt]
-    object Nest extends ParserBridge1[Stmt, Stmt]
+    object If extends ParserBridge3[Expr, List[Stmt], List[Stmt], Stmt]
+    object While extends ParserBridge2[Expr, List[Stmt], Stmt]
+    object Nest extends ParserBridge1[List[Stmt], Stmt]
 }
