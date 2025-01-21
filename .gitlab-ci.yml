@@ -1,10 +1,11 @@
 image: gumjoe/wacc-ci-scala:slim
 
 stages:
-  - compile
+  - build
+  - test
 
-compile:
-  stage: compile
+build:
+  stage: build
   before_script:
     - echo "Cleaning Scala..."
     - scala clean .
@@ -13,3 +14,10 @@ compile:
     - echo "Compiling program..."
     - scala compile .
     - echo "Compilation complete!"
+
+parser_test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - scala test .
+    - echo "Testing complete!"
