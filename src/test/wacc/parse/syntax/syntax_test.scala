@@ -12,7 +12,7 @@ class syntax_test extends AnyFlatSpec {
         val ranTests = get_tests(s"valid/$path").map(program => program -> parser.parse(program))
         
         val failedTests = ranTests.collect {
-            case (program, parsley.Failure(_)) => program
+            case (program, parsley.Failure(err)) => err
         }
         
         failedTests shouldBe empty 
