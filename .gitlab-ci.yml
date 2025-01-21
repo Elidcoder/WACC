@@ -1,13 +1,13 @@
 image: gumjoe/wacc-ci-scala:slim
 
 stages:
-  - build
+  - compile
 
-build:
-  stage: build
+compile:
+  stage: compile
   before_script:
     - echo "Cleaning Scala..."
-    - scala clean
+    - scala clean .
     - echo "Clean complete!"
   script:
     - echo "Compiling program..."
