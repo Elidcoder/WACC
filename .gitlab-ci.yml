@@ -1,0 +1,11 @@
+image: gumjoe/wacc-ci-scala:slim
+
+stages:
+  - build
+
+build:
+  stage: build
+  before-script:
+    scala clean
+  script:
+    scala compile .
