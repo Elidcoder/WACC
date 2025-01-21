@@ -5,7 +5,7 @@ stages:
 
 build:
   stage: build
-  before-script:
+  before_script:
     scala clean
   script:
     scala compile .
