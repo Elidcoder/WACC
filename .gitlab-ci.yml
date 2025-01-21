@@ -6,10 +6,10 @@ stages:
 build:
   stage: build
   before_script:
-    echo "Cleaning Scala..."
-    scala clean
-    echo "Clean complete!"
+    - echo "Cleaning Scala..."
+    - scala clean
+    - echo "Clean complete!"
   script:
-    echo "Compiling program..."
-    scala compile .
-    echo "Compilation complete!"
+    - echo "Compiling program..."
+    - scala compile .
+    - echo "Compilation complete!"
