@@ -6,6 +6,7 @@ enum Stmt {
     case Skip
     case NewAss(t: Type, v: String, r: RValue)
     case Assign(l: LValue, r: RValue)
+    case Read(l: LValue)
     case Free(e: Expr)
     case Return(e: Expr)
     case Exit(e: Expr)
@@ -19,7 +20,9 @@ enum Stmt {
 object Stmt {
     object NewAss extends ParserBridge3[Type, String, RValue, Stmt]
     object Assign extends ParserBridge2[LValue, RValue, Stmt]
+    object Read extends ParserBridge1[LValue, Stmt]
     object Free extends ParserBridge1[Expr, Stmt]
+    object Return extends ParserBridge1[Expr, Stmt]
     object Exit extends ParserBridge1[Expr, Stmt]
     object Print extends ParserBridge1[Expr, Stmt]
     object PrintLn extends ParserBridge1[Expr, Stmt]
