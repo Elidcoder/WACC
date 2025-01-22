@@ -52,14 +52,14 @@ object parser {
 
     private lazy val expr: Parsley[Expr] = 
         precedence(
-            ("pair" as PairLit()),
+            ("null" as PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
             CharLit(asciiChar),
             StrLit(asciiString),
             atomic(ArrayElem(ident, some(brackets(expr)))),
             ident,
-            "(" ~> expr <~ ")")(
+            parens(expr))(
             Ops(Prefix)(
                 (Not <# "!"),
                 (notFollowedBy(integer) ~> (Neg <# "-")),
@@ -114,7 +114,7 @@ object parser {
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
         baseType
     
-    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]".as(ArrayT(_)))
+    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]" as (ArrayT(_)))
 
     private lazy val baseType: Parsley[Type] = 
         ("int" as IntT()) |
@@ -122,7 +122,7 @@ object parser {
         ("char" as CharT()) | 
         ("string" as StringT())
     
-    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]".as(ArrayT(_)))
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]" as (ArrayT(_)))
     
     private lazy val pairTypeHelper: Parsley[Type] = 
         baseType |
