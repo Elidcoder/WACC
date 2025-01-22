@@ -23,7 +23,7 @@ object lexer {
 
     val implicits = lexer.lexeme.symbol.implicits
 
-    val integer = lexer.lexeme.integer.decimal
+    val integer = lexer.lexeme.integer.decimal32
     val ident: Parsley[Ident] = Ident(lexer.lexeme.names.identifier)
     val asciiChar = lexer.lexeme.character.ascii
     val asciiString = lexer.lexeme.string.ascii

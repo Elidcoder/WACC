@@ -48,7 +48,7 @@ object parser {
             "(" ~> expr <~ ")")(
             Ops(Prefix)(
                 (Not <# "!"),
-                (Neg <# "-"),
+                (notFollowedBy(integer) ~> (Neg <# "-")),
                 (Len <# "len"),
                 (Ord <# "ord"),
                 (Chr <# "chr"),
