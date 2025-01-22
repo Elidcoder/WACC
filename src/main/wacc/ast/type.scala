@@ -2,32 +2,16 @@ package wacc.ast
 
 import parsley.generic.{ParserBridge1, ParserBridge2}
 
-enum Type {
-    case Base(t: BaseType)
-    case ArrayT(t: Type)
-    case PairT(x: PairType, y: PairType)
-}
+sealed trait Type
 
-enum BaseType {
-    case Int
-    case Bool
-    case Char
-    case String
-}
+case class ArrayT(t: Type) extends Type
+case class PairT(x: Type, y: Type) extends Type
+case class RedPairT() extends Type
 
-enum PairType {
-    case PBase(t: BaseType)
-    case PArrayT(t: Type)
-    case PPairT
-}
+case class IntT() extends Type
+case class BoolT() extends Type
+case class CharT() extends Type
+case class StringT() extends Type
 
-object Type {
-    object Base extends ParserBridge1[BaseType, Type]
-    object ArrayT extends ParserBridge1[Type, Type]
-    object PairT extends ParserBridge2[PairType, PairType, Type]
-}
-
-object PairType {
-    object PBase extends ParserBridge1[BaseType, PairType]
-    object PArrayT extends ParserBridge1[Type, PairType]
-}
+object ArrayT extends ParserBridge1[Type, Type]
+object PairT extends ParserBridge2[Type, Type, Type]

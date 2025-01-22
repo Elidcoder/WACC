@@ -13,8 +13,6 @@ import wacc.ast.Expr.*
 import wacc.lexer.*
 import wacc.ast.RValue.*
 import wacc.ast.PairElem.*
-import wacc.ast.PairType.*
-import wacc.ast.Type.*
 
 object parser {
     def parse(input: String): Result[String, Program] = parser.parse(input)
@@ -102,18 +100,19 @@ object parser {
 
     private lazy val typeHelper: Parsley[Type] = 
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
-        Base(baseType)
+        baseType
     
     private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]".as(ArrayT(_)))
 
-    private lazy val baseType: Parsley[BaseType] = 
-        ("int" as BaseType.Int) |
-        ("bool" as BaseType.Bool) |
-        ("char" as BaseType.Char) | 
-        ("string" as BaseType.String)
+    private lazy val baseType: Parsley[Type] = 
+        ("int" as IntT()) |
+        ("bool" as BoolT()) |
+        ("char" as CharT()) | 
+        ("string" as StringT())
     
-    private lazy val pairType: Parsley[PairType] =
-        atomic(PairType.PArrayT(postfix1(typeHelper)("[]".as(ArrayT(_))))) |
-        PBase(baseType) |
-        ("pair" as PPairT)
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]".as(ArrayT(_)))
+    
+    private lazy val pairTypeHelper: Parsley[Type] = 
+        baseType |
+        ("pair" as RedPairT())
 }
