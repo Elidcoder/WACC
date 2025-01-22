@@ -8,7 +8,6 @@ import parsley.expr.chain.*
 import lexer.implicits.implicitSymbol
 
 import wacc.ast.*
-import wacc.ast.Stmt.*
 import wacc.lexer.*
 
 object parser {
@@ -20,7 +19,7 @@ object parser {
     private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> stmts <~ "end")))
 
     private lazy val stmt: Parsley[Stmt] = 
-        ("skip" as Skip) |
+        ("skip" as Skip()) |
         ("read" ~> Read(lvalue)) |
         ("free" ~> Free(expr)) |
         ("return" ~> Return(expr)) |
