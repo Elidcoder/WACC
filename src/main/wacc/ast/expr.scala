@@ -29,7 +29,7 @@ enum Expr {
     case StrLit(s: String)
     case PairLit
     case Ident(v: String)
-    case ArrayLit(v: String, x: List[Expr])
+    case ArrayElem(v: String, x: List[Expr])
 }
 
 object Expr {
@@ -58,7 +58,7 @@ object Expr {
     object CharLit extends ParserBridge1[Char, Expr]
     object StrLit extends ParserBridge1[String, Expr]
     object Ident extends ParserBridge1[String, Expr]
-    object ArrayLit extends ParserBridge2[String, List[Expr], Expr]
+    object ArrayElem extends ParserBridge2[String, List[Expr], Expr]
 }
 
 
