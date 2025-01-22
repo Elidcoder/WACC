@@ -55,7 +55,7 @@ object parser {
             ("null" as PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
-            CharLit(asciiChar),
+            notFollowedBy("\'\'\'" | "\'\"\'" | "\'\\\'") ~> CharLit(asciiChar),
             StrLit(asciiString),
             atomic(ArrayElem(ident, some(brackets(expr)))),
             ident,
