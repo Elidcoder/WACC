@@ -1,6 +1,6 @@
 package wacc.ast
 
-import parsley.generic.{ParserBridge4, ParserBridge2}
+import parsley.generic.{ParserBridge2, ParserBridge4}
 
 case class Func(t: Type, v: String, l: List[Param], s: List[Stmt])
 

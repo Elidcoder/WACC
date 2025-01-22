@@ -1,0 +1,76 @@
+image: gumjoe/wacc-ci-scala:slim
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  before_script:
+    - echo "Cleaning Scala..."
+    - scala clean .
+    - echo "Clean complete!"
+  script:
+    - echo "Compiling program..."
+    - scala compile .
+    - echo "Compilation complete!"
+
+parser_syntax_basic:
+  stage: test
+  script:
+    - scala test . -- -z "basic"
+
+parser_syntax_array:
+  stage: test
+  script:
+    - scala test . -- -z "array"
+
+parser_syntax_expressions:
+  stage: test
+  script:
+    - scala test . -- -z "expressions"
+
+parser_syntax_function:
+  stage: test
+  script:
+    - scala test . -- -z "function"
+
+parser_syntax_if:
+  stage: test
+  script:
+    - scala test . -- -z "if"
+
+parser_syntax_io:
+  stage: test
+  script:
+    - scala test . -- -z "io"
+
+parser_syntax_pairs:
+  stage: test
+  script:
+    - scala test . -- -z "pairs"
+
+parser_syntax_runtime:
+  stage: test
+  script:
+    - scala test . -- -z "runtime"
+
+parser_syntax_scope:
+  stage: test
+  script:
+    - scala test . -- -z "scope"
+
+parser_syntax_sequence:
+  stage: test
+  script:
+    - scala test . -- -z "sequence"
+
+parser_syntax_variables:
+  stage: test
+  script:
+    - scala test . -- -z "variables"
+
+parser_syntax_while:
+  stage: test
+  script:
+    - scala test . -- -z "while"
