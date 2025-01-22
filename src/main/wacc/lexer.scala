@@ -4,6 +4,8 @@ import parsley.Parsley
 import parsley.token.{Lexer, Basic}
 import parsley.token.descriptions.*
 
+import wacc.ast.Ident
+
 object lexer {
     private val desc = LexicalDesc.plain.copy(
         nameDesc = NameDesc.plain.copy(
@@ -22,7 +24,7 @@ object lexer {
     val implicits = lexer.lexeme.symbol.implicits
 
     val integer = lexer.lexeme.integer.decimal
-    val ident: Parsley[String] = lexer.lexeme.names.identifier
+    val ident: Parsley[Ident] = Ident(lexer.lexeme.names.identifier)
     val asciiChar = lexer.lexeme.character.ascii
     val asciiString = lexer.lexeme.string.ascii
 

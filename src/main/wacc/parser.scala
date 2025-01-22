@@ -26,9 +26,9 @@ object parser {
         ("exit" ~> Exit(expr)) |
         ("println" ~> PrintLn(expr)) |
         ("print" ~> Print(expr)) |
-        (If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi"))) |
-        (While(("while" ~> expr), ("do" ~> stmts <~ "done"))) |
-        (Nest("begin" ~> stmts <~ "end")) | 
+        If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi")) |
+        While(("while" ~> expr), ("do" ~> stmts <~ "done")) |
+        Nest("begin" ~> stmts <~ "end") | 
         NewAss(ptype, ident, "=" ~> rvalue) |
         Assign(lvalue, "=" ~> rvalue)
 
@@ -42,7 +42,7 @@ object parser {
             CharLit(asciiChar),
             StrLit(asciiString),
             atomic(ArrayElem(ident, some(brackets(expr)))),
-            Ident(ident),
+            ident,
             "(" ~> expr <~ ")")(
             Ops(Prefix)(
                 (Not <# "!"),
@@ -81,12 +81,12 @@ object parser {
     private lazy val lvalue: Parsley[LValue] = 
         PElem(pairElem) |
         atomic(ArrayElem(ident, some(brackets(expr)))) |
-        Ident(ident)
+        ident
 
     private lazy val rvalue: Parsley[RValue] = 
         PElem(pairElem) |
         NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
-        Call(("call" ~> Ident(ident)), parens(commaSep(expr))) |
+        Call(("call" ~> ident), parens(commaSep(expr))) |
         ArrayLit(brackets(sepBy(expr, ","))) | 
         expr
     

@@ -5,7 +5,7 @@ import parsley.generic.{ParserBridge1, ParserBridge2, ParserBridge3}
 sealed trait Stmt
 
 case class Skip() extends Stmt
-case class NewAss(t: Type, v: String, r: RValue) extends Stmt
+case class NewAss(t: Type, v: Ident, r: RValue) extends Stmt
 case class Assign(l: LValue, r: RValue) extends Stmt
 case class Read(l: LValue) extends Stmt
 case class Free(e: Expr) extends Stmt
@@ -17,7 +17,7 @@ case class If(e: Expr, s1: List[Stmt], s2: List[Stmt]) extends Stmt
 case class While(e: Expr, s: List[Stmt]) extends Stmt
 case class Nest(s: List[Stmt]) extends Stmt
 
-case object NewAss extends ParserBridge3[Type, String, RValue, NewAss]
+case object NewAss extends ParserBridge3[Type, Ident, RValue, NewAss]
 case object Assign extends ParserBridge2[LValue, RValue, Assign]
 case object Read extends ParserBridge1[LValue, Read]
 case object Free extends ParserBridge1[Expr, Free]

@@ -8,7 +8,7 @@ sealed trait Expr extends RValue
 sealed trait PairElem extends RValue
 
 case class Ident(v: String) extends LValue, Expr
-case class ArrayElem(v: String, x: List[Expr]) extends LValue, Expr
+case class ArrayElem(i: Ident, x: List[Expr]) extends LValue, Expr
 
 case class PElem(v: PairElem) extends LValue, RValue
 
@@ -20,7 +20,7 @@ case class First(v: LValue) extends PairElem
 case class Second(v: LValue) extends PairElem
 
 case object Ident extends ParserBridge1[String, Ident]
-case object ArrayElem extends ParserBridge2[String, List[Expr], ArrayElem]
+case object ArrayElem extends ParserBridge2[Ident, List[Expr], ArrayElem]
 
 case object PElem extends ParserBridge1[PairElem, PElem]
 
