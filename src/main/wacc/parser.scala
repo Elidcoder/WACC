@@ -9,10 +9,7 @@ import lexer.implicits.implicitSymbol
 
 import wacc.ast.*
 import wacc.ast.Stmt.*
-import wacc.ast.Expr.*
 import wacc.lexer.*
-import wacc.ast.RValue.*
-import wacc.ast.PairElem.*
 
 object parser {
     def parse(input: String): Result[String, Program] = parser.parse(input)
@@ -40,7 +37,7 @@ object parser {
 
     private lazy val expr: Parsley[Expr] = 
         precedence(
-            ("pair" as PairLit),
+            ("pair" as PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
             CharLit(asciiChar),
@@ -83,16 +80,16 @@ object parser {
         )
 
     private lazy val lvalue: Parsley[LValue] = 
-        LValue.PElem(pairElem) |
-        atomic(LValue.ArrayElem(ident, some(brackets(expr)))) |
-        LValue.Ident(ident)
+        PElem(pairElem) |
+        atomic(ArrayElem(ident, some(brackets(expr)))) |
+        Ident(ident)
 
     private lazy val rvalue: Parsley[RValue] = 
         PElem(pairElem) |
         NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
-        Call(("call" ~> ident), parens(commaSep(expr))) |
-        RValue.ArrayLit(brackets(sepBy(expr, ","))) | 
-        RExpr(expr)
+        Call(("call" ~> Ident(ident)), parens(commaSep(expr))) |
+        ArrayLit(brackets(sepBy(expr, ","))) | 
+        expr
     
     private lazy val pairElem: Parsley[PairElem] = 
         (("fst" ~> First(lvalue)) |
