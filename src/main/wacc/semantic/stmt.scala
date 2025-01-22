@@ -18,7 +18,7 @@ def checkSemanticsStmts(xs: List[Stmt], env: Environment): (Option[String], Envi
 
 def checkSemanticsStmt(s: Stmt, env: Environment): (Option[String], Environment) = s match {
     case Skip()                                      => (None, env)
-    case NewAss(t: Type, v: Ident, r: RValue)        => checkSemanticsNewAss(t, v, r, env)
+    case NewAss(t: Type, Ident(v), r: RValue)        => checkSemanticsNewAss(t, v, r, env)
     case Assign(l: LValue, r: RValue)                => checkSemanticsAss(l, r, env)
     case Free(e: Expr)                               => checkSemanticsFree(e, env)
     case Return(e: Expr)                             => checkSemanticsReturn(e, env)
