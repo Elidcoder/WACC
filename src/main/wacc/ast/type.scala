@@ -13,5 +13,5 @@ case class BoolT() extends Type
 case class CharT() extends Type
 case class StringT() extends Type
 
-object ArrayT extends ParserBridge1[Type, Type]
-object PairT extends ParserBridge2[Type, Type, Type]
+case object ArrayT extends ParserBridge1[Type, Type]
+case object PairT extends ParserBridge2[Type, Type, Type]

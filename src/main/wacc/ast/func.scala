@@ -4,8 +4,8 @@ import parsley.generic.{ParserBridge2, ParserBridge4}
 
 case class Func(t: Type, v: String, l: List[Param], s: List[Stmt])
 
-object Func extends ParserBridge4[Type, String, List[Param], List[Stmt], Func]
+case object Func extends ParserBridge4[Type, String, List[Param], List[Stmt], Func]
 
 case class Param(t: Type, v: String)
 
-object Param extends ParserBridge2[Type, String, Param]
+case object Param extends ParserBridge2[Type, String, Param]
