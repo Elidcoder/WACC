@@ -3,7 +3,7 @@ package wacc.test
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.*
 
-import wacc.parser
+import wacc.syntax.parser
 import parsley.Success
 
 val VALID_FILES = List("basic", "array", "expressions", "function", "if", "IO", "pairs", "runtimeErr", "scope", "sequence", "variables", "while" )

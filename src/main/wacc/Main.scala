@@ -1,5 +1,7 @@
 package wacc
 
+import wacc.syntax.parser
+
 import parsley.{Success, Failure}
 import java.io.File
 

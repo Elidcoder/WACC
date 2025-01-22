@@ -1,4 +1,4 @@
-package wacc
+package wacc.syntax
 
 import parsley.Parsley
 import parsley.token.{Lexer, Basic}
