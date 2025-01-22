@@ -27,7 +27,7 @@ object parser {
 
     private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
 
-    private lazy val rtrnStmts: Parsley[List[Stmt]] = (endBy1(stmt, ";") <~> rtrnStmt) map ((x: List[Stmt], y: Stmt) => x ++ List(y))
+    private lazy val rtrnStmts: Parsley[List[Stmt]] = (many(atomic(stmt <~ ";")) <~> rtrnStmt) map ((x: List[Stmt], y: Stmt) => x ++ List(y))
     private lazy val rtrnStmt: Parsley[Stmt] = 
         ("return" ~> Return(expr)) |
         ("exit" ~> Exit(expr)) |
