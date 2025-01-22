@@ -9,6 +9,8 @@ import lexer.implicits.implicitSymbol
 
 import wacc.ast.*
 import wacc.lexer.*
+import scala.util.Success
+import parsley.Failure
 
 object parser {
     def parse(input: String): Result[String, Program] = parser.parse(input)

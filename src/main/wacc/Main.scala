@@ -1,15 +1,22 @@
 package wacc
 
 import parsley.{Success, Failure}
+import java.io.File
 
 def main(args: Array[String]): Unit = {
-    println("hello WACC!")
 
     args.headOption match {
-        case Some(expr) => parser.parse(expr) match {
-            case Success(x) => println(s"$expr = $x")
-            case Failure(msg) => println(msg)
+        case Some(expr) => 
+            val file = new File(expr)
+            assert(file.exists())
+            parser.parse(file) match {
+                case Success(x) => println(s"$x")
+                case Failure(msg) => 
+                    print("Syntax error ")
+                    println(msg)
+                    sys.exit(100)
         }
         case None => println("please enter an expression")
     }
+    sys.exit()
 }
