@@ -1,7 +1,6 @@
 package wacc.test
 
 import java.io.File
-import scala.io.Source
 
 final val PATH_TO_WACC_EXAMPLES = "./src/test/wacc/wacc_examples/"
 
@@ -10,10 +9,10 @@ final val PATH_TO_WACC_EXAMPLES = "./src/test/wacc/wacc_examples/"
     PRE: the function is called from the root of the repository
     Returns a list of file contents
  */
-def get_tests(folder_path: String): List[String] = {
+def get_tests(folder_path: String): List[File] = {
     val directory = new File(PATH_TO_WACC_EXAMPLES + folder_path)
     assert(directory.exists() && directory.isDirectory())
-    get_tests(directory).map(Source.fromFile(_).mkString)
+    get_tests(directory)
 }
 
 /* 

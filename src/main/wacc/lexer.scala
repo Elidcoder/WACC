@@ -3,6 +3,7 @@ package wacc
 import parsley.Parsley
 import parsley.token.{Lexer, Basic}
 import parsley.token.descriptions.*
+import parsley.token.errors.*
 
 import wacc.ast.Ident
 
@@ -17,13 +18,22 @@ object lexer {
         ),
         textDesc = TextDesc.plain.copy(
             escapeSequences = EscapeDesc.haskell
+        ),
+        symbolDesc = SymbolDesc.plain.copy(
+            hardKeywords = Set("if", "true", "false", "len", "ord", "chr", "int", "bool", "char",
+            "string", "pair", "null", "begin", "end", "skip", "read", "free", "return", "exit", "print", "println", "if",
+            "then", "else", "fi", "while", "do", "done", "call", "fst", "snd", "newpair")
         )
     )
-    private val lexer = new Lexer(desc)
+
+    private val errConfig = new ErrorConfig {
+    }
+
+    private val lexer = new Lexer(desc, errConfig)
 
     val implicits = lexer.lexeme.symbol.implicits
 
-    val integer = lexer.lexeme.integer.decimal
+    val integer = lexer.lexeme.integer.decimal32
     val ident: Parsley[Ident] = Ident(lexer.lexeme.names.identifier)
     val asciiChar = lexer.lexeme.character.ascii
     val asciiString = lexer.lexeme.string.ascii

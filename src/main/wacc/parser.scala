@@ -3,20 +3,36 @@ package wacc
 import parsley.{Parsley, Result}
 import parsley.quick.*
 import parsley.expr.*
-import parsley.expr.chain.*
+import parsley.expr.chain.postfix
+import parsley.errors.ErrorBuilder
+
+import java.io.File
 
 import lexer.implicits.implicitSymbol
 
 import wacc.ast.*
 import wacc.lexer.*
+import scala.util.Success
+import parsley.Failure
 
 object parser {
-    def parse(input: String): Result[String, Program] = parser.parse(input)
+    def parse(input: File): Result[String, Program] =  parser.parseFile(input) match {
+        case Success(x) => x
+        case _ => Failure("failed file read.")
+    }
+    
     private val parser = fully(program)
     
     private lazy val program: Parsley[Program] = Program("begin" ~> many(func), stmts <~ "end")
 
-    private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> stmts <~ "end")))
+    private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
+
+    private lazy val rtrnStmts: Parsley[List[Stmt]] = (many(atomic(stmt <~ ";")) <~> rtrnStmt) map ((x: List[Stmt], y: Stmt) => x ++ List(y))
+    private lazy val rtrnStmt: Parsley[Stmt] = 
+        ("return" ~> Return(expr)) |
+        ("exit" ~> Exit(expr)) |
+        If(("if" ~> expr), ("then" ~> rtrnStmts), ("else" ~> rtrnStmts <~ "fi")) |
+        While(("while" ~> expr), ("do" ~> rtrnStmts <~ "done"))
 
     private lazy val stmt: Parsley[Stmt] = 
         ("skip" as Skip()) |
@@ -36,17 +52,17 @@ object parser {
 
     private lazy val expr: Parsley[Expr] = 
         precedence(
-            ("pair" as PairLit()),
+            ("null" as PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
-            CharLit(asciiChar),
+            notFollowedBy("\'\'\'" | "\'\"\'" | "\'\\\'") ~> CharLit(asciiChar),
             StrLit(asciiString),
             atomic(ArrayElem(ident, some(brackets(expr)))),
             ident,
-            "(" ~> expr <~ ")")(
+            parens(expr))(
             Ops(Prefix)(
                 (Not <# "!"),
-                (Neg <# "-"),
+                (notFollowedBy(integer) ~> (Neg <# "-")),
                 (Len <# "len"),
                 (Ord <# "ord"),
                 (Chr <# "chr"),
@@ -98,7 +114,7 @@ object parser {
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
         baseType
     
-    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]".as(ArrayT(_)))
+    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]" as (ArrayT(_)))
 
     private lazy val baseType: Parsley[Type] = 
         ("int" as IntT()) |
@@ -106,7 +122,7 @@ object parser {
         ("char" as CharT()) | 
         ("string" as StringT())
     
-    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]".as(ArrayT(_)))
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]" as (ArrayT(_)))
     
     private lazy val pairTypeHelper: Parsley[Type] = 
         baseType |

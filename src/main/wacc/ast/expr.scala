@@ -51,7 +51,7 @@ case class NotEq(x: Expr, y: Expr) extends Expr
 case class And(x: Expr, y: Expr) extends Expr
 case class Or(x: Expr, y: Expr) extends Expr
 
-case class IntLit(n: BigInt) extends Expr
+case class IntLit(n: Int) extends Expr
 case class BoolLit(b: Boolean) extends Expr
 case class CharLit(c: Char) extends Expr
 case class StrLit(s: String) extends Expr
@@ -78,7 +78,7 @@ case object NotEq extends ParserBridge2[Expr, Expr, Expr]
 case object And extends ParserBridge2[Expr, Expr, Expr]
 case object Or extends ParserBridge2[Expr, Expr, Expr]
 
-case object IntLit extends ParserBridge1[BigInt, IntLit]
+case object IntLit extends ParserBridge1[Int, IntLit]
 case object BoolLit extends ParserBridge1[Boolean, BoolLit]
 case object CharLit extends ParserBridge1[Char, CharLit]
 case object StrLit extends ParserBridge1[String, StrLit]
