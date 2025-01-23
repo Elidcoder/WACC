@@ -1,84 +1,91 @@
 package wacc.ast
 
-import parsley.generic.{ParserBridge1, ParserBridge2}
-
 sealed trait LValue
 sealed trait RValue
 sealed trait Expr extends RValue
 sealed trait PairElem extends RValue
+sealed trait ArrayOrIdent extends LValue, Expr
 
-case class Ident(v: String) extends LValue, Expr
-case class ArrayElem(i: Ident, x: List[Expr]) extends LValue, Expr
+case class Ident(v: String)(val pos: (Int, Int)) extends LValue, Expr, ArrayOrIdent
+case class ArrayElem(i: Ident, x: List[Expr])(val pos: (Int, Int)) extends LValue, Expr, ArrayOrIdent
 
-case class PElem(v: PairElem) extends LValue, RValue
+case class PElem(v: PairElem)(val pos: (Int, Int)) extends LValue, RValue
 
-case class ArrayLit(x: List[Expr]) extends RValue
-case class NewPair(e1: Expr, e2: Expr) extends RValue
-case class Call(i: Ident, x: List[Expr]) extends RValue
+case class ArrayLit(x: List[Expr])(val pos: (Int, Int)) extends RValue
+case class NewPair(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends RValue
+case class Call(i: Ident, x: List[Expr])(val pos: (Int, Int)) extends RValue
 
-case class First(v: LValue) extends PairElem
-case class Second(v: LValue) extends PairElem
+case class First(v: LValue)(val pos: (Int, Int)) extends PairElem
+case class Second(v: LValue)(val pos: (Int, Int)) extends PairElem
 
-case object Ident extends ParserBridge1[String, Ident]
-case object ArrayElem extends ParserBridge2[Ident, List[Expr], ArrayElem]
+case object Ident extends ParserBridgePos1[String, Ident]
+case object ArrayElem extends ParserBridgePos2[Ident, List[Expr], ArrayElem]
 
-case object PElem extends ParserBridge1[PairElem, PElem]
+case object ArrayOrIdent extends ParserBridgePos2[Ident, Option[List[Expr]], ArrayOrIdent] {
+    override def apply(i: Ident, exprs: Option[List[Expr]])(pos: (Int, Int)): ArrayOrIdent = exprs match {
+        case Some(es)   => ArrayElem(i, es)(pos)
+        case None       => i
+    }
+    
+}
 
-case object ArrayLit extends ParserBridge1[List[Expr], ArrayLit]
-case object NewPair extends ParserBridge2[Expr, Expr, NewPair]
-case object Call extends ParserBridge2[Ident, List[Expr], Call]
+case object PElem extends ParserBridgePos1[PairElem, PElem]
 
-case object First extends ParserBridge1[LValue, PairElem]
-case object Second extends ParserBridge1[LValue, PairElem]
+case object ArrayLit extends ParserBridgePos1[List[Expr], ArrayLit]
+case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair]
+case object Call extends ParserBridgePos2[Ident, List[Expr], Call]
 
-case class Not(e: Expr) extends Expr
-case class Neg(e: Expr) extends Expr
-case class Len(e: Expr) extends Expr
-case class Ord(e: Expr) extends Expr
-case class Chr(e: Expr) extends Expr
+case object First extends ParserBridgePos1[LValue, PairElem]
+case object Second extends ParserBridgePos1[LValue, PairElem]
 
-case class Mul(x: Expr, y: Expr) extends Expr
-case class Div(x: Expr, y: Expr) extends Expr
-case class Mod(x: Expr, y: Expr) extends Expr
-case class Add(x: Expr, y: Expr) extends Expr
-case class Sub(x: Expr, y: Expr) extends Expr
-case class Greater(x: Expr, y: Expr) extends Expr
-case class GreaterEq(x: Expr, y: Expr) extends Expr
-case class Less(x: Expr, y: Expr) extends Expr
-case class LessEq(x: Expr, y: Expr) extends Expr
-case class Eq(x: Expr, y: Expr) extends Expr
-case class NotEq(x: Expr, y: Expr) extends Expr
-case class And(x: Expr, y: Expr) extends Expr
-case class Or(x: Expr, y: Expr) extends Expr
+case class Not(e: Expr)(val pos: (Int, Int)) extends Expr
+case class Neg(e: Expr)(val pos: (Int, Int)) extends Expr
+case class Len(e: Expr)(val pos: (Int, Int)) extends Expr
+case class Ord(e: Expr)(val pos: (Int, Int)) extends Expr
+case class Chr(e: Expr)(val pos: (Int, Int)) extends Expr
 
-case class IntLit(n: Int) extends Expr
-case class BoolLit(b: Boolean) extends Expr
-case class CharLit(c: Char) extends Expr
-case class StrLit(s: String) extends Expr
+case class Mul(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Div(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Mod(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Add(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Sub(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Greater(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class GreaterEq(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Less(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class LessEq(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Eq(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class NotEq(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class And(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+case class Or(x: Expr, y: Expr)(val pos: (Int, Int)) extends Expr
+
+case class IntLit(n: Int)(val pos: (Int, Int)) extends Expr
+case class BoolLit(b: Boolean)(val pos: (Int, Int)) extends Expr
+case class CharLit(c: Char)(val pos: (Int, Int)) extends Expr
+case class StrLit(s: String)(val pos: (Int, Int)) extends Expr
 case class PairLit() extends Expr
 
 
-case object Not extends ParserBridge1[Expr, Expr]
-case object Neg extends ParserBridge1[Expr, Expr]
-case object Len extends ParserBridge1[Expr, Expr]
-case object Ord extends ParserBridge1[Expr, Expr]
-case object Chr extends ParserBridge1[Expr, Expr]
+case object Not extends ParserBridgePos1[Expr, Expr]
+case object Neg extends ParserBridgePos1[Expr, Expr]
+case object Len extends ParserBridgePos1[Expr, Expr]
+case object Ord extends ParserBridgePos1[Expr, Expr]
+case object Chr extends ParserBridgePos1[Expr, Expr]
 
-case object Mul extends ParserBridge2[Expr, Expr, Expr]
-case object Div extends ParserBridge2[Expr, Expr, Expr]
-case object Mod extends ParserBridge2[Expr, Expr, Expr]
-case object Add extends ParserBridge2[Expr, Expr, Expr]
-case object Sub extends ParserBridge2[Expr, Expr, Expr]
-case object Greater extends ParserBridge2[Expr, Expr, Expr]
-case object GreaterEq extends ParserBridge2[Expr, Expr, Expr]
-case object Less extends ParserBridge2[Expr, Expr, Expr]
-case object LessEq extends ParserBridge2[Expr, Expr, Expr]
-case object Eq extends ParserBridge2[Expr, Expr, Expr]
-case object NotEq extends ParserBridge2[Expr, Expr, Expr]
-case object And extends ParserBridge2[Expr, Expr, Expr]
-case object Or extends ParserBridge2[Expr, Expr, Expr]
+case object Mul extends ParserBridgePos2[Expr, Expr, Expr]
+case object Div extends ParserBridgePos2[Expr, Expr, Expr]
+case object Mod extends ParserBridgePos2[Expr, Expr, Expr]
+case object Add extends ParserBridgePos2[Expr, Expr, Expr]
+case object Sub extends ParserBridgePos2[Expr, Expr, Expr]
+case object Greater extends ParserBridgePos2[Expr, Expr, Expr]
+case object GreaterEq extends ParserBridgePos2[Expr, Expr, Expr]
+case object Less extends ParserBridgePos2[Expr, Expr, Expr]
+case object LessEq extends ParserBridgePos2[Expr, Expr, Expr]
+case object Eq extends ParserBridgePos2[Expr, Expr, Expr]
+case object NotEq extends ParserBridgePos2[Expr, Expr, Expr]
+case object And extends ParserBridgePos2[Expr, Expr, Expr]
+case object Or extends ParserBridgePos2[Expr, Expr, Expr]
 
-case object IntLit extends ParserBridge1[Int, IntLit]
-case object BoolLit extends ParserBridge1[Boolean, BoolLit]
-case object CharLit extends ParserBridge1[Char, CharLit]
-case object StrLit extends ParserBridge1[String, StrLit]
+case object IntLit extends ParserBridgePos1[Int, IntLit]
+case object BoolLit extends ParserBridgePos1[Boolean, BoolLit]
+case object CharLit extends ParserBridgePos1[Char, CharLit]
+case object StrLit extends ParserBridgePos1[String, StrLit]

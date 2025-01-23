@@ -19,6 +19,14 @@ object parser {
         case Success(x) => x
         case _ => sys.exit(-1)
     }
+
+    def isReturnStmt(s: List[Stmt]): Boolean = s.last match {
+        case Return(_)      => true
+        case Exit(_)        => true
+        case If(_, s1, s2)  => isReturnStmt(s1) && isReturnStmt(s2)
+        case While(_, s)    => isReturnStmt(s)
+        case _              => false
+    }    
     
     private val parser = fully(program)
     
@@ -26,12 +34,7 @@ object parser {
 
     private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
 
-    private lazy val rtrnStmts: Parsley[List[Stmt]] = (many(atomic(stmt <~ ";")) <~> rtrnStmt) map ((x: List[Stmt], y: Stmt) => x ++ List(y))
-    private lazy val rtrnStmt: Parsley[Stmt] = 
-        ("return" ~> Return(expr)) |
-        ("exit" ~> Exit(expr)) |
-        If(("if" ~> expr), ("then" ~> rtrnStmts), ("else" ~> rtrnStmts <~ "fi")) |
-        While(("while" ~> expr), ("do" ~> rtrnStmts <~ "done"))
+    private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
 
     private lazy val stmt: Parsley[Stmt] = 
         ("skip" as Skip()) |
@@ -54,10 +57,9 @@ object parser {
             ("null" as PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
-            notFollowedBy("\'\'\'" | "\'\"\'" | "\'\\\'") ~> CharLit(asciiChar),
+            CharLit(asciiChar),
             StrLit(asciiString),
-            atomic(ArrayElem(ident, some(brackets(expr)))),
-            ident,
+            ArrayOrIdent(ident, option(some(brackets(expr)))),
             parens(expr))(
             Ops(Prefix)(
                 (Not <# "!"),
@@ -95,8 +97,7 @@ object parser {
 
     private lazy val lvalue: Parsley[LValue] = 
         PElem(pairElem) |
-        atomic(ArrayElem(ident, some(brackets(expr)))) |
-        ident
+        ArrayOrIdent(ident, option(some(brackets(expr))))
 
     private lazy val rvalue: Parsley[RValue] = 
         PElem(pairElem) |
@@ -113,7 +114,7 @@ object parser {
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
         baseType
     
-    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]" as (ArrayT(_)))
+    private lazy val ptype: Parsley[Type] = postfix(typeHelper)(ArrayT <# "[]")
 
     private lazy val baseType: Parsley[Type] = 
         ("int" as IntT()) |
@@ -121,7 +122,7 @@ object parser {
         ("char" as CharT()) | 
         ("string" as StringT())
     
-    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]" as (ArrayT(_)))
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
     
     private lazy val pairTypeHelper: Parsley[Type] = 
         baseType |
