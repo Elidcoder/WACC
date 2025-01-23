@@ -13,11 +13,11 @@ class Context (val b: String, val env: Environment) {
     def getType(v: String): Option[Type] = env.get(v)
 
     def removeOption(v: String): Option[Environment] = env match {
-        case m if m.contains(v) => Some(m - v)
+        case m if m.contains(v) => Some(m -= v)
         case _ => None
     }
 
-    def remove(v: String): Environment = env - v
+    def remove(v: String): Environment = env -= v
 
     def getArrayElemType(v: String, d: Int): Option[Type] = 
         def go(t: Type, d: Int): Option[Type] = d match {
