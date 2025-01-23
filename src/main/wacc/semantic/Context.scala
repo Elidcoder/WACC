@@ -2,7 +2,7 @@ package wacc.semantic
 
 import wacc.ast.*  
 
-class Context (val b: String, val env: Environment) {
+class Context (val b: String, val env: environment) {
 
     def contains(v: String): Boolean = env.contains(v)
 
@@ -12,12 +12,12 @@ class Context (val b: String, val env: Environment) {
 
     def getType(v: String): Option[Type] = env.get(v)
 
-    def removeOption(v: String): Option[Environment] = env match {
+    def removeOption(v: String): Option[environment] = env match {
         case m if m.contains(v) => Some(m -= v)
         case _ => None
     }
 
-    def remove(v: String): Environment = env -= v
+    def remove(v: String): environment = env -= v
 
     def getArrayElemType(v: String, d: Int): Option[Type] = 
         def go(t: Type, d: Int): Option[Type] = d match {
