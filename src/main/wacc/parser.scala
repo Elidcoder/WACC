@@ -21,18 +21,21 @@ object parser {
         case _ => Failure("failed file read.")
     }
     
+    def isReturnStmt(s: List[Stmt]): Boolean = s.last match {
+        case Return(_)      => true
+        case Exit(_)        => true
+        case If(_, s1, s2)  => isReturnStmt(s1) && isReturnStmt(s2)
+        case While(_, s)    => isReturnStmt(s)
+        case _              => false
+    }    
+    
     private val parser = fully(program)
     
     private lazy val program: Parsley[Program] = Program("begin" ~> many(func), stmts <~ "end")
 
     private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
 
-    private lazy val rtrnStmts: Parsley[List[Stmt]] = (many(atomic(stmt <~ ";")) <~> rtrnStmt) map ((x: List[Stmt], y: Stmt) => x ++ List(y))
-    private lazy val rtrnStmt: Parsley[Stmt] = 
-        ("return" ~> Return(expr)) |
-        ("exit" ~> Exit(expr)) |
-        If(("if" ~> expr), ("then" ~> rtrnStmts), ("else" ~> rtrnStmts <~ "fi")) |
-        While(("while" ~> expr), ("do" ~> rtrnStmts <~ "done"))
+    private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
 
     private lazy val stmt: Parsley[Stmt] = 
         ("skip" as Skip()) |
