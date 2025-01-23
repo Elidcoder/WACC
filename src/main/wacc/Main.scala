@@ -12,7 +12,7 @@ def pipeline(file: File): Int = {
         case Success(x) =>
             return 0
         case Failure(x) => 
-            println(x)
+            // println(x)
             return 100
     }
 }
