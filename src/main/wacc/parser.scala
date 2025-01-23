@@ -20,7 +20,7 @@ object parser {
         case Success(x) => x
         case _ => Failure("failed file read.")
     }
-    
+
     def isReturnStmt(s: List[Stmt]): Boolean = s.last match {
         case Return(_)      => true
         case Exit(_)        => true
@@ -60,8 +60,7 @@ object parser {
             IntLit(integer),
             CharLit(asciiChar),
             StrLit(asciiString),
-            atomic(ArrayElem(ident, some(brackets(expr)))),
-            ident,
+            ArrayOrIdent(ident, option(some(brackets(expr)))),
             parens(expr))(
             Ops(Prefix)(
                 (Not <# "!"),
@@ -99,8 +98,7 @@ object parser {
 
     private lazy val lvalue: Parsley[LValue] = 
         PElem(pairElem) |
-        atomic(ArrayElem(ident, some(brackets(expr)))) |
-        ident
+        ArrayOrIdent(ident, option(some(brackets(expr))))
 
     private lazy val rvalue: Parsley[RValue] = 
         PElem(pairElem) |
@@ -117,7 +115,7 @@ object parser {
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
         baseType
     
-    private lazy val ptype: Parsley[Type] = postfix(typeHelper)("[]" as (ArrayT(_)))
+    private lazy val ptype: Parsley[Type] = postfix(typeHelper)(ArrayT <# "[]")
 
     private lazy val baseType: Parsley[Type] = 
         ("int" as IntT()) |
@@ -125,7 +123,7 @@ object parser {
         ("char" as CharT()) | 
         ("string" as StringT())
     
-    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)("[]" as (ArrayT(_)))
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
     
     private lazy val pairTypeHelper: Parsley[Type] = 
         baseType |
