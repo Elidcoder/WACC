@@ -9,3 +9,4 @@ def getType(env: Environment, v: String): Option[Type] = ???
 def removeOption(env: Environment, v: String): Option[Environment] = ???
 def remove(env: Environment, v: String): Environment = ???
 def getScopeFunctionType(env: Environment) = ???
+def getArrayElemType(env: Environment, v: String, n: Int): Option[Type] = ???
