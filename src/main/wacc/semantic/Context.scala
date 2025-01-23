@@ -2,12 +2,12 @@ package wacc.semantic
 
 import wacc.ast.*  
 
-class Context (val b: String, var env: Environment) {
+class Context (val b: String, val env: Environment) {
 
     def contains(v: String): Boolean = env.contains(v)
 
     def add(v: String, t: Type): Unit = {
-        env = env + (v -> t)
+        env += (v -> t)
     }
 
     def getType(v: String): Option[Type] = env.get(v)
@@ -31,4 +31,5 @@ class Context (val b: String, var env: Environment) {
             case Some(t) => go(t, d)
             case _ => None
     }
+
 }
