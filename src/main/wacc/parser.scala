@@ -13,12 +13,11 @@ import lexer.implicits.implicitSymbol
 import wacc.ast.*
 import wacc.lexer.*
 import scala.util.Success
-import parsley.Failure
 
 object parser {
-    def parse(input: File): Result[String, Program] =  parser.parseFile(input) match {
+    def parse[Err: ErrorBuilder](input: File): Result[Err, Program] =  parser.parseFile(input) match {
         case Success(x) => x
-        case _ => Failure("failed file read.")
+        case _ => sys.exit(-1)
     }
     
     private val parser = fully(program)

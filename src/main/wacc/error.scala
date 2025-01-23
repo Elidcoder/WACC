@@ -60,8 +60,10 @@ abstract class WaccErrorBuilder extends ErrorBuilder[WaccErr] {
     type Item = ErrItem
     type Raw = ErrItem.Raw
     type Named = ErrItem.Named
+    type EndOfInput = ErrItem.EndOfInput.type
+    
     override def raw(item: String): Raw = new Raw(item)
     override def named(item: String): Named = new Named(item)
 
-    override val endOfInput: EndOfInput = endOfInput
+    override val endOfInput: EndOfInput = ErrItem.EndOfInput
 }
