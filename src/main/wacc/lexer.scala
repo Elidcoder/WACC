@@ -39,6 +39,9 @@ object lexer {
     )
 
     private val errConfig = new ErrorConfig {
+        override def labelSymbol = Map(
+            ";" -> Label("end")
+        )
     }
 
     private val lexer = new Lexer(desc, errConfig)
