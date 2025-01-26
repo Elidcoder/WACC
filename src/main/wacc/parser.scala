@@ -36,13 +36,8 @@ object parser {
 
     private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
 
-    private lazy val assignmentStmt: Parsley[Stmt] =
-        ( NewAss(ptype, ident, "=" ~> rvalue)
-        <|> Assign(lvalue, "=" ~> rvalue)
-        )
-
     private lazy val stmt: Parsley[Stmt] = 
-        (("skip" as Skip()) |
+        ("skip" as Skip()) |
         ("read" ~> Read(lvalue)) |
         ("free" ~> Free(expr)) |
         ("return" ~> Return(expr)) |
@@ -52,7 +47,8 @@ object parser {
         If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi")) |
         While(("while" ~> expr), ("do" ~> stmts <~ "done")) |
         Nest("begin" ~> stmts <~ "end") | 
-        assignmentStmt)
+        NewAss(ptype, ident, "=" ~> rvalue) | 
+        Assign(lvalue, "=" ~> rvalue)
 
     private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt)
 
@@ -103,35 +99,35 @@ object parser {
         ).label("expression").explain(EXPR_ERR_MSG)
 
     private lazy val lvalue: Parsley[LValue] = 
-        (PElem(pairElem) |
-        ArrayOrIdent(ident, option(some(brackets(expr)))))
+        PElem(pairElem) |
+        ArrayOrIdent(ident, option(some(brackets(expr))))
 
     private lazy val rvalue: Parsley[RValue] = 
-        (PElem(pairElem) |
+        PElem(pairElem) |
         NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
         Call(("call" ~> ident), parens(commaSep(expr))) |
         ArrayLit(brackets(sepBy(expr, ","))) | 
-        expr)
+        expr
     
     private lazy val pairElem: Parsley[PairElem] = 
-        (("fst" ~> First(lvalue)) |
-        ("snd" ~> Second(lvalue))).label("FIRSTORSEND")
+        ("fst" ~> First(lvalue)) |
+        ("snd" ~> Second(lvalue))
 
     private lazy val typeHelper: Parsley[Type] = 
-        (("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
-        baseType)
-    
+        ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
+        baseType
+
     private lazy val ptype: Parsley[Type] = (postfix(typeHelper)(ArrayT <# "[]"))
 
     private lazy val baseType: Parsley[Type] = 
-        (("int" as IntT()) |
+        ("int" as IntT()) |
         ("bool" as BoolT()) |
         ("char" as CharT()) | 
-        ("string" as StringT()))
+        ("string" as StringT())
     
     private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
     
     private lazy val pairTypeHelper: Parsley[Type] = 
-        (baseType |
-        ("pair" as RedPairT()))
+        baseType |
+        ("pair" as RedPairT())
 }
