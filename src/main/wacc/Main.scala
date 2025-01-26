@@ -7,12 +7,12 @@ import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
 
 def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
+    //given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
     parser.parse(file) match {
         case Success(x) =>
             return 0
         case Failure(x) => 
-            // println(x)
+            println(x)
             return 100
     }
 }

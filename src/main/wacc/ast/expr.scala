@@ -18,7 +18,9 @@ case class Call(i: Ident, x: List[Expr])(val pos: (Int, Int)) extends RValue
 case class First(v: LValue)(val pos: (Int, Int)) extends PairElem
 case class Second(v: LValue)(val pos: (Int, Int)) extends PairElem
 
-case object Ident extends ParserBridgePos1[String, Ident]
+case object Ident extends ParserBridgePos1[String, Ident] {
+    override def labels: List[String] = List("identifier")
+}
 case object ArrayElem extends ParserBridgePos2[Ident, List[Expr], ArrayElem]
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, Option[List[Expr]], ArrayOrIdent] {
@@ -35,8 +37,12 @@ case object ArrayLit extends ParserBridgePos1[List[Expr], ArrayLit]
 case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair]
 case object Call extends ParserBridgePos2[Ident, List[Expr], Call]
 
-case object First extends ParserBridgePos1[LValue, PairElem]
-case object Second extends ParserBridgePos1[LValue, PairElem]
+case object First extends ParserBridgePos1[LValue, PairElem] {
+    override def labels: List[String] = List("fst")
+}
+case object Second extends ParserBridgePos1[LValue, PairElem] {
+    override def labels: List[String] = List("snd")
+}
 
 case class Not(e: Expr)(val pos: (Int, Int)) extends Expr
 case class Neg(e: Expr)(val pos: (Int, Int)) extends Expr
@@ -85,7 +91,15 @@ case object NotEq extends ParserBridgePos2[Expr, Expr, Expr]
 case object And extends ParserBridgePos2[Expr, Expr, Expr]
 case object Or extends ParserBridgePos2[Expr, Expr, Expr]
 
-case object IntLit extends ParserBridgePos1[Int, IntLit]
-case object BoolLit extends ParserBridgePos1[Boolean, BoolLit]
-case object CharLit extends ParserBridgePos1[Char, CharLit]
-case object StrLit extends ParserBridgePos1[String, StrLit]
+case object IntLit extends ParserBridgePos1[Int, IntLit]{
+    override def labels = List("integer literal")
+}
+case object BoolLit extends ParserBridgePos1[Boolean, BoolLit]{
+    override def labels = List("boolean literal")
+}
+case object CharLit extends ParserBridgePos1[Char, CharLit]{
+    override def labels = List("character literal")
+}
+case object StrLit extends ParserBridgePos1[String, StrLit]{
+    override def labels = List("string literal")
+}

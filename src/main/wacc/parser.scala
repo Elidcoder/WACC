@@ -5,7 +5,7 @@ import parsley.quick.*
 import parsley.expr.*
 import parsley.expr.chain.postfix
 import parsley.errors.ErrorBuilder
-
+import parsley.errors.combinator._
 import java.io.File
 
 import lexer.implicits.implicitSymbol
@@ -36,8 +36,13 @@ object parser {
 
     private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
 
+    private lazy val assignmentStmt: Parsley[Stmt] =
+        ( NewAss(ptype, ident, "=" ~> rvalue)
+        <|> Assign(lvalue, "=" ~> rvalue)
+        )
+
     private lazy val stmt: Parsley[Stmt] = 
-        ("skip" as Skip()) |
+        (("skip" as Skip()) |
         ("read" ~> Read(lvalue)) |
         ("free" ~> Free(expr)) |
         ("return" ~> Return(expr)) |
@@ -47,10 +52,12 @@ object parser {
         If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi")) |
         While(("while" ~> expr), ("do" ~> stmts <~ "done")) |
         Nest("begin" ~> stmts <~ "end") | 
-        NewAss(ptype, ident, "=" ~> rvalue) |
-        Assign(lvalue, "=" ~> rvalue)
+        assignmentStmt)
 
     private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt)
+
+    /* Error message taken from the WACC Reference Compiler. */
+    val EXPR_ERR_MSG = "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses in addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators";
 
     private lazy val expr: Parsley[Expr] = 
         precedence(
@@ -93,38 +100,38 @@ object parser {
             Ops(InfixR)(
                 (Or <# "||"),
             ),
-        )
+        ).label("expression").explain(EXPR_ERR_MSG)
 
     private lazy val lvalue: Parsley[LValue] = 
-        PElem(pairElem) |
-        ArrayOrIdent(ident, option(some(brackets(expr))))
+        (PElem(pairElem) |
+        ArrayOrIdent(ident, option(some(brackets(expr)))))
 
     private lazy val rvalue: Parsley[RValue] = 
-        PElem(pairElem) |
+        (PElem(pairElem) |
         NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
         Call(("call" ~> ident), parens(commaSep(expr))) |
         ArrayLit(brackets(sepBy(expr, ","))) | 
-        expr
+        expr)
     
     private lazy val pairElem: Parsley[PairElem] = 
         (("fst" ~> First(lvalue)) |
-        ("snd" ~> Second(lvalue)))
+        ("snd" ~> Second(lvalue))).label("FIRSTORSEND")
 
     private lazy val typeHelper: Parsley[Type] = 
-        ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
-        baseType
+        (("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
+        baseType)
     
-    private lazy val ptype: Parsley[Type] = postfix(typeHelper)(ArrayT <# "[]")
+    private lazy val ptype: Parsley[Type] = (postfix(typeHelper)(ArrayT <# "[]"))
 
     private lazy val baseType: Parsley[Type] = 
-        ("int" as IntT()) |
+        (("int" as IntT()) |
         ("bool" as BoolT()) |
         ("char" as CharT()) | 
-        ("string" as StringT())
+        ("string" as StringT()))
     
     private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
     
     private lazy val pairTypeHelper: Parsley[Type] = 
-        baseType |
-        ("pair" as RedPairT())
+        (baseType |
+        ("pair" as RedPairT()))
 }

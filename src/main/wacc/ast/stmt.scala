@@ -15,8 +15,13 @@ case class If(e: Expr, s1: List[Stmt], s2: List[Stmt])(val pos: (Int, Int)) exte
 case class While(e: Expr, s: List[Stmt])(val pos: (Int, Int)) extends Stmt
 case class Nest(s: List[Stmt])(val pos: (Int, Int)) extends Stmt
 
-case object NewAss extends ParserBridgePos3[Type, Ident, RValue, NewAss]
-case object Assign extends ParserBridgePos2[LValue, RValue, Assign]
+case object NewAss extends ParserBridgePos3[Type, Ident, RValue, NewAss]{
+    override def labels: List[String] = List("identifier")
+}
+case object Assign extends ParserBridgePos2[LValue, RValue, Assign]{
+    override def labels: List[String] = List("assignment")
+}
+
 case object Read extends ParserBridgePos1[LValue, Read]
 case object Free extends ParserBridgePos1[Expr, Free]
 case object Return extends ParserBridgePos1[Expr, Return]
