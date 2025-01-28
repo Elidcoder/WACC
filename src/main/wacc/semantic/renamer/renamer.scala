@@ -11,12 +11,14 @@ def rename(prog: ast.Program): (renamedAst.Program, environment) =
     (renamedAst.Program(renamedFs, renamedSs), env)
 
 def rename(f: ast.Func)(using env: environment): renamedAst.Func = 
-    env.add(rename(f.t)); 
-    val paramMap: Map[String, Int] = ((f.v.v, env.uid()) :: f.l.map { param => env.add(rename(param.t)); (param.v.v, env.uid()) }).toMap
+    val paramMap: Scope = ((f.v.v, env.add(f.v.v, rename(f.t))) :: f.l.map { 
+        param => 
+            (param.v.v, env.add(param.v.v, rename(param.t)))
+        }).toMap
     renamedAst.Func(
         rename(f.t),
-        renamedAst.Ident(f.v.v, paramMap(f.v.v)),
-        f.l.map(p => renamedAst.Param(rename(p.t), renamedAst.Ident(p.v.v, paramMap(p.v.v)))),
+        paramMap(f.v.v),
+        f.l.map(p => renamedAst.Param(rename(p.t), paramMap(p.v.v))),
         rename(f.s, paramMap.toMap))
 
 
@@ -33,9 +35,9 @@ def rename(ss: List[ast.Stmt], parentScope: Scope)(using environment): List[rena
 def rename(s: ast.Stmt)(using curScope: MutScope, env: environment): renamedAst.Stmt = s match {
     case ast.Skip() => renamedAst.Skip()
     case ast.NewAss(t, ast.Ident(v), r) => 
-        env.add(rename(t));
-        curScope.put(v, env.uid());
-        renamedAst.Assign(renamedAst.Ident(v, env.uid()), rename(r))
+        val i = env.add(v, rename(t));
+        curScope.put(v, i);
+        renamedAst.Assign(i, rename(r))
     case ast.Assign(l, r) => renamedAst.Assign(rename(l), rename(r))
     case ast.Read(l) => renamedAst.Read(rename(l))
     case ast.Free(e) => renamedAst.Free(rename(e))
@@ -49,14 +51,8 @@ def rename(s: ast.Stmt)(using curScope: MutScope, env: environment): renamedAst.
 }
 
 def rename(l: ast.LValue)(using env: environment, curScope: MutScope): renamedAst.LValue = l match {
-    case ast.Ident(v) => curScope.get(v) match {
-        case Some(uid) => renamedAst.Ident(v, uid)
-        case None      => renamedAst.Ident(v, Undeclared)
-    }
-    case ast.ArrayElem(ast.Ident(v), x) => curScope.get(v) match {
-        case Some(uid) => renamedAst.Ident(v, uid)
-        case None      => renamedAst.Ident(v, Undeclared)
-    }
+    case i: ast.Ident => curScope.rebuildWithIdent(i)(identity(_))
+    case ast.ArrayElem(i, x) => curScope.rebuildWithIdent(i)(renamedAst.ArrayElem(_, x.map(rename(_))))
     case ast.PElem(ast.First(l)) => rename(l)
     case ast.PElem(ast.Second(l)) => rename(l)
 }
@@ -65,10 +61,7 @@ def rename(r: ast.RValue)(using env: environment, curScope: MutScope): renamedAs
     case e: ast.Expr => rename(e)
     case ast.ArrayLit(es) => renamedAst.ArrayLit(es.map(rename(_)))
     case ast.NewPair(e1, e2) => renamedAst.NewPair(rename(e1), rename(e2))
-    case ast.Call(ast.Ident(v), es) => curScope.get(v) match {
-        case Some(uid) => renamedAst.Call(renamedAst.Ident(v, uid), es.map(rename(_)))
-        case None      => renamedAst.Call(renamedAst.Ident(v, Undeclared), es.map(rename(_)))
-    }
+    case ast.Call(i, es) => curScope.rebuildWithIdent(i)(renamedAst.Call(_, es.map(rename(_))))
     case ast.First(l) => renamedAst.First(rename(l))
     case ast.Second(l) => renamedAst.Second(rename(l))
     case ast.PElem(ast.First(l)) => renamedAst.PElem(renamedAst.First(rename(l)))
@@ -99,20 +92,22 @@ def rename(e: ast.Expr)(using env: environment, curScope: MutScope): renamedAst.
     case ast.CharLit(c: Char) => renamedAst.CharLit(c)
     case ast.StrLit(s: String) => renamedAst.StrLit(s)
     case ast.PairLit() => renamedAst.PairLit()
-    case ast.Ident(v) => curScope.get(v) match {
-        case Some(uid) => renamedAst.Ident(v, uid)
-        case None      => renamedAst.Ident(v, Undeclared)
-    }
-    case ast.ArrayElem(ast.Ident(v), es) => curScope.get(v) match {
-        case Some(uid) => renamedAst.ArrayElem(renamedAst.Ident(v, uid), es.map(rename(_)))
-        case None      => renamedAst.ArrayElem(renamedAst.Ident(v, Undeclared), es.map(rename(_)))
-    }
+    case i: ast.Ident => curScope.rebuildWithIdent(i)(identity(_))
+    case ast.ArrayElem(i, es) => curScope.rebuildWithIdent(i)(renamedAst.ArrayElem(_, es.map(rename(_))))
 }
+
+extension (scope: MutScope) 
+    def rebuildWithIdent[A](id: ast.Ident)
+    (build: renamedAst.Ident => A)
+    (using curScope: MutScope): A = curScope.get(id.v) match {
+        case Some(i) => build(i)
+        case None    => build(renamedAst.Ident(id.v, Undeclared, renamedAst.?))
+    }
 
 def rename(t: ast.Type): renamedAst.Type = t match {
     case ast.ArrayT(t) => renamedAst.ArrayT(rename(t))
     case ast.PairT(x, y) => renamedAst.PairT(rename(x), rename(y))
-    case ast.RedPairT() => renamedAst.RedPairT()
+    case ast.RedPairT() => renamedAst.PairT(renamedAst.?, renamedAst.?)
     case ast.IntT() => renamedAst.IntT()
     case ast.BoolT() => renamedAst.BoolT()
     case ast.CharT() => renamedAst.CharT()

@@ -4,17 +4,19 @@ import wacc.ast.Type
 import scala.collection.mutable
 
 class environment() {
-    private val map: mutable.Map[Int, renamedAst.Type] = mutable.Map.empty
+    private val map: mutable.Map[Int, renamedAst.Ident] = mutable.Map.empty
     private var nextUID: Int = 0
     def uid(): Int = nextUID
-    def add(t: renamedAst.Type): Unit = 
-        nextUID = nextUID + 1;
-        map.put(nextUID,t)
-    def get(uid: Int): renamedAst.Type = map(uid)
+    def add(v: String, t: renamedAst.Type): renamedAst.Ident = 
+        val i = renamedAst.Ident(v, nextUID, t)
+        map.put(nextUID,i)
+        nextUID = nextUID + 1
+        i
+    def get(uid: Int): renamedAst.Ident = map(uid)
     override def toString(): String = map.toString()
 }
-type MutScope = mutable.Map[String, Int]
-type Scope = Map[String, Int]
+type MutScope = mutable.Map[String, renamedAst.Ident]
+type Scope = Map[String, renamedAst.Ident]
 final val Undeclared = -1
 
 type Environment = List[List[(String, Type)]]

@@ -5,7 +5,7 @@ sealed trait RValue
 sealed trait Expr extends RValue
 sealed trait PairElem extends RValue
 
-case class Ident(val oldName: String, val uid: Int) extends LValue, Expr
+case class Ident(oldName: String, uid: Int, t: Type) extends LValue, Expr
 case class ArrayElem(i: Ident, x: List[Expr]) extends LValue, Expr
 
 case class PElem(v: PairElem) extends LValue, RValue
