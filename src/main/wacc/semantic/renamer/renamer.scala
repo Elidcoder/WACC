@@ -6,26 +6,25 @@ import wacc.ast
 
 def rename(prog: ast.Program): (renamedAst.Program, environment) = 
     given env: environment = new environment()
+    given mainScope: MutScope = empty
     val renamedFs = prog.fs.map(rename(_))
-    val renamedSs = rename(prog.x)
+    val renamedSs = rename(prog.x, mainScope.toMap)
     (renamedAst.Program(renamedFs, renamedSs), env)
 
-def rename(f: ast.Func)(using env: environment): renamedAst.Func = 
-    val paramMap: Scope = ((f.v.v, env.add(f.v.v, rename(f.t))) :: f.l.map { 
+def rename(f: ast.Func)(using env: environment, mainScope: MutScope): renamedAst.Func = 
+    val renamedT = rename(f.t)
+    val paramMap: MutScope = from((f.l.map { 
         param => 
             (param.v.v, env.add(param.v.v, rename(param.t)))
-        }).toMap
+        }))
+    val renamedF = env.add(f.v.v, renamedAst.FuncT(renamedT, paramMap.map(_._2.t).toList))
+    mainScope.put(f.v.v, renamedF)
+    paramMap.put(f.v.v, renamedF)
     renamedAst.Func(
-        rename(f.t),
+        renamedT,
         paramMap(f.v.v),
         f.l.map(p => renamedAst.Param(rename(p.t), paramMap(p.v.v))),
         rename(f.s, paramMap.toMap))
-
-
-def rename(ss: List[ast.Stmt])(using environment): List[renamedAst.Stmt] = {
-    given curScope: MutScope = empty
-    ss.map(rename(_))
-}
 
 def rename(ss: List[ast.Stmt], parentScope: Scope)(using environment): List[renamedAst.Stmt] = {
     given curScope: MutScope = from(parentScope)
