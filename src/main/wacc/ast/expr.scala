@@ -19,15 +19,18 @@ case class First(v: LValue)(val pos: (Int, Int)) extends PairElem
 case class Second(v: LValue)(val pos: (Int, Int)) extends PairElem
 
 case object Ident extends ParserBridgePos1[String, Ident] {
-    override def labels: List[String] = List("identity")
+    override def labels: List[String] = List("identifier")
 }
-case object ArrayElem extends ParserBridgePos2[Ident, List[Expr], ArrayElem]
+case object ArrayElem extends ParserBridgePos2[Ident, List[Expr], ArrayElem]{
+    override def labels: List[String] = List("array")
+}
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, Option[List[Expr]], ArrayOrIdent] {
     override def apply(i: Ident, exprs: Option[List[Expr]])(pos: (Int, Int)): ArrayOrIdent = exprs match {
         case Some(es)   => ArrayElem(i, es)(pos)
         case None       => i
     }
+    override def labels: List[String] = List("array type or identifier")
     
 }
 
@@ -83,19 +86,20 @@ case object Len extends UnaryOperator[Expr, Expr]
 case object Ord extends UnaryOperator[Expr, Expr]
 case object Chr extends UnaryOperator[Expr, Expr]
 
-case object Mul extends ParserBridgePos2[Expr, Expr, Expr]
-case object Div extends ParserBridgePos2[Expr, Expr, Expr]
-case object Mod extends ParserBridgePos2[Expr, Expr, Expr]
-case object Add extends ParserBridgePos2[Expr, Expr, Expr]
-case object Sub extends ParserBridgePos2[Expr, Expr, Expr]
-case object Greater extends ParserBridgePos2[Expr, Expr, Expr]
-case object GreaterEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object Less extends ParserBridgePos2[Expr, Expr, Expr]
-case object LessEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object Eq extends ParserBridgePos2[Expr, Expr, Expr]
-case object NotEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object And extends ParserBridgePos2[Expr, Expr, Expr]
-case object Or extends ParserBridgePos2[Expr, Expr, Expr]
+case object Mul extends MathematicalOperator[Expr, Expr, Expr]
+case object Div extends MathematicalOperator[Expr, Expr, Expr]
+case object Mod extends MathematicalOperator[Expr, Expr, Expr]
+case object Add extends MathematicalOperator[Expr, Expr, Expr]
+case object Sub extends MathematicalOperator[Expr, Expr, Expr]
+case object And extends ComparisonOperator[Expr, Expr, Expr]
+case object Or  extends ComparisonOperator[Expr, Expr, Expr]
+
+case object Greater   extends ComparisonOperator[Expr, Expr, Expr]
+case object GreaterEq extends ComparisonOperator[Expr, Expr, Expr]
+case object Less      extends ComparisonOperator[Expr, Expr, Expr]
+case object LessEq    extends ComparisonOperator[Expr, Expr, Expr]
+case object Eq        extends ComparisonOperator[Expr, Expr, Expr]
+case object NotEq     extends ComparisonOperator[Expr, Expr, Expr]
 
 case object IntLit extends ParserBridgePos1[Int, IntLit] {
     override def labels = List("integer literal")

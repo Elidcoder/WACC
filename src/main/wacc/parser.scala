@@ -17,15 +17,15 @@ import scala.util.Success
 object parser {
     def parse[Err: ErrorBuilder](input: File): Result[Err, Program] =  parser.parseFile(input) match {
         case Success(x) => x
-        case _ => sys.exit(-1)
+        case _          => sys.exit(-1)
     }
 
     def isReturnStmt(s: List[Stmt]): Boolean = s.last match {
-        case Return(_)      => true
-        case Exit(_)        => true
-        case If(_, s1, s2)  => isReturnStmt(s1) && isReturnStmt(s2)
-        case While(_, s)    => isReturnStmt(s)
-        case _              => false
+        case If(_, s1, s2) => isReturnStmt(s1) && isReturnStmt(s2)
+        case While(_, s)   => isReturnStmt(s)
+        case Return(_)     => true
+        case Exit(_)       => true
+        case _             => false
     }    
     
     private val parser = fully(program)
@@ -35,6 +35,8 @@ object parser {
     private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
 
     private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
+
+    private lazy val asgnmt = ("=" ~> rvalue).label("assignment")
 
     private lazy val stmt: Parsley[Stmt] = 
         ("skip" as Skip()) |
@@ -47,8 +49,8 @@ object parser {
         If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi")) |
         While(("while" ~> expr), ("do" ~> stmts <~ "done")) |
         Nest("begin" ~> stmts <~ "end") | 
-        NewAss(ptype, ident, "=" ~> rvalue) | 
-        Assign(lvalue, "=" ~> rvalue)
+        NewAss(ptype, ident, asgnmt) | 
+        Assign(lvalue, asgnmt)
 
     private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt)
 
@@ -100,7 +102,7 @@ object parser {
 
     private lazy val lvalue: Parsley[LValue] = 
         PElem(pairElem) |
-        ArrayOrIdent(ident, option(some(brackets(expr))))
+        ArrayOrIdent(ident, option(some(brackets(expr))).label("array index"))
 
     private lazy val rvalue: Parsley[RValue] = 
         PElem(pairElem) |

@@ -29,6 +29,14 @@ trait ParserBridgePos2[-A, -B, +C] extends ParserSingletonBridgePos[(A, B) => C]
     override final def con(pos: (Int, Int)): (A, B) => C = this.apply(_, _)(pos)
 }
 
+trait ComparisonOperator[-A, -B, +C] extends ParserBridgePos2[A, B, C]  {
+    override def labels: List[String] = List("comparison operator")
+}
+
+trait MathematicalOperator[-A, -B, +C] extends ParserBridgePos2[A, B, C]  {
+    override def labels: List[String] = List("mathematical operator")
+}
+
 trait ParserBridgePos3[-A, -B, -C, +D] extends ParserSingletonBridgePos[(A, B, C) => D] {
     def apply(x: A, y: B, z: C)(pos: (Int, Int)): D
     def apply(x: Parsley[A], y: =>Parsley[B], z: =>Parsley[C]): Parsley[D] = error(ap3(pos.map(con), x, y, z))

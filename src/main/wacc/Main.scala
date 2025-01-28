@@ -2,9 +2,9 @@ package wacc
 
 import parsley.{Success, Failure}
 import java.io.File
-import wacc.error.*
+//import wacc.error.*
 import parsley.errors.ErrorBuilder
-import parsley.errors.tokenextractors.SingleChar
+//import parsley.errors.tokenextractors.SingleChar
 
 def pipeline(file: File): Int = {
     //given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
