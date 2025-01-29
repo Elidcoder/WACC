@@ -4,11 +4,14 @@ import parsley.Parsley
 import parsley.token.{Lexer, Basic}
 import parsley.token.descriptions.*
 import parsley.token.errors.*
+import parsley.errors.combinator._
 
 import wacc.ast.Ident
 import parsley.token.Unicode
 
 object lexer {
+    /* Error message taken from the WACC Reference Compiler. */
+    val ESCAPE_ERR_MSG = "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
     private val desc = LexicalDesc.plain.copy(
         nameDesc = NameDesc.plain.copy(
             identifierStart = Basic(_.isLetter),
@@ -18,6 +21,8 @@ object lexer {
             lineCommentStart = "#"
         ),
         textDesc = TextDesc.plain.copy(
+            // TODO(Should make use of the escape_error_message to replace the invalid escape character message)
+            // Add custom message for '"' - double quotes must be escaped inside character literals
             escapeSequences = EscapeDesc.plain.copy(
                 literals = Set('\"', '\'', '\\'),
                 mapping = Map(
@@ -39,6 +44,10 @@ object lexer {
     )
 
     private val errConfig = new ErrorConfig {
+        // TODO(This doesn't work [test with funcExpr])
+        override def labelSymbol = Map(
+            "(" -> Label("opening parenthesis")
+        )
     }
 
     private val lexer = new Lexer(desc, errConfig)
@@ -46,7 +55,8 @@ object lexer {
     val implicits = lexer.lexeme.symbol.implicits
 
     val integer = lexer.lexeme.integer.decimal32
-    val ident: Parsley[Ident] = Ident(lexer.lexeme.names.identifier)
+
+    val ident: Parsley[Ident] = (Ident(lexer.lexeme.names.identifier))
     val asciiChar = lexer.lexeme.character.ascii
     val asciiString = lexer.lexeme.string.ascii
 

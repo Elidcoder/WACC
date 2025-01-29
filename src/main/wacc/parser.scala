@@ -9,6 +9,7 @@ import parsley.errors.combinator._
 import java.io.File
 
 import lexer.implicits.implicitSymbol
+import parsley.debug._
 
 import wacc.ast.*
 import wacc.lexer.*
@@ -26,17 +27,21 @@ object parser {
         case Return(_)     => true
         case Exit(_)       => true
         case _             => false
-    }    
+    }
     
-    private val parser = fully(program)
+    // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
+    private val parser = fully(program).debug("parser")
+
+    private lazy val end = "end".explain("a scope, function or the main body is unclosed").debug("end")
     
-    private lazy val program: Parsley[Program] = Program("begin" ~> many(func), stmts <~ "end")
+    private lazy val program: Parsley[Program] = Program("begin" ~> many(func), stmts <~ end).debug("program")
 
-    private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
+    private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ end))).debug("func")
 
-    private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
+    private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None))).debug("rtrnstmnt")
 
-    private lazy val asgnmt = ("=" ~> rvalue).label("assignment")
+    // TODO(unexpected identifier should somehow pass the name/ character through so that it is clear) '| unexpected("identifier")'
+    private lazy val asgnmt = ("=" ~> rvalue).label("assignment").debug("asgnmnt")
 
     private lazy val stmt: Parsley[Stmt] = 
         ("skip" as Skip()) |
@@ -46,25 +51,31 @@ object parser {
         ("exit" ~> Exit(expr)) |
         ("println" ~> PrintLn(expr)) |
         ("print" ~> Print(expr)) |
-        If(("if" ~> expr), ("then" ~> stmts), ("else" ~> stmts <~ "fi")) |
+        If(
+            ("if" ~> expr), 
+            ("then".explain("the condition of an if statement must be closed with `then`") ~> stmts), 
+            ("else".explain("all if statements must have an else clause") ~> stmts <~ "fi".explain("unclosed if statement"))
+        ) |
         While(("while" ~> expr), ("do" ~> stmts <~ "done")) |
-        Nest("begin" ~> stmts <~ "end") | 
-        NewAss(ptype, ident, asgnmt) | 
-        Assign(lvalue, asgnmt)
+        Nest("begin" ~> stmts <~ end) | 
+        NewAss(ptype, ident, asgnmt ) | 
+        Assign(lvalue, asgnmt ).debug("stmnt")
 
-    private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt)
+    private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt).label("statement").explain("missing main program body").debug("stmnts")
 
     /* Error message taken from the WACC Reference Compiler. */
     val EXPR_ERR_MSG = "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses in addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators";
 
+    private lazy val arridx = option(some(brackets(expr))).label("array index").debug("arridx")
+
     private lazy val expr: Parsley[Expr] = 
         precedence(
-            ("null" as PairLit()),
-            BoolLit(("true" as true) | ("false" as false)),
-            IntLit(integer),
-            CharLit(asciiChar),
-            StrLit(asciiString),
-            ArrayOrIdent(ident, option(some(brackets(expr)))),
+            ("null" as PairLit()).debug("exp'"),
+            BoolLit(("true" as true) | ("false" as false)).debug("exp'"),
+            IntLit(integer).debug("exp'"),
+            CharLit(asciiChar).debug("exp'"),
+            StrLit(asciiString).debug("exp'"),
+            ArrayOrIdent(ident, arridx).debug("exp'"),
             parens(expr))(
             Ops(Prefix)(
                 (Not <# "!"),
@@ -98,38 +109,38 @@ object parser {
             Ops(InfixR)(
                 (Or <# "||"),
             ),
-        ).label("expression").explain(EXPR_ERR_MSG)
+        ).label("expression").explain(EXPR_ERR_MSG).debug("expr")
 
     private lazy val lvalue: Parsley[LValue] = 
-        PElem(pairElem) |
-        ArrayOrIdent(ident, option(some(brackets(expr))).label("array index"))
+        (PElem(pairElem) |
+        ArrayOrIdent(ident, arridx)).debug("lval")
 
     private lazy val rvalue: Parsley[RValue] = 
-        PElem(pairElem) |
-        NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
-        Call(("call" ~> ident), parens(commaSep(expr))) |
-        ArrayLit(brackets(sepBy(expr, ","))) | 
-        expr
+        (PElem(pairElem).debug("1") |
+        NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")).debug("2") |
+        Call(("call" ~> ident), parens(commaSep(expr))).debug("3") |
+        ArrayLit(brackets(sepBy(expr, ","))).debug("4") | 
+        expr.debug("4")).debug("rval")
     
     private lazy val pairElem: Parsley[PairElem] = 
-        ("fst" ~> First(lvalue)) |
-        ("snd" ~> Second(lvalue))
+        (("fst" ~> First(lvalue)).debug("1") |
+        ("snd" ~> Second(lvalue)).debug("2")).debug("pairel")
 
     private lazy val typeHelper: Parsley[Type] = 
-        ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
-        baseType
+        (("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
+        baseType).debug("typehelp")
 
-    private lazy val ptype: Parsley[Type] = (postfix(typeHelper)(ArrayT <# "[]"))
+    private lazy val ptype: Parsley[Type] = (postfix(typeHelper)(ArrayT <# "[]")).debug("ptype")
 
     private lazy val baseType: Parsley[Type] = 
-        ("int" as IntT()) |
+        (("int" as IntT()) |
         ("bool" as BoolT()) |
         ("char" as CharT()) | 
-        ("string" as StringT())
+        ("string" as StringT())).debug("basetype")
     
-    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]").debug("pairtype")
     
     private lazy val pairTypeHelper: Parsley[Type] = 
-        baseType |
-        ("pair" as RedPairT())
+        (baseType |
+        ("pair" as RedPairT())).debug("pairtypehelper")
 }

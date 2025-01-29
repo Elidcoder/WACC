@@ -29,9 +29,7 @@ case object ArrayOrIdent extends ParserBridgePos2[Ident, Option[List[Expr]], Arr
     override def apply(i: Ident, exprs: Option[List[Expr]])(pos: (Int, Int)): ArrayOrIdent = exprs match {
         case Some(es)   => ArrayElem(i, es)(pos)
         case None       => i
-    }
-    override def labels: List[String] = List("array type or identifier")
-    
+    } 
 }
 
 case object PElem extends ParserBridgePos1[PairElem, PElem]
