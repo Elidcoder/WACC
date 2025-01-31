@@ -2,9 +2,8 @@ package wacc
 
 import parsley.Parsley
 import parsley.token.{Lexer, Basic}
-import parsley.token.descriptions.*
-import parsley.token.errors.*
-import parsley.errors.combinator._
+    import parsley.token.descriptions.*
+    import parsley.token.errors.*
 
 import wacc.ast.Ident
 import parsley.token.Unicode
@@ -12,6 +11,7 @@ import parsley.token.Unicode
 object lexer {
     /* Error message taken from the WACC Reference Compiler. */
     val ESCAPE_ERR_MSG = "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
+    
     private val desc = LexicalDesc.plain.copy(
         nameDesc = NameDesc.plain.copy(
             identifierStart = Basic(_.isLetter),
@@ -21,8 +21,6 @@ object lexer {
             lineCommentStart = "#"
         ),
         textDesc = TextDesc.plain.copy(
-            // TODO(Should make use of the escape_error_message to replace the invalid escape character message)
-            // Add custom message for '"' - double quotes must be escaped inside character literals
             escapeSequences = EscapeDesc.plain.copy(
                 literals = Set('\"', '\'', '\\'),
                 mapping = Map(
@@ -44,10 +42,8 @@ object lexer {
     )
 
     private val errConfig = new ErrorConfig {
-        // TODO(This doesn't work [test with funcExpr])
-        override def labelSymbol = Map(
-            "(" -> Label("opening parenthesis")
-        )
+        override def labelEscapeNumericEnd(a: Char, b: Int):LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
+        override def labelEscapeEnd:LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
     }
 
     private val lexer = new Lexer(desc, errConfig)
