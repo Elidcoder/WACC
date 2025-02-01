@@ -34,67 +34,67 @@ parser_syntax_basic:
     RUN_TEST: "$RUN_SYNTAX_BASIC"
 
 parser_syntax_array:
+  extends: .test_job_template
   variables:
     TEST_NAME: "array"
     RUN_TEST: "$RUN_SYNTAX_ARRAY"
-  <<: *test_job_template
 
 parser_syntax_expressions:
+  extends: .test_job_template
   variables:
     TEST_NAME: "expressions"
     RUN_TEST: "$RUN_SYNTAX_EXPRESSIONS"
-  <<: *test_job_template
 
 parser_syntax_function:
+  extends: .test_job_template
   variables:
     TEST_NAME: "function"
     RUN_TEST: "$RUN_SYNTAX_FUNCTION"
-  <<: *test_job_template
 
 parser_syntax_if:
+  extends: .test_job_template
   variables:
     TEST_NAME: "if"
     RUN_TEST: "$RUN_SYNTAX_IF"
-  <<: *test_job_template
 
 parser_syntax_io:
+  extends: .test_job_template
   variables:
     TEST_NAME: "io"
     RUN_TEST: "$RUN_SYNTAX_IO"
-  <<: *test_job_template
 
 parser_syntax_pairs:
+  extends: .test_job_template
   variables:
     TEST_NAME: "pairs"
     RUN_TEST: "$RUN_SYNTAX_PAIRS"
-  <<: *test_job_template
 
 parser_syntax_runtime:
+  extends: .test_job_template
   variables:
     TEST_NAME: "runtime"
     RUN_TEST: "$RUN_SYNTAX_RUNTIME"
-  <<: *test_job_template
 
 parser_syntax_scope:
+  extends: .test_job_template
   variables:
     TEST_NAME: "scope"
     RUN_TEST: "$RUN_SYNTAX_SCOPE"
-  <<: *test_job_template
 
 parser_syntax_sequence:
+  extends: .test_job_template
   variables:
     TEST_NAME: "sequence"
     RUN_TEST: "$RUN_SYNTAX_SEQUENCE"
-  <<: *test_job_template
 
 parser_syntax_variables:
+  extends: .test_job_template
   variables:
     TEST_NAME: "variables"
     RUN_TEST: "$RUN_SYNTAX_VARIABLES"
-  <<: *test_job_template
 
 parser_syntax_while:
+  extends: .test_job_template
   variables:
     TEST_NAME: "while"
     RUN_TEST: "$RUN_SYNTAX_WHILE"
-  <<: *test_job_template
