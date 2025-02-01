@@ -25,77 +25,111 @@ build:
   stage: test
   script:
     - scala test . -- -z "${TEST_NAME}"
-  rules:
-    - if: '$RUN_TEST == "true"'
 
 parser_syntax_basic:
   extends: .test_job_template
   variables:
     TEST_NAME: "basic"
-    RUN_TEST: "$RUN_SYNTAX_BASIC"
+  rules:
+    - if: '$RUN_SYNTAX_BASIC == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_array:
   extends: .test_job_template
   variables:
     TEST_NAME: "array"
-    RUN_TEST: "$RUN_SYNTAX_ARRAY"
+  rules:
+    - if: '$RUN_SYNTAX_ARRAY == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_expressions:
   extends: .test_job_template
   variables:
     TEST_NAME: "expressions"
-    RUN_TEST: "$RUN_SYNTAX_EXPRESSIONS"
+  rules:
+    - if: '$RUN_SYNTAX_EXPRESSIONS == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_function:
   extends: .test_job_template
   variables:
     TEST_NAME: "function"
-    RUN_TEST: "$RUN_SYNTAX_FUNCTION"
+  rules:
+    - if: '$RUN_SYNTAX_FUNCTION == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_if:
   extends: .test_job_template
   variables:
     TEST_NAME: "if"
-    RUN_TEST: "$RUN_SYNTAX_IF"
+  rules:
+    - if: '$RUN_SYNTAX_IF == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_io:
   extends: .test_job_template
   variables:
     TEST_NAME: "io"
-    RUN_TEST: "$RUN_SYNTAX_IO"
+  rules:
+    - if: '$RUN_SYNTAX_IO == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_pairs:
   extends: .test_job_template
   variables:
     TEST_NAME: "pairs"
-    RUN_TEST: "$RUN_SYNTAX_PAIRS"
+  rules:
+    - if: '$RUN_SYNTAX_PAIRS == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_runtime:
   extends: .test_job_template
   variables:
     TEST_NAME: "runtime"
-    RUN_TEST: "$RUN_SYNTAX_RUNTIME"
+  rules:
+    - if: '$RUN_SYNTAX_RUNTIME == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_scope:
   extends: .test_job_template
   variables:
     TEST_NAME: "scope"
-    RUN_TEST: "$RUN_SYNTAX_SCOPE"
+  rules:
+    - if: '$RUN_SYNTAX_SCOPE == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_sequence:
   extends: .test_job_template
   variables:
     TEST_NAME: "sequence"
-    RUN_TEST: "$RUN_SYNTAX_SEQUENCE"
+  rules:
+    - if: '$RUN_SYNTAX_SEQUENCE == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_variables:
   extends: .test_job_template
   variables:
     TEST_NAME: "variables"
-    RUN_TEST: "$RUN_SYNTAX_VARIABLES"
+  rules:
+    - if: '$RUN_SYNTAX_VARIABLES == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_while:
   extends: .test_job_template
   variables:
     TEST_NAME: "while"
-    RUN_TEST: "$RUN_SYNTAX_WHILE"
+  rules:
+    - if: '$RUN_SYNTAX_WHILE == "true"'
+      when: on_success
+    - when: never
