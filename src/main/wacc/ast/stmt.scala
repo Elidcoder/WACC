@@ -1,19 +1,21 @@
 package wacc.ast
 
-sealed trait Stmt
+type StmtList[N, T] = List[Stmt[N, T]]
 
-case class Skip() extends Stmt
-case class NewAss(t: Type, v: Ident, r: RValue)(val pos: (Int, Int)) extends Stmt
-case class Assign(l: LValue, r: RValue)(val pos: (Int, Int)) extends Stmt
-case class Read(l: LValue)(val pos: (Int, Int)) extends Stmt
-case class Free(e: Expr)(val pos: (Int, Int)) extends Stmt
-case class Return(e: Expr)(val pos: (Int, Int)) extends Stmt
-case class Exit(e: Expr)(val pos: (Int, Int)) extends Stmt
-case class Print(e: Expr)(val pos: (Int, Int)) extends Stmt
-case class PrintLn(e: Expr)(val pos: (Int, Int)) extends Stmt
-case class If(e: Expr, s1: List[Stmt], s2: List[Stmt])(val pos: (Int, Int)) extends Stmt
-case class While(e: Expr, s: List[Stmt])(val pos: (Int, Int)) extends Stmt
-case class Nest(s: List[Stmt])(val pos: (Int, Int)) extends Stmt
+sealed trait Stmt[N, T]
+
+case class Skip[N, T]() extends Stmt[N, T]
+case class NewAss[N, T](t: Type[N, T], v: Ident[N, T], r: RValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Assign[N, T](l: LValue[N, T], r: RValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Read[N, T](l: LValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Free[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Return[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Exit[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Print[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class PrintLn[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class If[N, T](e: Expr[N, T], s1: List[Stmt[N, T]], s2: List[Stmt[N, T]])(val pos: (Int, Int)) extends Stmt[N, T]
+case class While[N, T](e: Expr[N, T], s: List[Stmt[N, T]])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Nest[N, T](s: List[Stmt[N, T]])(val pos: (Int, Int)) extends Stmt[N, T]
 
 case object NewAss extends ParserBridgePos3[Type, Ident, RValue, NewAss]
 case object Assign extends ParserBridgePos2[LValue, RValue, Assign]
@@ -23,6 +25,6 @@ case object Return extends ParserBridgePos1[Expr, Return]
 case object Exit extends ParserBridgePos1[Expr, Exit]
 case object Print extends ParserBridgePos1[Expr, Print]
 case object PrintLn extends ParserBridgePos1[Expr, PrintLn]
-case object If extends ParserBridgePos3[Expr, List[Stmt], List[Stmt], If]
-case object While extends ParserBridgePos2[Expr, List[Stmt], While]
-case object Nest extends ParserBridgePos1[List[Stmt], Nest]
+case object If extends ParserBridgePos3[Expr, StmtList, StmtList, If]
+case object While extends ParserBridgePos2[Expr, StmtList, While]
+case object Nest extends ParserBridgePos1[StmtList, Nest]
