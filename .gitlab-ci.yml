@@ -18,6 +18,15 @@ build:
     - scala compile .
     - echo "Compilation complete!"
 
+.test_job_template: &test_job_template
+  stage: test
+  script:
+    - scala test . -- -z "${TEST_NAME}"
+  rules:
+    - if: '$RUN_TEST == true'
+      when: on_success
+    - when: never
+
 parser_syntax_basic:
   variables:
     TEST_NAME: "basic"

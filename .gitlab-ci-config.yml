@@ -12,13 +12,3 @@ variables:
   RUN_SYNTAX_SEQUENCE:    true
   RUN_SYNTAX_VARIABLES:   true
   RUN_SYNTAX_WHILE:       true
-
-# A job template for all tests
-.test_job_template: &test_job_template
-  stage: test
-  script:
-    - scala test . -- -z "${TEST_NAME}"
-  rules:
-    - if: '$RUN_TEST == true'
-      when: on_success
-    - when: never
