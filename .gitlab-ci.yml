@@ -1,3 +1,6 @@
+include:
+  - local: '.gitlab-ci-config.yml'
+
 image: gumjoe/wacc-ci-scala:slim
 
 stages:
@@ -16,61 +19,73 @@ build:
     - echo "Compilation complete!"
 
 parser_syntax_basic:
-  stage: test
-  script:
-    - scala test . -- -z "basic"
+  variables:
+    TEST_NAME: "basic"
+    RUN_TEST: "$RUN_SYNTAX_BASIC"
+  <<: *test_job_template
 
 parser_syntax_array:
-  stage: test
-  script:
-    - scala test . -- -z "array"
+  variables:
+    TEST_NAME: "array"
+    RUN_TEST: "$RUN_SYNTAX_ARRAY"
+  <<: *test_job_template
 
 parser_syntax_expressions:
-  stage: test
-  script:
-    - scala test . -- -z "expressions"
+  variables:
+    TEST_NAME: "expressions"
+    RUN_TEST: "$RUN_SYNTAX_EXPRESSIONS"
+  <<: *test_job_template
 
 parser_syntax_function:
-  stage: test
-  script:
-    - scala test . -- -z "function"
+  variables:
+    TEST_NAME: "function"
+    RUN_TEST: "$RUN_SYNTAX_FUNCTION"
+  <<: *test_job_template
 
 parser_syntax_if:
-  stage: test
-  script:
-    - scala test . -- -z "if"
+  variables:
+    TEST_NAME: "if"
+    RUN_TEST: "$RUN_SYNTAX_IF"
+  <<: *test_job_template
 
 parser_syntax_io:
-  stage: test
-  script:
-    - scala test . -- -z "io"
+  variables:
+    TEST_NAME: "io"
+    RUN_TEST: "$RUN_SYNTAX_IO"
+  <<: *test_job_template
 
 parser_syntax_pairs:
-  stage: test
-  script:
-    - scala test . -- -z "pairs"
+  variables:
+    TEST_NAME: "pairs"
+    RUN_TEST: "$RUN_SYNTAX_PAIRS"
+  <<: *test_job_template
 
 parser_syntax_runtime:
-  stage: test
-  script:
-    - scala test . -- -z "runtime"
+  variables:
+    TEST_NAME: "runtime"
+    RUN_TEST: "$RUN_SYNTAX_RUNTIME"
+  <<: *test_job_template
 
 parser_syntax_scope:
-  stage: test
-  script:
-    - scala test . -- -z "scope"
+  variables:
+    TEST_NAME: "scope"
+    RUN_TEST: "$RUN_SYNTAX_SCOPE"
+  <<: *test_job_template
 
 parser_syntax_sequence:
-  stage: test
-  script:
-    - scala test . -- -z "sequence"
+  variables:
+    TEST_NAME: "sequence"
+    RUN_TEST: "$RUN_SYNTAX_SEQUENCE"
+  <<: *test_job_template
 
 parser_syntax_variables:
-  stage: test
-  script:
-    - scala test . -- -z "variables"
+  variables:
+    TEST_NAME: "variables"
+    RUN_TEST: "$RUN_SYNTAX_VARIABLES"
+  <<: *test_job_template
 
 parser_syntax_while:
-  stage: test
-  script:
-    - scala test . -- -z "while"
+  variables:
+    TEST_NAME: "while"
+    RUN_TEST: "$RUN_SYNTAX_WHILE"
+  <<: *test_job_template
