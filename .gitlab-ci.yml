@@ -23,7 +23,7 @@ build:
   script:
     - scala test . -- -z "${TEST_NAME}"
   rules:
-    - if: $RUN_TEST == "true"
+    - if: '$RUN_TEST == "true"'
       when: on_success
     - when: never
 
