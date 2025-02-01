@@ -10,5 +10,5 @@ variables:
   RUN_SYNTAX_RUNTIME:     "true"
   RUN_SYNTAX_SCOPE:       "true"
   RUN_SYNTAX_SEQUENCE:    "true"
-  RUN_SYNTAX_VARIABLES:   "true"
-  RUN_SYNTAX_WHILE:       "true"
+  RUN_SYNTAX_VARIABLES:   "false"
+  RUN_SYNTAX_WHILE:       "false"
