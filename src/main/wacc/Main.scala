@@ -9,21 +9,18 @@ import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
 import scala.util.Random
 
-def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
-    parser.parse(file) match {
-        // For carrot mark
-        case Success(x) => Random.nextInt(2) * 200
-        case Failure(x) => 100
-    }
-}
-
 def main(args: Array[String]): Unit = {
     args.headOption match {
         case Some(expr) => 
             val file = new File(expr)
             assert(file.exists())
-            sys.exit(pipeline(file))
+            parser.parse(file) match {
+                case Success(x) => sys.exit(0)
+                case Failure(msg) => 
+                    print("Syntax error ")
+                    println(msg)
+                    sys.exit(100)
+        }
         case None => println("please enter an expression")
     }
 }
