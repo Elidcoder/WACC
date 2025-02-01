@@ -1,14 +1,14 @@
 # Configure tests that you want to run on this commit
 variables:
-  RUN_SYNTAX_BASIC:       true
-  RUN_SYNTAX_ARRAY:       true
-  RUN_SYNTAX_EXPRESSIONS: true
-  RUN_SYNTAX_FUNCTION:    true
-  RUN_SYNTAX_IF:          true
-  RUN_SYNTAX_IO:          true
-  RUN_SYNTAX_PAIRS:       true
-  RUN_SYNTAX_RUNTIME:     true
-  RUN_SYNTAX_SCOPE:       true
-  RUN_SYNTAX_SEQUENCE:    true
-  RUN_SYNTAX_VARIABLES:   false
-  RUN_SYNTAX_WHILE:       false
+  RUN_SYNTAX_BASIC:       "true"
+  RUN_SYNTAX_ARRAY:       "true"
+  RUN_SYNTAX_EXPRESSIONS: "true"
+  RUN_SYNTAX_FUNCTION:    "true"
+  RUN_SYNTAX_IF:          "true"
+  RUN_SYNTAX_IO:          "true"
+  RUN_SYNTAX_PAIRS:       "true"
+  RUN_SYNTAX_RUNTIME:     "true"
+  RUN_SYNTAX_SCOPE:       "true"
+  RUN_SYNTAX_SEQUENCE:    "true"
+  RUN_SYNTAX_VARIABLES:   "true"
+  RUN_SYNTAX_WHILE:       "true"
