@@ -22,10 +22,6 @@ build:
   stage: test
   script:
     - scala test . -- -z "${TEST_NAME}"
-  rules:
-    - if: '$RUN_TEST == "true"'
-      when: on_success
-    - when: never
 
 parser_syntax_basic:
   extends: .test_job_template
