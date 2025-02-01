@@ -6,6 +6,7 @@ import parsley.token.descriptions.*
 import parsley.token.errors.*
 
 import wacc.ast.Ident
+import parsley.token.Unicode
 
 object lexer {
     private val desc = LexicalDesc.plain.copy(
@@ -17,7 +18,18 @@ object lexer {
             lineCommentStart = "#"
         ),
         textDesc = TextDesc.plain.copy(
-            escapeSequences = EscapeDesc.haskell
+            escapeSequences = EscapeDesc.plain.copy(
+                literals = Set('\"', '\'', '\\'),
+                mapping = Map(
+                    "0" -> 0x00,
+                    "b" -> 0x08,
+                    "t" -> 0x09,
+                    "n" -> 0x0a,
+                    "f" -> 0x0c,
+                    "r" -> 0x0d,
+                ),
+            ),
+            graphicCharacter = Unicode((x: Int) => !Set('\"', '\'', '\\').contains(x) && x >= ' '.toInt)
         ),
         symbolDesc = SymbolDesc.plain.copy(
             hardKeywords = Set("if", "true", "false", "len", "ord", "chr", "int", "bool", "char",
