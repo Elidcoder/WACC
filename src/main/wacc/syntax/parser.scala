@@ -1,4 +1,4 @@
-package wacc
+package wacc.syntax
 
 import parsley.{Parsley, Result}
 import parsley.quick.*
@@ -11,7 +11,7 @@ import java.io.File
 import lexer.implicits.implicitSymbol
 
 import wacc.ast.*
-import wacc.lexer.*
+import wacc.syntax.lexer.*
 import scala.util.Success
 
 object parser {
