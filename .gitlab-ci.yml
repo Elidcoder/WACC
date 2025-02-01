@@ -28,7 +28,7 @@ parser_syntax_basic:
   variables:
     TEST_NAME: "basic"
   rules:
-    - if: '$RUN_SYNTAX_BASIC == true'
+    - if: $RUN_SYNTAX_BASIC == true
       when: on_success
     - when: never
 
@@ -37,7 +37,7 @@ parser_syntax_array:
   variables:
     TEST_NAME: "array"
   rules:
-    - if: '$RUN_SYNTAX_ARRAY == true'
+    - if: $RUN_SYNTAX_ARRAY == true
       when: on_success
     - when: never
 
@@ -46,7 +46,7 @@ parser_syntax_expressions:
   variables:
     TEST_NAME: "expressions"
   rules:
-    - if: '$RUN_SYNTAX_EXPRESSIONS == true'
+    - if: $RUN_SYNTAX_EXPRESSIONS == true
       when: on_success
     - when: never
 
@@ -55,7 +55,7 @@ parser_syntax_function:
   variables:
     TEST_NAME: "function"
   rules:
-    - if: '$RUN_SYNTAX_FUNCTION == true'
+    - if: $RUN_SYNTAX_FUNCTION == true
       when: on_success
     - when: never
 
@@ -64,7 +64,7 @@ parser_syntax_if:
   variables:
     TEST_NAME: "if"
   rules:
-    - if: '$RUN_SYNTAX_IF == true'
+    - if: $RUN_SYNTAX_IF == true
       when: on_success
     - when: never
 
@@ -73,7 +73,7 @@ parser_syntax_io:
   variables:
     TEST_NAME: "io"
   rules:
-    - if: '$RUN_SYNTAX_IO == true'
+    - if: $RUN_SYNTAX_IO == true
       when: on_success
     - when: never
 
@@ -82,7 +82,7 @@ parser_syntax_pairs:
   variables:
     TEST_NAME: "pairs"
   rules:
-    - if: '$RUN_SYNTAX_PAIRS == true'
+    - if: $RUN_SYNTAX_PAIRS == true
       when: on_success
     - when: never
 
@@ -91,7 +91,7 @@ parser_syntax_runtime:
   variables:
     TEST_NAME: "runtime"
   rules:
-    - if: '$RUN_SYNTAX_RUNTIME == true'
+    - if: $RUN_SYNTAX_RUNTIME == true
       when: on_success
     - when: never
 
@@ -100,7 +100,7 @@ parser_syntax_scope:
   variables:
     TEST_NAME: "scope"
   rules:
-    - if: '$RUN_SYNTAX_SCOPE == true'
+    - if: $RUN_SYNTAX_SCOPE == true
       when: on_success
     - when: never
 
@@ -109,7 +109,7 @@ parser_syntax_sequence:
   variables:
     TEST_NAME: "sequence"
   rules:
-    - if: '$RUN_SYNTAX_SEQUENCE == true'
+    - if: $RUN_SYNTAX_SEQUENCE == true
       when: on_success
     - when: never
 
@@ -118,7 +118,7 @@ parser_syntax_variables:
   variables:
     TEST_NAME: "variables"
   rules:
-    - if: '$RUN_SYNTAX_VARIABLES == true'
+    - if: $RUN_SYNTAX_VARIABLES == true
       when: on_success
     - when: never
 
@@ -127,6 +127,6 @@ parser_syntax_while:
   variables:
     TEST_NAME: "while"
   rules:
-    - if: '$RUN_SYNTAX_WHILE == true'
+    - if: $RUN_SYNTAX_WHILE == true
       when: on_success
     - when: never
