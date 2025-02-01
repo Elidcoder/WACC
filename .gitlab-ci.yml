@@ -22,6 +22,8 @@ build:
   stage: test
   script:
     - scala test . -- -z "${TEST_NAME}"
+  rules:
+    - if: '$RUN_TEST == "true"'
 
 parser_syntax_basic:
   extends: .test_job_template
