@@ -3,6 +3,9 @@ include:
 
 image: gumjoe/wacc-ci-scala:slim
 
+variables:
+  - template: .gitlab-ci-config.yml
+
 stages:
   - build
   - test
