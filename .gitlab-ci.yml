@@ -18,7 +18,7 @@ build:
     - scala compile .
     - echo "Compilation complete!"
 
-.test_job_template: &test_job_template
+.test_job_template:
   stage: test
   script:
     - scala test . -- -z "${TEST_NAME}"
@@ -28,10 +28,10 @@ build:
     - when: never
 
 parser_syntax_basic:
+  extends: .test_job_template
   variables:
     TEST_NAME: "basic"
     RUN_TEST: "$RUN_SYNTAX_BASIC"
-  <<: *test_job_template
 
 parser_syntax_array:
   variables:
