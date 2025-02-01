@@ -3,7 +3,7 @@ package wacc.semantic
 import wacc.ast.Type
 import scala.collection.mutable
 
-class environment() {
+class Environment() {
     private val map: mutable.Map[Int, renamedAst.Ident] = mutable.Map.empty
     private var nextUID: Int = 0
     def uid(): Int = nextUID
@@ -18,12 +18,3 @@ class environment() {
 type MutScope = mutable.Map[String, renamedAst.Ident]
 type Scope = Map[String, renamedAst.Ident]
 final val Undeclared = -1
-
-type Environment = List[List[(String, Type)]]
-
-def contains(env: Environment, v: String): Boolean = ???
-def add(env: Environment, v: String, t: Type): Unit = ???
-def getType(env: Environment, v: String): Option[Type] = ???
-def removeOption(env: Environment, v: String): Option[Environment] = ???
-def remove(env: Environment, v: String): Environment = ???
-def getArrayElemType(env: Environment, v: String, d: Int): Option[Type] = ???

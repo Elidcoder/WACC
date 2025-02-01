@@ -4,14 +4,14 @@ import scala.collection.mutable.Map.{empty, from}
 
 import wacc.ast
 
-def rename(prog: ast.Program): (renamedAst.Program, environment) = 
-    given env: environment = new environment()
+def rename(prog: ast.Program): (renamedAst.Program, Environment) = 
+    given env: Environment = new Environment()
     given mainScope: MutScope = empty
     val renamedFs = prog.fs.map(rename(_))
     val renamedSs = rename(prog.x, mainScope.toMap)
     (renamedAst.Program(renamedFs, renamedSs), env)
 
-def rename(f: ast.Func)(using env: environment, mainScope: MutScope): renamedAst.Func = 
+def rename(f: ast.Func)(using env: Environment, mainScope: MutScope): renamedAst.Func = 
     val renamedT = rename(f.t)
     val paramMap: MutScope = from((f.l.map { 
         param => 
@@ -26,12 +26,12 @@ def rename(f: ast.Func)(using env: environment, mainScope: MutScope): renamedAst
         f.l.map(p => renamedAst.Param(rename(p.t), paramMap(p.v.v))),
         rename(f.s, paramMap.toMap))
 
-def rename(ss: List[ast.Stmt], parentScope: Scope)(using environment): List[renamedAst.Stmt] = {
+def rename(ss: List[ast.Stmt], parentScope: Scope)(using Environment): List[renamedAst.Stmt] = {
     given curScope: MutScope = from(parentScope)
     ss.map(rename(_))
 }
 
-def rename(s: ast.Stmt)(using curScope: MutScope, env: environment): renamedAst.Stmt = s match {
+def rename(s: ast.Stmt)(using curScope: MutScope, env: Environment): renamedAst.Stmt = s match {
     case ast.Skip() => renamedAst.Skip()
     case ast.NewAss(t, ast.Ident(v), r) => 
         val i = env.add(v, rename(t));
@@ -49,14 +49,14 @@ def rename(s: ast.Stmt)(using curScope: MutScope, env: environment): renamedAst.
     case ast.Nest(ss) => renamedAst.Nest(ss.map(rename(_)))
 }
 
-def rename(l: ast.LValue)(using env: environment, curScope: MutScope): renamedAst.LValue = l match {
+def rename(l: ast.LValue)(using env: Environment, curScope: MutScope): renamedAst.LValue = l match {
     case i: ast.Ident => curScope.rebuildWithIdent(i)(identity(_))
     case ast.ArrayElem(i, x) => curScope.rebuildWithIdent(i)(renamedAst.ArrayElem(_, x.map(rename(_))))
     case ast.PElem(ast.First(l)) => rename(l)
     case ast.PElem(ast.Second(l)) => rename(l)
 }
 
-def rename(r: ast.RValue)(using env: environment, curScope: MutScope): renamedAst.RValue = r match {
+def rename(r: ast.RValue)(using env: Environment, curScope: MutScope): renamedAst.RValue = r match {
     case e: ast.Expr => rename(e)
     case ast.ArrayLit(es) => renamedAst.ArrayLit(es.map(rename(_)), renamedAst.ArrayT(renamedAst.?))
     case ast.NewPair(e1, e2) => renamedAst.NewPair(rename(e1), rename(e2), renamedAst.PairT(renamedAst.?, renamedAst.?))
@@ -67,7 +67,7 @@ def rename(r: ast.RValue)(using env: environment, curScope: MutScope): renamedAs
     case ast.PElem(ast.Second(l)) => renamedAst.PElem(renamedAst.First(rename(l), renamedAst.?), renamedAst.?)
 }
 
-def rename(e: ast.Expr)(using env: environment, curScope: MutScope): renamedAst.Expr = e match {
+def rename(e: ast.Expr)(using env: Environment, curScope: MutScope): renamedAst.Expr = e match {
     case ast.Not(e) => renamedAst.Not(rename(e))
     case ast.Neg(e) => renamedAst.Neg(rename(e))
     case ast.Len(e) => renamedAst.Len(rename(e))
