@@ -7,11 +7,17 @@ import wacc.error.WaccErr
 def check(prog: renamedAst.Program): Either[List[WaccErr], typedAst.Program] = {
     given ctx: Context = new Context()
     val typedFuncs: List[typedAst.Func] = checkFuncs(prog.fs)
-    val typedStmts: List[typedAst.Stmt] = checkStmts(prog.x)
+    val typedStmts: List[typedAst.Stmt] = check(prog.x)
     val errors = ctx.result
     if errors.isEmpty then Right(typedAst.Program(typedFuncs, typedStmts)) else Left(errors)
 }
 
-def checkFuncs(funcs: List[renamedAst.Func])(using ctx: Context): List[typedAst.Func] = ??? 
+def checkFuncs(fs: List[renamedAst.Func])(using ctx: Context): List[typedAst.Func] = 
+    fs.map(check(_))
 
-def checkStmts(stmts: List[renamedAst.Stmt])(using ctx: Context): List[typedAst.Stmt] = ??? 
+def check(f: renamedAst.Func)(using ctx: Context): typedAst.Func = 
+    typedAst.Func(typedAst.Ident(f.v), check(f.s))
+
+def check(ss: List[renamedAst.Stmt])(using ctx: Context): List[typedAst.Stmt] = ??? 
+
+def check(t: renamedAst.Type) = ???
