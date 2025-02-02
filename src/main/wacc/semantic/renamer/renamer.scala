@@ -7,24 +7,28 @@ import wacc.ast
 def rename(prog: ast.Program): (renamedAst.Program, Environment) = 
     given env: Environment = new Environment()
     given mainScope: MutScope = empty
-    val renamedFs = prog.fs.map(rename(_))
+    val renamedFs = renameFuncs(prog.fs)
     val renamedSs = rename(prog.x, mainScope.toMap)
     (renamedAst.Program(renamedFs, renamedSs), env)
 
+def renameFuncs(fs: List[ast.Func])(using env: Environment, mainScope: MutScope): List[renamedAst.Func] = {
+    fs.foreach { f =>
+        mainScope.put(f.v.v, env.add(f.v.v, renamedAst.FuncT(rename(f.t), f.l.map(p => rename(p.t)))))
+    }
+    fs.map(rename(_))
+}
+
 def rename(f: ast.Func)(using env: Environment, mainScope: MutScope): renamedAst.Func = 
     val renamedT = rename(f.t)
-    val paramMap: MutScope = from((f.l.map { 
-        param => 
-            (param.v.v, env.add(param.v.v, rename(param.t)))
-        }))
-    val renamedF = env.add(f.v.v, renamedAst.FuncT(renamedT, paramMap.map(_._2.t).toList))
-    mainScope.put(f.v.v, renamedF)
-    paramMap.put(f.v.v, renamedF)
+    val funcScope: MutScope = from(mainScope)
+    f.l.foreach { param => 
+            funcScope.put(param.v.v, env.add(param.v.v, rename(param.t)))
+        }
     renamedAst.Func(
         renamedT,
-        paramMap(f.v.v),
-        f.l.map(p => renamedAst.Param(rename(p.t), paramMap(p.v.v))),
-        rename(f.s, paramMap.toMap))
+        funcScope(f.v.v),
+        f.l.map(p => renamedAst.Param(rename(p.t), funcScope(p.v.v))),
+        rename(f.s, funcScope.toMap))
 
 def rename(ss: List[ast.Stmt], parentScope: Scope)(using Environment): List[renamedAst.Stmt] = {
     given curScope: MutScope = from(parentScope)
