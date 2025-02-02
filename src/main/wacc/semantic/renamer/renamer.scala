@@ -19,16 +19,11 @@ def renameFuncs(fs: List[ast.Func])(using env: Environment, mainScope: MutScope)
 }
 
 def rename(f: ast.Func)(using env: Environment, mainScope: MutScope): renamedAst.Func = 
-    val renamedT = rename(f.t)
     val funcScope: MutScope = from(mainScope)
     f.l.foreach { param => 
             funcScope.put(param.v.v, env.add(param.v.v, rename(param.t)))
         }
-    renamedAst.Func(
-        renamedT,
-        funcScope(f.v.v),
-        f.l.map(p => renamedAst.Param(rename(p.t), funcScope(p.v.v))),
-        rename(f.s, funcScope.toMap))
+    renamedAst.Func(funcScope(f.v.v), rename(f.s, funcScope.toMap))
 
 def rename(ss: List[ast.Stmt], parentScope: Scope)(using Environment): List[renamedAst.Stmt] = {
     given curScope: MutScope = from(parentScope)
