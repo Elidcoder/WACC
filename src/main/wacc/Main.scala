@@ -7,7 +7,16 @@ import java.io.File
 import wacc.error.*
 import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
-import scala.util.Random
+
+def pipeline(file: File): Int = {
+    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
+    parser.parse(file) match {
+        case Success(x) =>
+            return 0
+        case Failure(x) => 
+            return 100
+    }
+}
 
 def main(args: Array[String]): Unit = {
     args.headOption match {
