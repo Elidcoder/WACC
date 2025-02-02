@@ -33,6 +33,7 @@ object WaccErr {
 
 class Context() {
     private val errors = List.newBuilder[WaccErr]
+    def result: List[WaccErr] = errors.result()
     def error(err: WaccErr): Option[Type] = 
         errors += err
         None
