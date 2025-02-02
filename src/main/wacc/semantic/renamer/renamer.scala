@@ -57,13 +57,13 @@ def rename(l: ast.LValue)(using env: Environment, curScope: MutScope): renamedAs
 
 def rename(r: ast.RValue)(using env: Environment, curScope: MutScope): renamedAst.RValue = r match {
     case e: ast.Expr => rename(e)
-    case ast.ArrayLit(es) => renamedAst.ArrayLit(es.map(rename(_)), renamedAst.ArrayT(renamedAst.?))
-    case ast.NewPair(e1, e2) => renamedAst.NewPair(rename(e1), rename(e2), renamedAst.PairT(renamedAst.?, renamedAst.?))
-    case ast.Call(i, es) => curScope.rebuildWithIdent(i)(renamedAst.Call(_, es.map(rename(_)), renamedAst.?))
-    case ast.First(l) => renamedAst.First(rename(l), renamedAst.?)
-    case ast.Second(l) => renamedAst.Second(rename(l), renamedAst.?)
-    case ast.PElem(ast.First(l)) => renamedAst.PElem(renamedAst.First(rename(l), renamedAst.?), renamedAst.?)
-    case ast.PElem(ast.Second(l)) => renamedAst.PElem(renamedAst.First(rename(l), renamedAst.?), renamedAst.?)
+    case ast.ArrayLit(es) => renamedAst.ArrayLit(es.map(rename(_)))
+    case ast.NewPair(e1, e2) => renamedAst.NewPair(rename(e1), rename(e2))
+    case ast.Call(i, es) => curScope.rebuildWithIdent(i)(renamedAst.Call(_, es.map(rename(_))))
+    case ast.First(l) => renamedAst.First(rename(l))
+    case ast.Second(l) => renamedAst.Second(rename(l))
+    case ast.PElem(ast.First(l)) => renamedAst.PElem(renamedAst.First(rename(l)))
+    case ast.PElem(ast.Second(l)) => renamedAst.PElem(renamedAst.First(rename(l)))
 }
 
 def rename(e: ast.Expr)(using env: Environment, curScope: MutScope): renamedAst.Expr = e match {
