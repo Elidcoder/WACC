@@ -29,6 +29,30 @@ object WaccErr {
             None
         )
     }
+    case object IsNotFreeable {
+        def apply(pos: R2, id: Ident) = wacc.error.WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(id.oldName)),
+                Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
+                Set("Must be of a freeable type"),
+                10
+            ),
+            None
+        )
+    }
+    case object IsNotReadable {
+        def apply(pos: R2, id: Ident) = wacc.error.WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(id.oldName)),
+                Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
+                Set("Must be a readable type"),
+                10
+            ),
+            None
+        )
+    }
 }
 
 class Context() {
