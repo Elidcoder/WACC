@@ -82,8 +82,12 @@ def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s ma
         for {tE <- check(e, Is(renamedAst.IntT()))._2} yield typedAst.Exit(tE)
     case renamedAst.Free(e) => 
         for {tE <- check(e, IsFreeable)._2} yield typedAst.Free(tE)
-    case renamedAst.If(e, s1, s2) => ???
-    case renamedAst.Nest(s) => ???
+    case renamedAst.If(e, s1, s2) => 
+        val (_, typedCond) = check(e, Is(renamedAst.BoolT()))
+        val (typedS1, typedS2) = (check(s1), check(s2))
+        for {te <- typedCond; ts1 <- typedS1; ts2 <- typedS2} yield typedAst.If(te, ts1, ts2)
+    case renamedAst.Nest(s) => 
+        for {ts <- check(s)} yield typedAst.Nest(ts)
     case renamedAst.Print(e) => 
         val (ot, otE) = check(e, Unconstrained)
         for { t <- ot; tE <- otE} yield typedAst.Print(tE, check(t))
@@ -94,9 +98,12 @@ def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s ma
         val (ot, otE) = check(l, IsReadable)
         for { t <- ot; tE <- otE} yield typedAst.Read(tE, check(t))
     case renamedAst.Return(e) => ???
-    case renamedAst.Skip() => ???
-    case renamedAst.While(e, s) => ???
-}
+    case renamedAst.Skip() => Some(typedAst.Skip())
+    case renamedAst.While(e, s) => 
+        val (_, typedCond) = check(e, Is(renamedAst.BoolT()))
+        val typedS = check(s)
+        for {te <- typedCond; ts <- typedS} yield typedAst.While(te, ts)
+} 
 
 def check(e: renamedAst.Expr, c: Constraint): (Option[renamedAst.Type], Option[typedAst.Expr]) = ???
 
