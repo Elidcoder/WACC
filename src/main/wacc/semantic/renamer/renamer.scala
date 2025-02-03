@@ -3,6 +3,7 @@ package wacc.semantic
 import scala.collection.mutable.Map.{empty, from}
 
 import wacc.ast
+import wacc.semantic.renamedAst.Ident
 
 def rename(prog: ast.Program): (renamedAst.Program, Environment) = 
     given env: Environment = new Environment()
@@ -35,7 +36,11 @@ def rename(ss: List[ast.Stmt])(using curScope: MutScope, env: Environment, paren
 def rename(s: ast.Stmt)(using curScope: MutScope, env: Environment, parentScope: Scope): renamedAst.Stmt = s match {
     case ast.Skip() => renamedAst.Skip()
     case ast.NewAss(t, ast.Ident(v), r) => 
-        val i = env.add(v, rename(t))
+        val i = curScope.get(v) match {
+            case Some(_) => renamedAst.Ident(v, AlreadyDeclaredInScope, renamedAst.?)
+            case None    => env.add(v, rename(t))
+        }
+        curScope.put(v, i)
         val rR = rename(r)
         curScope.put(v, i)
         renamedAst.Assign(i, rR)
