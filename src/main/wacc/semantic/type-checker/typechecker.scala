@@ -74,7 +74,10 @@ def check(ss: List[renamedAst.Stmt])(using ctx: Context): Option[List[typedAst.S
         }
 
 def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s match {
-    case renamedAst.Assign(l, r) => ???
+    case renamedAst.Assign(l, r) => 
+        val (lvalType, typedLval) = check(l, Unconstrained)
+        val (rvalType, typedRval) = check(r, Is(lvalType.getOrElse(renamedAst.?)))
+        for {l <- typedLval; r <- typedRval} yield typedAst.Assign(l, r)
     case renamedAst.Exit(e) => 
         for {tE <- check(e, Is(renamedAst.IntT()))._2} yield typedAst.Exit(tE)
     case renamedAst.Free(e) => 
@@ -83,21 +86,23 @@ def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s ma
     case renamedAst.Nest(s) => ???
     case renamedAst.Print(e) => 
         val (ot, otE) = check(e, Unconstrained)
-        for { t <- ot; tE <- otE} yield typedAst.Print(tE, t)
+        for { t <- ot; tE <- otE} yield typedAst.Print(tE, check(t))
     case renamedAst.PrintLn(e) => 
         val (ot, otE) = check(e, Unconstrained)
-        for { t <- ot; tE <- otE} yield typedAst.PrintLn(tE, t)
+        for { t <- ot; tE <- otE} yield typedAst.PrintLn(tE, check(t))
     case renamedAst.Read(l) => 
         val (ot, otE) = check(l, IsReadable)
-        for { t <- ot; tE <- otE} yield typedAst.Read(tE, t)
+        for { t <- ot; tE <- otE} yield typedAst.Read(tE, check(t))
     case renamedAst.Return(e) => ???
     case renamedAst.Skip() => ???
     case renamedAst.While(e, s) => ???
 }
 
-def check(e: renamedAst.Expr, c: Constraint): (Option[typedAst.Type], Option[typedAst.Expr]) = ???
+def check(e: renamedAst.Expr, c: Constraint): (Option[renamedAst.Type], Option[typedAst.Expr]) = ???
 
-def check(e: renamedAst.LValue, c: Constraint): (Option[typedAst.Type], Option[typedAst.LValue]) = ???
+def check(e: renamedAst.LValue, c: Constraint): (Option[renamedAst.Type], Option[typedAst.LValue]) = ???
+
+def check(e: renamedAst.RValue, c: Constraint): (Option[renamedAst.Type], Option[typedAst.RValue]) = ???
 
 def check(t: renamedAst.Type): typedAst.Type = ???
 
