@@ -1,3 +1,3 @@
 package wacc.semantic.renamedAst
 
-case class Func(v: Ident, s: List[Stmt])
+case class Func(rt: Type, v: Ident, s: List[Stmt])

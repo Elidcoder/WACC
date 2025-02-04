@@ -46,15 +46,15 @@ extension (t: renamedAst.Type)
 
 
 def check(prog: renamedAst.Program): Either[List[WaccErr], Option[typedAst.Program]] = {
-    given ctx: Context = new Context()
+    given ctx: Context = new Context(Body.Main)
     val typedFuncs: Option[List[typedAst.Func]] = checkFuncs(prog.fs)
-    val typedStmts: Option[List[typedAst.Stmt]] = check(prog.x)
+    val typedStmts: Option[List[typedAst.Stmt]] = {
+        ctx.body = Body.Main 
+        check(prog.x)
+    }
     val errors = ctx.result
     if errors.isEmpty 
-        then Right(for {
-            fs <- typedFuncs
-            ss <- typedStmts
-        } yield typedAst.Program(fs, ss))
+        then Right(for { fs <- typedFuncs; ss <- typedStmts} yield typedAst.Program(fs, ss))
         else Left(errors)
 }
 
@@ -65,6 +65,7 @@ def checkFuncs(fs: List[renamedAst.Func])(using ctx: Context): Option[List[typed
         }
 
 def check(f: renamedAst.Func)(using ctx: Context): Option[typedAst.Func] = 
+    ctx.body = Body.Function(f.rt)
     for { tF <- check(f.s) } yield typedAst.Func(typedAst.Ident(f.v.oldName, f.v.uid, check(f.v.t)), tF)
 
 def check(ss: List[renamedAst.Stmt])(using ctx: Context): Option[List[typedAst.Stmt]] = 
@@ -97,7 +98,11 @@ def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s ma
     case renamedAst.Read(l) => 
         val (ot, otE) = check(l, IsReadable)
         for { t <- ot; tE <- otE} yield typedAst.Read(tE, check(t))
-    case renamedAst.Return(e) => ???
+    case renamedAst.Return(e) => ctx.body match {
+        case Body.Main => ctx.error(ReturnInMainBody((1,1)))
+        case Body.Function(returnType) => 
+            for { te <- check(e, Is(returnType))._2 } yield typedAst.Return(te, check(returnType))
+    }
     case renamedAst.Skip() => Some(typedAst.Skip())
     case renamedAst.While(e, s) => 
         val (_, typedCond) = check(e, Is(renamedAst.BoolT()))

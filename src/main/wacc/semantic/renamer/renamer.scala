@@ -25,7 +25,7 @@ def rename(f: ast.Func)(using env: Environment, mainScope: MutScope, parentScope
     f.l.foreach { param => 
             funcScope.put(param.v.v, env.add(param.v.v, rename(param.t)))
         }
-    renamedAst.Func(funcScope(f.v.v), rename(f.s))
+    renamedAst.Func(rename(f.t), funcScope(f.v.v), rename(f.s))
 
 def rename(ss: List[ast.Stmt])(using curScope: MutScope, env: Environment, parentScope: Scope): List[renamedAst.Stmt] = {
     given Scope = parentScope ++ curScope.toMap

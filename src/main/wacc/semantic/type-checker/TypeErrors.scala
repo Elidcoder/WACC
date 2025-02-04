@@ -53,12 +53,29 @@ object WaccErr {
             None
         )
     }
+    case object ReturnInMainBody {
+        def apply(pos: R2) = wacc.error.WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                None,
+                Set(),
+                Set("Return in main body is not allowed"),
+                10
+            ),
+            None
+        )
+    }
 }
 
-class Context() {
+enum Body {
+    case Function(returnType: wacc.semantic.renamedAst.Type)
+    case Main
+}
+
+class Context(var body: Body) {
     private val errors = List.newBuilder[WaccErr]
     def result: List[WaccErr] = errors.result()
-    def error(err: WaccErr): Option[Type] = 
+    def error(err: WaccErr) = 
         errors += err
         None
 }
