@@ -5,6 +5,9 @@ import parsley.position._
 import parsley.ap._
 import parsley.generic.ErrorBridge
 
+type Const[T] = [_, _] =>> T
+type ListWrap[A[N, T]] = [N, T] =>> List[A[N, T]]
+
 trait ParserSingletonBridgePos[+A] extends ErrorBridge {
     protected def con(pos: (Int, Int)): A
     def from[B](op: Parsley[B]): Parsley[A] = error(pos.map(this.con(_)) <* op)

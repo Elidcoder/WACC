@@ -3,8 +3,6 @@ package wacc.ast
 import parsley.Parsley
 import parsley.position._
 
-type StmtList[N, T] = List[Stmt[N, T]]
-
 sealed trait Stmt[N, T] {
     val pos: (Int, Int)
 }
@@ -26,7 +24,7 @@ case object Skip {
     def apply(): Parsley[Skip[String, Unit]] = pos.map(Skip[String, Unit]()(_))
 }
 
-case object NewAss extends ParserBridgePos3[TypeWrap, Ident, RValue, NewAss]{
+case object NewAss extends ParserBridgePos3[Const[Type], Ident, RValue, NewAss]{
     override def labels: List[String] = List("assignment")
 }
 case object Assign extends ParserBridgePos2[LValue, RValue, Assign]{
@@ -39,6 +37,6 @@ case object Return extends ParserBridgePos1[Expr, Return]
 case object Exit extends ParserBridgePos1[Expr, Exit]
 case object Print extends ParserBridgePos1[Expr, Print]
 case object PrintLn extends ParserBridgePos1[Expr, PrintLn]
-case object If extends ParserBridgePos3[Expr, StmtList, StmtList, If]
-case object While extends ParserBridgePos2[Expr, StmtList, While]
-case object Nest extends ParserBridgePos1[StmtList, Nest]
+case object If extends ParserBridgePos3[Expr, ListWrap[Stmt], ListWrap[Stmt], If]
+case object While extends ParserBridgePos2[Expr, ListWrap[Stmt], While]
+case object Nest extends ParserBridgePos1[ListWrap[Stmt], Nest]

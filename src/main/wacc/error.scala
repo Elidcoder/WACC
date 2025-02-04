@@ -20,12 +20,8 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     strBuilder ++= "\n"
 
     /* Pointer(s) to the erroring character(s). */
-    (1 to lineInfo._4).foreach(
-        strBuilder ++= " "
-    )
-    (1 to lineInfo._5).foreach(
-        strBuilder ++= "^"
-    )
+    strBuilder ++= " " * (lineInfo._4 + 1)
+    strBuilder ++= "^" * (lineInfo._5)
     strBuilder ++= "\n>"
 
     /* Display the line after the line with the error. */
@@ -39,7 +35,8 @@ case class WaccErr(
     errorPos: R2,
     errStyle: ErrLines,
     fileName: Option[String],
-    errType: String){
+    errType: String
+    ) {
 
     def format():String = fileName match {
         case None => "Bad filename, no error message could be built"
@@ -57,14 +54,18 @@ case class WaccErr(
             
             /* Build body of the error message. */
             errStyle match {
-                case ErrLines.SpecialisedError(msgs, errStyle) => 
+                case ErrLines.SpecialisedError(msgs, errStyle) =>
+                    /* Join the given messages. */
+                    msgs.mkString(",\n") 
+                    
                     /* Display code near the error. */
                     parseLineInfo(errStyle, outputBuilder)
+
                 case ErrLines.VanillaError(unexpected, expecteds, reasons, errStyle) => 
                     /* Unexpected ... line of the error message. */
                     unexpected match {
                         case None => 
-                            outputBuilder ++= "  No unexpected item found\n"
+                            outputBuilder ++= "  No 'unexpected item' found\n"
                         case Some(unexpectd) => 
                             outputBuilder ++= "  unexpected "
                             unexpectd match {
@@ -89,16 +90,14 @@ case class WaccErr(
                             case ErrItem.Raw(item) => item
                         }).mkString(", or ")
                     
-                    
                     /* Explanations for the error. */
                     if (!reasons.isEmpty) {
                         outputBuilder ++= "\n  "
                         outputBuilder ++= reasons.mkString("\n  ")
                     }
-
-                    outputBuilder ++= "\n\n>"
                     
                     /* Display code near the error. */
+                    outputBuilder ++= "\n\n>"
                     parseLineInfo(errStyle, outputBuilder)
             }
             outputBuilder.result()
