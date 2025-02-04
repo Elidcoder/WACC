@@ -19,8 +19,8 @@ build:
     - echo "Compilation complete!"
   artifacts:
     paths:
-      - .scala-build/
-      - .bsp/
+      - ./.scala-build/
+      - ./.bsp/
 
 .test_job_template:
   stage: test
