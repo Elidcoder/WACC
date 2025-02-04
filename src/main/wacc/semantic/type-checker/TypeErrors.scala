@@ -3,6 +3,7 @@ package wacc.semantic.typecheck
 import wacc.error.{WaccErr, R2, ErrLines, ErrItem}
 import wacc.semantic.renamedAst.Ident
 import wacc.semantic.renamedAst.Type
+import wacc.error.LineInformation
 
 object WaccErr {
     case object TypeMismatch {
@@ -12,9 +13,10 @@ object WaccErr {
                 Some(ErrItem.Named(id.oldName)),
                 Set(ErrItem.Raw(expectedType.toString)),
                 Set("Types must match"),
-                10
+                new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotString {
@@ -24,9 +26,10 @@ object WaccErr {
                 Some(ErrItem.Named(id.oldName)),
                 Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
                 Set("Must be of string like type"),
-                10
+                new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotFreeable {
@@ -36,9 +39,10 @@ object WaccErr {
                 Some(ErrItem.Named(id.oldName)),
                 Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
                 Set("Must be of a freeable type"),
-                10
+                new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotReadable {
@@ -48,9 +52,10 @@ object WaccErr {
                 Some(ErrItem.Named(id.oldName)),
                 Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
                 Set("Must be a readable type"),
-                10
+                new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object ReturnInMainBody {
@@ -60,9 +65,10 @@ object WaccErr {
                 None,
                 Set(),
                 Set("Return in main body is not allowed"),
-                10
+                new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
 }
