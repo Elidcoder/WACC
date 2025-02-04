@@ -17,17 +17,6 @@ build:
     - echo "Compiling program..."
     - scala compile .
     - echo "Compilation complete!"
-    - echo "Listing all files..."
-    - ls -Rla
-    - echo "Listing files to see where compiled artifacts are stored..."
-    - find . -type f | grep -E "\.(class|jar|tasty)$" || echo "No class or tasty files found"
-    - echo "specific directories..."
-    - echo "searching sbt..."
-    - ls -Rla .sbt
-    - echo "searching scala-build..."
-    - ls -Rla .scala-build
-    - echo "searching bsp"
-    - ls -Rla .bsp
   artifacts:
     paths:
       - .scala-build/
