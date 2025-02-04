@@ -15,7 +15,8 @@ object WaccErr {
                 Set("Types must match"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotString {
@@ -27,7 +28,8 @@ object WaccErr {
                 Set("Must be of string like type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotFreeable {
@@ -39,7 +41,8 @@ object WaccErr {
                 Set("Must be of a freeable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object IsNotReadable {
@@ -51,7 +54,8 @@ object WaccErr {
                 Set("Must be a readable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
     case object ReturnInMainBody {
@@ -63,7 +67,8 @@ object WaccErr {
                 Set("Return in main body is not allowed"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None
+            None,
+            "Type"
         )
     }
 }

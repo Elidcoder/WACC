@@ -1,6 +1,7 @@
 package wacc.error
 
 import parsley.errors.ErrorBuilder
+
 /* R2 = (line: Int, column: Int) */
 type R2 = (Int, Int)
 
@@ -8,11 +9,13 @@ type R2 = (Int, Int)
 type LineInformation = (String, Seq[String], Seq[String], Int, Int)
 
 /* Takes in line information and a string builder
- * Parses the line information nicely into the stringBuilder*/
+ * Parses the line information nicely into the stringBuilder */
 def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     /* Display the line before the line with the error. */
-    strBuilder ++= lineInfo._2(0)
-    strBuilder ++= "\n>"
+    if (!lineInfo._2.isEmpty) {
+        strBuilder ++= lineInfo._2(0)
+        strBuilder ++= "\n>"
+    }
 
     /* Display the line with the error. */
     strBuilder ++= lineInfo._1
@@ -24,20 +27,25 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     strBuilder ++= "\n>"
 
     /* Display the line after the line with the error. */
-    strBuilder ++= lineInfo._3(0)
+    if (!lineInfo._3.isEmpty) {
+        strBuilder ++= lineInfo._3(0)
+        strBuilder ++= "\n>"
+    }
 }
 
 case class WaccErr(
     errorPos: R2,
-    lines: ErrLines,
-    fileName: Option[String]){
+    errStyle: ErrLines,
+    fileName: Option[String],
+    errType: String){
 
     def format():String = fileName match {
         case None => "Bad filename, no error message could be built"
         case Some(fName) => 
             /* Build title of the error message. */
             val outputBuilder: StringBuilder = new StringBuilder()
-            outputBuilder ++= "In file '"
+            outputBuilder ++= errType
+            outputBuilder ++= " error in file '"
             outputBuilder ++= fName
             outputBuilder ++= "' (line "
             outputBuilder ++= errorPos._1.toString()
@@ -46,11 +54,11 @@ case class WaccErr(
             outputBuilder ++= "):\n"
             
             /* Build body of the error message. */
-            lines match {
-                case ErrLines.SpecialisedError(msgs, lineInfo) => 
+            errStyle match {
+                case ErrLines.SpecialisedError(msgs, errStyle) => 
                     /* Display code near the error. */
-                    parseLineInfo(lineInfo, outputBuilder)
-                case ErrLines.VanillaError(unexpected, expecteds, reasons, lineInfo) => 
+                    parseLineInfo(errStyle, outputBuilder)
+                case ErrLines.VanillaError(unexpected, expecteds, reasons, errStyle) => 
                     /* Unexpected ... line of the error message. */
                     unexpected match {
                         case None => 
@@ -90,7 +98,7 @@ case class WaccErr(
                     outputBuilder ++= "\n\n>"
                     
                     /* Display code near the error. */
-                    parseLineInfo(lineInfo, outputBuilder)
+                    parseLineInfo(errStyle, outputBuilder)
             }
             outputBuilder.result()
     }
@@ -108,7 +116,7 @@ enum ErrLines {
 }
 
 abstract class WaccErrorBuilder extends ErrorBuilder[WaccErr] {
-    override def build(pos: Position, source: Source, lines: ErrorInfoLines): WaccErr = WaccErr(pos, lines, source)
+    override def build(pos: Position, source: Source, lines: ErrorInfoLines): WaccErr = WaccErr(pos, lines, source, "Syntax")
 
     type Position = R2
     override def pos(line: Int, col: Int): Position = (line, col)
