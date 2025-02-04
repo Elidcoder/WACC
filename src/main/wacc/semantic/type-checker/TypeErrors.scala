@@ -1,16 +1,15 @@
 package wacc.semantic.typecheck
 
-import wacc.error.{WaccErr, R2, ErrLines, ErrItem}
-import wacc.semantic.renamedAst.Ident
-import wacc.semantic.renamedAst.Type
-import wacc.error.LineInformation
+import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation}
+import wacc.ast.*
+import wacc.semantic.QualifiedName
 
 object WaccErr {
     case object TypeMismatch {
-        def apply(pos: R2, id: Ident, expectedType: Type) = wacc.error.WaccErr(
-            pos,
+        def apply(id: Ident[QualifiedName, Unit], expectedType: Type) = wacc.error.WaccErr(
+            id.pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.oldName)),
+                Some(ErrItem.Named(id.v.oldName)),
                 Set(ErrItem.Raw(expectedType.toString)),
                 Set("Types must match"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
@@ -20,10 +19,10 @@ object WaccErr {
         )
     }
     case object IsNotString {
-        def apply(pos: R2, id: Ident) = wacc.error.WaccErr(
-            pos,
+        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+            id.pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.oldName)),
+                Some(ErrItem.Named(id.v.oldName)),
                 Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
                 Set("Must be of string like type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
@@ -33,10 +32,10 @@ object WaccErr {
         )
     }
     case object IsNotFreeable {
-        def apply(pos: R2, id: Ident) = wacc.error.WaccErr(
-            pos,
+        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+            id.pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.oldName)),
+                Some(ErrItem.Named(id.v.oldName)),
                 Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
                 Set("Must be of a freeable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
@@ -46,10 +45,10 @@ object WaccErr {
         )
     }
     case object IsNotReadable {
-        def apply(pos: R2, id: Ident) = wacc.error.WaccErr(
-            pos,
+        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+            id.pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.oldName)),
+                Some(ErrItem.Named(id.v.oldName)),
                 Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
                 Set("Must be a readable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
@@ -74,7 +73,7 @@ object WaccErr {
 }
 
 enum Body {
-    case Function(returnType: wacc.semantic.renamedAst.Type)
+    case Function(returnType: Type)
     case Main
 }
 
