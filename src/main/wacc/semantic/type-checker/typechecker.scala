@@ -4,6 +4,30 @@ import wacc.semantic.renamedAst
 import wacc.semantic.typedAst
 import wacc.error.WaccErr
 import wacc.semantic.typecheck.WaccErr.*
+import wacc.semantic.renamedAst.Add
+import wacc.semantic.renamedAst.And
+import wacc.semantic.renamedAst.ArrayElem
+import wacc.semantic.renamedAst.BoolLit
+import wacc.semantic.renamedAst.CharLit
+import wacc.semantic.renamedAst.Chr
+import wacc.semantic.renamedAst.Div
+import wacc.semantic.renamedAst.Eq
+import wacc.semantic.renamedAst.Greater
+import wacc.semantic.renamedAst.GreaterEq
+import wacc.semantic.renamedAst.Less
+import wacc.semantic.renamedAst.LessEq
+import wacc.semantic.renamedAst.Mod
+import wacc.semantic.renamedAst.Mul
+import wacc.semantic.renamedAst.Sub
+import wacc.semantic.renamedAst.IntLit
+import wacc.semantic.renamedAst.Len
+import wacc.semantic.renamedAst.Not
+import wacc.semantic.renamedAst.Neg
+import wacc.semantic.renamedAst.Ord
+import wacc.semantic.renamedAst.Or
+import wacc.semantic.renamedAst.PairLit
+import wacc.semantic.renamedAst.NotEq
+import wacc.semantic.renamedAst.StrLit
 
 enum Constraint {
     case Is(refT: renamedAst.Type)
@@ -110,7 +134,33 @@ def check(s: renamedAst.Stmt)(using ctx: Context): Option[typedAst.Stmt] =  s ma
         for {te <- typedCond; ts <- typedS} yield typedAst.While(te, ts)
 } 
 
-def check(e: renamedAst.Expr, c: Constraint): (Option[renamedAst.Type], Option[typedAst.Expr]) = ???
+def check(e: renamedAst.Expr, c: Constraint): (Option[renamedAst.Type], Option[typedAst.Expr]) = e match {
+    case Add(x, y) => ???
+    case And(x, y) => ???
+    case Or(x, y) => ???
+    case Div(x, y) => ???
+    case Eq(x, y) => ???
+    case Greater(x, y) => ???
+    case GreaterEq(x, y) => ???
+    case Less(x, y) => ???
+    case LessEq(x, y) => ???
+    case NotEq(x, y) => ???
+    case Mod(x, y) => ???
+    case Mul(x, y) => ???
+    case Sub(x, y) => ???
+    case ArrayElem(i, x) => ???
+    case PairLit() => ???
+    case StrLit(s) => ???
+    case BoolLit(b) => ???
+    case CharLit(c) => ???
+    case Chr(e) => ???
+    case IntLit(n) => ???
+    case Len(e) => ???
+    case Not(e) => ???
+    case Neg(e) => ???
+    case Ord(e) => ???
+    case i: renamedAst.Ident => ???
+}
 
 def check(e: renamedAst.LValue, c: Constraint): (Option[renamedAst.Type], Option[typedAst.LValue]) = ???
 
