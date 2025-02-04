@@ -1,13 +1,100 @@
 package wacc.error
 
 import parsley.errors.ErrorBuilder
+/* R2 = (line: Int, column: Int) */
 type R2 = (Int, Int)
+
+/* LineInformation = (line: String, linesBefore: Seq[String], linesAfter: Seq[String], errorPointsAt: Int, errorWidth: Int) */
+type LineInformation = (String, Seq[String], Seq[String], Int, Int)
+
+/* Takes in line information and a string builder
+ * Parses the line information nicely into the stringBuilder*/
+def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
+    /* Display the line before the line with the error. */
+    strBuilder ++= lineInfo._2(0)
+    strBuilder ++= "\n>"
+
+    /* Display the line with the error. */
+    strBuilder ++= lineInfo._1
+    strBuilder ++= "\n"
+
+    /* Pointer(s) to the erroring character(s). */
+    strBuilder ++= " " * lineInfo._4
+    strBuilder ++= "^" * lineInfo._5
+    strBuilder ++= "\n>"
+
+    /* Display the line after the line with the error. */
+    strBuilder ++= lineInfo._3(0)
+}
 
 case class WaccErr(
     errorPos: R2,
     lines: ErrLines,
-    fileName: Option[String]
-)
+    fileName: Option[String]){
+
+    def format():String = fileName match {
+        case None => "Bad filename, no error message could be built"
+        case Some(fName) => 
+            /* Build title of the error message. */
+            val outputBuilder: StringBuilder = new StringBuilder()
+            outputBuilder ++= "In file '"
+            outputBuilder ++= fName
+            outputBuilder ++= "' (line "
+            outputBuilder ++= errorPos._1.toString()
+            outputBuilder ++= ", column "
+            outputBuilder ++= errorPos._2.toString()
+            outputBuilder ++= "):\n"
+            
+            /* Build body of the error message. */
+            lines match {
+                case ErrLines.SpecialisedError(msgs, lineInfo) => 
+                    /* Display code near the error. */
+                    parseLineInfo(lineInfo, outputBuilder)
+                case ErrLines.VanillaError(unexpected, expecteds, reasons, lineInfo) => 
+                    /* Unexpected ... line of the error message. */
+                    unexpected match {
+                        case None => 
+                            outputBuilder ++= "  No unexpected item found\n"
+                        case Some(unexpectd) => 
+                            outputBuilder ++= "  unexpected "
+                            unexpectd match {
+                                case ErrItem.EndOfInput => 
+                                    outputBuilder ++= "end of input"
+                                case ErrItem.Named(item) =>
+                                    outputBuilder ++= "keyword "
+                                    outputBuilder ++= item
+                                case ErrItem.Raw(item) =>
+                                    outputBuilder ++= "identifier \""
+                                    outputBuilder ++= item
+                                    outputBuilder ++= "\""
+                                outputBuilder ++= "\n"
+                            }
+                    }
+
+                    /* Exoected ... line of the error message. */
+                    outputBuilder ++= "  expected "
+                    outputBuilder ++= expecteds.map(i => 
+                        i match {
+                            case ErrItem.Named(item) => item
+                            case ErrItem.EndOfInput => "end of input"
+                            case ErrItem.Raw(item) => item
+                        }).mkString(", or ")
+                    
+                    
+                    /* Explanations for the error. */
+                    if (!reasons.isEmpty) {
+                        outputBuilder ++= "\n  "
+                        outputBuilder ++= reasons.mkString("\n  ")
+                    }
+
+                    outputBuilder ++= "\n\n>"
+                    
+                    /* Display code near the error. */
+                    parseLineInfo(lineInfo, outputBuilder)
+            }
+            outputBuilder.result()
+    }
+}
 
 enum ErrItem {
     case Raw(item: String)
@@ -16,8 +103,8 @@ enum ErrItem {
 }
 
 enum ErrLines {
-    case VanillaError(unexpected: Option[ErrItem], expecteds: Set[ErrItem], reasons: Set[String], width: Int)
-    case SpecialisedError(msgs: Set[String], width: Int)
+    case VanillaError(unexpected: Option[ErrItem], expecteds: Set[ErrItem], reasons: Set[String], lineInfo: LineInformation)
+    case SpecialisedError(msgs: Set[String], lineInfo: LineInformation)
 }
 
 abstract class WaccErrorBuilder extends ErrorBuilder[WaccErr] {
@@ -51,11 +138,11 @@ abstract class WaccErrorBuilder extends ErrorBuilder[WaccErr] {
     override def reason(reason: String): Message = reason
     override def message(msg: String): Message = msg
 
-    type LineInfo = Int
-    override def lineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], lineNum: Int, errorPointsAt: Int, errorWidth: Int): Int = errorWidth
+    type LineInfo = LineInformation
+    override def lineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], lineNum: Int, errorPointsAt: Int, errorWidth: Int): LineInformation = new LineInformation(line, linesBefore, linesAfter, errorPointsAt, errorWidth)
 
-    override val numLinesBefore: Int = 0
-    override val numLinesAfter: Int = 0
+    override val numLinesBefore: Int = 1
+    override val numLinesAfter: Int = 1
 
     type Item = ErrItem
     type Raw = ErrItem.Raw
