@@ -14,11 +14,9 @@ case class BoolT() extends Type
 case class CharT() extends Type
 case class StringT() extends Type
 
-type TypeWrap[N, T] = Type
-
-case object ArrayT extends ParserBridgePos1[TypeWrap, TypeWrap]{
+case object ArrayT extends ParserBridgePos1[Const[Type], Const[Type]]{
     override def labels: List[String] = List("array type")
 }
-case object PairT extends ParserBridgePos2[TypeWrap, TypeWrap, TypeWrap]{
+case object PairT extends ParserBridgePos2[Const[Type], Const[Type], Const[Type]]{
     override def labels: List[String] = List("pair type")
 }
