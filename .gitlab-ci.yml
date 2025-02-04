@@ -8,11 +8,11 @@ stages:
   - test
 
 cache:
-  key: global
+  key: "$CI_COMMIT_REF_SLUG"
   paths:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-    - $HOME/.coursier
+    - /root/.ivy2/cache
+    - /root/.sbt
+    - /root/.coursier
 
 build:
   stage: build
@@ -33,6 +33,8 @@ build:
   stage: test
   script:
     - scala test . -- -z "${TEST_NAME}"
+  dependencies:
+    - build
 
 parser_syntax_basic:
   extends: .test_job_template
