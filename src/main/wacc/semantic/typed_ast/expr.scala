@@ -1,21 +1,21 @@
-package wacc.semantic.renamedAst
+package wacc.semantic.typedAst
 
 sealed trait LValue
 sealed trait RValue
 sealed trait Expr extends RValue
 sealed trait PairElem extends RValue
 
-case class Ident(oldName: String, uid: Int, t: Type) extends LValue, Expr
+case class Ident(oldName: String, uid: Int, t: Type) extends LValue, Expr 
 case class ArrayElem(i: Ident, x: List[Expr]) extends LValue, Expr
 
-case class PElem(v: PairElem) extends LValue, RValue
+case class PElem(v: PairElem, t: Type) extends LValue, RValue
 
-case class ArrayLit(x: List[Expr]) extends RValue
-case class NewPair(e1: Expr, e2: Expr) extends RValue
-case class Call(i: Ident, x: List[Expr]) extends RValue
+case class ArrayLit(x: List[Expr], t: Type) extends RValue
+case class NewPair(e1: Expr, e2: Expr, t: Type) extends RValue
+case class Call(i: Ident, x: List[Expr], t: Type) extends RValue
 
-case class First(v: LValue) extends PairElem
-case class Second(v: LValue) extends PairElem
+case class First(v: LValue, t: Type) extends PairElem
+case class Second(v: LValue, t: Type) extends PairElem
 
 case class Not(e: Expr) extends Expr
 case class Neg(e: Expr) extends Expr
