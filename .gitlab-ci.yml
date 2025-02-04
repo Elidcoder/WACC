@@ -1,6 +1,3 @@
-include:
-  - local: '.gitlab-ci-config.yml'
-
 image: gumjoe/wacc-ci-scala:slim
 
 stages:
