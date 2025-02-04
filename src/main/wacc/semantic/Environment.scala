@@ -8,7 +8,9 @@ class Environment() {
     private var nextUID: Int = 0
     def uid(): Int = nextUID
     def add(v: String, pos: (Int, Int)): Ident[QualifiedName, Unit] = 
-        val i = Ident[QualifiedName, Unit](QualifiedName(v, nextUID))(pos, ())
+        given (Int, Int) = pos
+        given Unit = ()
+        val i = Ident[QualifiedName, Unit](QualifiedName(v, nextUID))
         map.put(nextUID,i)
         nextUID = nextUID + 1
         i
