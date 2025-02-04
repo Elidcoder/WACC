@@ -1,11 +1,16 @@
 package wacc.ast
 
+import parsley.Parsley
+import parsley.position._
+
 type StmtList[N, T] = List[Stmt[N, T]]
 
-sealed trait Stmt[N, T]
+sealed trait Stmt[N, T] {
+    val pos: (Int, Int)
+}
 
-case class Skip[N, T]() extends Stmt[N, T]
-case class NewAss[N, T](t: Type[N, T], v: Ident[N, T], r: RValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
+case class Skip[N, T]()(val pos: (Int, Int)) extends Stmt[N, T]
+case class NewAss[N, T](t: Type, v: Ident[N, T], r: RValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
 case class Assign[N, T](l: LValue[N, T], r: RValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
 case class Read[N, T](l: LValue[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
 case class Free[N, T](e: Expr[N, T])(val pos: (Int, Int)) extends Stmt[N, T]
@@ -17,7 +22,11 @@ case class If[N, T](e: Expr[N, T], s1: List[Stmt[N, T]], s2: List[Stmt[N, T]])(v
 case class While[N, T](e: Expr[N, T], s: List[Stmt[N, T]])(val pos: (Int, Int)) extends Stmt[N, T]
 case class Nest[N, T](s: List[Stmt[N, T]])(val pos: (Int, Int)) extends Stmt[N, T]
 
-case object NewAss extends ParserBridgePos3[Type, Ident, RValue, NewAss]
+case object Skip {
+    def apply(): Parsley[Skip[String, Unit]] = pos.map(Skip[String, Unit]()(_))
+}
+
+case object NewAss extends ParserBridgePos3[TypeWrap, Ident, RValue, NewAss]
 case object Assign extends ParserBridgePos2[LValue, RValue, Assign]
 case object Read extends ParserBridgePos1[LValue, Read]
 case object Free extends ParserBridgePos1[Expr, Free]

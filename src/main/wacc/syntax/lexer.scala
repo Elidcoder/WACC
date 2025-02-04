@@ -11,7 +11,7 @@ import parsley.token.Unicode
 object lexer {
     private val desc = LexicalDesc.plain.copy(
         nameDesc = NameDesc.plain.copy(
-            identifierStart = Basic(_.isLetter),
+            identifierStart = Basic((c: Char) => c.isLetter || (c == '_')),
             identifierLetter = Basic((c: Char) => c.isLetterOrDigit || (c =='_')),
         ),
         spaceDesc = SpaceDesc.plain.copy(

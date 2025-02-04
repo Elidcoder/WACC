@@ -1,15 +1,24 @@
 package wacc.ast
 
+import parsley.Parsley
+import parsley.position.pos
+
 type ExprList[N, T] = List[Expr[N, T]]
 type OptionalExprList[N, T] = Option[ExprList[N, T]]
 
-sealed trait LValue[N, T]
-sealed trait RValue[N, T]
+sealed trait LValue[N, T] {
+    val pos: (Int, Int)
+}
+sealed trait RValue[N, T] {
+    val pos: (Int, Int)
+}
 sealed trait Expr[N, T] extends RValue[N, T]
 sealed trait PairElem[N, T] extends RValue[N, T]
 sealed trait ArrayOrIdent[N, T] extends LValue[N, T], Expr[N, T]
 
-case class Ident[N, T](v: N)(val pos: (Int, Int), t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
+case class Ident[N, T](v: N)(val pos: (Int, Int), t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T] {
+    def getType(): T = t
+}
 case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(val pos: (Int, Int)) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 
 case class PElem[N, T](v: PairElem[N, T])(val pos: (Int, Int), t: T) extends LValue[N, T], RValue[N, T]
@@ -83,7 +92,7 @@ case class IntLit[N, T](n: IntWrap[N, T])(val pos: (Int, Int)) extends Expr[N, T
 case class BoolLit[N, T](b: BoolWrap[N, T])(val pos: (Int, Int)) extends Expr[N, T]
 case class CharLit[N, T](c: CharWrap[N, T])(val pos: (Int, Int)) extends Expr[N, T]
 case class StrLit[N, T](s: StrWrap[N, T])(val pos: (Int, Int)) extends Expr[N, T]
-case class PairLit[N, T]() extends Expr[N, T]
+case class PairLit[N, T]()(val pos: (Int, Int)) extends Expr[N, T]
 
 // case object UnaryOp extends ParserBridgePos1[Expr, UnaryOp]
 // case object BinaryOp extends ParserBridgePos2[Expr, Expr, BinaryOp]
@@ -112,3 +121,6 @@ case object IntLit extends ParserBridgePos1[IntWrap, IntLit]
 case object BoolLit extends ParserBridgePos1[BoolWrap, BoolLit]
 case object CharLit extends ParserBridgePos1[CharWrap, CharLit]
 case object StrLit extends ParserBridgePos1[StrWrap, StrLit]
+case object PairLit {
+    def apply(): Parsley[PairLit[String, Unit]] = pos.map(PairLit[String, Unit]()(_))
+}

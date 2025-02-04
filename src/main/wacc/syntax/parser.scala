@@ -37,7 +37,7 @@ object parser {
     private lazy val rtrnStmts: Parsley[List[Stmt[String, Unit]]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt[String, Unit]]) => if (isReturnStmt(s)) Some(s) else None)))
 
     private lazy val stmt: Parsley[Stmt[String, Unit]] = 
-        ("skip" as Skip[String, Unit]()) |
+        ("skip" ~> Skip()) |
         ("read" ~> Read(lvalue)) |
         ("free" ~> Free(expr)) |
         ("return" ~> Return(expr)) |
@@ -54,7 +54,7 @@ object parser {
 
     private lazy val expr: Parsley[Expr[String, Unit]] = 
         precedence(
-            ("null" as PairLit()),
+            ("null" ~> PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
             CharLit(asciiChar),
@@ -110,21 +110,21 @@ object parser {
         (("fst" ~> First(lvalue)) |
         ("snd" ~> Second(lvalue)))
 
-    private lazy val typeHelper: Parsley[Type[String, Unit]] = 
+    private lazy val typeHelper: Parsley[Type] = 
         ("pair" ~> PairT(("(" ~> pairType), ("," ~> pairType <~ ")"))) |
         baseType
     
-    private lazy val ptype: Parsley[Type[String, Unit]] = postfix(typeHelper)(ArrayT <# "[]")
+    private lazy val ptype: Parsley[Type] = postfix(typeHelper)(ArrayT <# "[]")
 
-    private lazy val baseType: Parsley[Type[String, Unit]] = 
-        ("int" as IntT[String, Unit]()) |
-        ("bool" as BoolT[String, Unit]()) |
-        ("char" as CharT[String, Unit]()) | 
-        ("string" as StringT[String, Unit]())
+    private lazy val baseType: Parsley[Type] = 
+        ("int" as IntT()) |
+        ("bool" as BoolT()) |
+        ("char" as CharT()) | 
+        ("string" as StringT())
     
-    private lazy val pairType: Parsley[Type[String, Unit]] = postfix(pairTypeHelper)(ArrayT <# "[]")
+    private lazy val pairType: Parsley[Type] = postfix(pairTypeHelper)(ArrayT <# "[]")
     
-    private lazy val pairTypeHelper: Parsley[Type[String, Unit]] = 
+    private lazy val pairTypeHelper: Parsley[Type] = 
         baseType |
         ("pair" as RedPairT())
 }
