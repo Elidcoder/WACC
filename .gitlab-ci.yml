@@ -28,7 +28,7 @@ build:
 
 .test_template:
   stage: test
-  script: scala test --test-only "*${TEST_CATEGORY}*"
+  script: scala test . --test-only "*${TEST_CATEGORY}*"
   dependencies:
     - build
 
