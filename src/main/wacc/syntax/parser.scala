@@ -15,12 +15,12 @@ import wacc.syntax.lexer.*
 import scala.util.Success
 
 object parser {
-    def parse[Err: ErrorBuilder](input: File): Result[Err, Program] =  parser.parseFile(input) match {
+    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Unit]] =  parser.parseFile(input) match {
         case Success(x) => x
         case _ => sys.exit(-1)
     }
 
-    def isReturnStmt(s: List[Stmt]): Boolean = s.last match {
+    def isReturnStmt(s: List[Stmt[String, Unit]]): Boolean = s.last match {
         case Return(_)      => true
         case Exit(_)        => true
         case If(_, s1, s2)  => isReturnStmt(s1) && isReturnStmt(s2)
@@ -30,14 +30,14 @@ object parser {
     
     private val parser = fully(program)
     
-    private lazy val program: Parsley[Program] = Program("begin" ~> many(func), stmts <~ "end")
+    private lazy val program: Parsley[Program[String, Unit]] = Program("begin" ~> many(func), stmts <~ "end")
 
-    private lazy val func: Parsley[Func] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
+    private lazy val func: Parsley[Func[String, Unit]] = atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> rtrnStmts <~ "end")))
 
-    private lazy val rtrnStmts: Parsley[List[Stmt]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt]) => if (isReturnStmt(s)) Some(s) else None)))
+    private lazy val rtrnStmts: Parsley[List[Stmt[String, Unit]]] = decide(semiSep1(stmt) <**> (pure((s: List[Stmt[String, Unit]]) => if (isReturnStmt(s)) Some(s) else None)))
 
-    private lazy val stmt: Parsley[Stmt] = 
-        ("skip" as Skip()) |
+    private lazy val stmt: Parsley[Stmt[String, Unit]] = 
+        ("skip" ~> Skip()) |
         ("read" ~> Read(lvalue)) |
         ("free" ~> Free(expr)) |
         ("return" ~> Return(expr)) |
@@ -50,11 +50,11 @@ object parser {
         NewAss(ptype, ident, "=" ~> rvalue) |
         Assign(lvalue, "=" ~> rvalue)
 
-    private lazy val stmts: Parsley[List[Stmt]] = semiSep1(stmt)
+    private lazy val stmts: Parsley[List[Stmt[String, Unit]]] = semiSep1(stmt)
 
-    private lazy val expr: Parsley[Expr] = 
+    private lazy val expr: Parsley[Expr[String, Unit]] = 
         precedence(
-            ("null" as PairLit()),
+            ("null" ~> PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
             IntLit(integer),
             CharLit(asciiChar),
@@ -95,18 +95,18 @@ object parser {
             ),
         )
 
-    private lazy val lvalue: Parsley[LValue] = 
+    private lazy val lvalue: Parsley[LValue[String, Unit]] = 
         PElem(pairElem) |
         ArrayOrIdent(ident, option(some(brackets(expr))))
 
-    private lazy val rvalue: Parsley[RValue] = 
+    private lazy val rvalue: Parsley[RValue[String, Unit]] = 
         PElem(pairElem) |
         NewPair(("newpair" ~> "(" ~> expr), ("," ~> expr <~ ")")) |
         Call(("call" ~> ident), parens(commaSep(expr))) |
         ArrayLit(brackets(sepBy(expr, ","))) | 
         expr
     
-    private lazy val pairElem: Parsley[PairElem] = 
+    private lazy val pairElem: Parsley[PairElem[String, Unit]] = 
         (("fst" ~> First(lvalue)) |
         ("snd" ~> Second(lvalue)))
 
