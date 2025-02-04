@@ -1,3 +1,6 @@
+include:
+  - local: '.gitlab-ci-config.yml'
+
 image: gumjoe/wacc-ci-scala:slim
 
 stages:
@@ -15,62 +18,115 @@ build:
     - scala compile .
     - echo "Compilation complete!"
 
-parser_syntax_basic:
+.test_job_template:
   stage: test
   script:
-    - scala test . -- -z "basic"
+    - scala test . -- -z "${TEST_NAME}"
+
+parser_syntax_basic:
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "basic"
+  rules:
+    - if: '$RUN_SYNTAX_BASIC == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_array:
-  stage: test
-  script:
-    - scala test . -- -z "array"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "array"
+  rules:
+    - if: '$RUN_SYNTAX_ARRAY == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_expressions:
-  stage: test
-  script:
-    - scala test . -- -z "expressions"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "expressions"
+  rules:
+    - if: '$RUN_SYNTAX_EXPRESSIONS == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_function:
-  stage: test
-  script:
-    - scala test . -- -z "function"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "function"
+  rules:
+    - if: '$RUN_SYNTAX_FUNCTION == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_if:
-  stage: test
-  script:
-    - scala test . -- -z "if"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "if"
+  rules:
+    - if: '$RUN_SYNTAX_IF == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_io:
-  stage: test
-  script:
-    - scala test . -- -z "io"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "io"
+  rules:
+    - if: '$RUN_SYNTAX_IO == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_pairs:
-  stage: test
-  script:
-    - scala test . -- -z "pairs"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "pairs"
+  rules:
+    - if: '$RUN_SYNTAX_PAIRS == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_runtime:
-  stage: test
-  script:
-    - scala test . -- -z "runtime"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "runtime"
+  rules:
+    - if: '$RUN_SYNTAX_RUNTIME == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_scope:
-  stage: test
-  script:
-    - scala test . -- -z "scope"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "scope"
+  rules:
+    - if: '$RUN_SYNTAX_SCOPE == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_sequence:
-  stage: test
-  script:
-    - scala test . -- -z "sequence"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "sequence"
+  rules:
+    - if: '$RUN_SYNTAX_SEQUENCE == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_variables:
-  stage: test
-  script:
-    - scala test . -- -z "variables"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "variables"
+  rules:
+    - if: '$RUN_SYNTAX_VARIABLES == "true"'
+      when: on_success
+    - when: never
 
 parser_syntax_while:
-  stage: test
-  script:
-    - scala test . -- -z "while"
+  extends: .test_job_template
+  variables:
+    TEST_NAME: "while"
+  rules:
+    - if: '$RUN_SYNTAX_WHILE == "true"'
+      when: on_success
+    - when: never

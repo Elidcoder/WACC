@@ -1,9 +1,11 @@
 package wacc.ast
 
-case class Func(t: Type, v: Ident, l: List[Param], s: List[Stmt])(val pos: (Int, Int))
-case object Func extends ParserBridgePos4[Type, Ident, List[Param], List[Stmt], Func] {
+type ParamList[N, T] = List[Param[N, T]]
+
+case class Func[N, T](t: Type, v: Ident[N, T], l: ParamList[N, T], s: StmtList[N, T])(val pos: (Int, Int))
+case object Func extends ParserBridgePos4[TypeWrap, Ident, ParamList, StmtList, Func] {
     override def labels: List[String] = List("function declaration")
 }
 
-case class Param(t: Type, v: Ident)(val pos: (Int, Int))
-case object Param extends ParserBridgePos2[Type, Ident, Param]
+case class Param[N, T](t: Type, v: Ident[N, T])(val pos: (Int, Int))
+case object Param extends ParserBridgePos2[TypeWrap, Ident, Param]
