@@ -20,8 +20,12 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     strBuilder ++= "\n"
 
     /* Pointer(s) to the erroring character(s). */
-    strBuilder ++= " " * lineInfo._4
-    strBuilder ++= "^" * lineInfo._5
+    (1 to lineInfo._4).foreach(
+        strBuilder ++= " "
+    )
+    (1 to lineInfo._5).foreach(
+        strBuilder ++= "^"
+    )
     strBuilder ++= "\n>"
 
     /* Display the line after the line with the error. */
@@ -79,8 +83,7 @@ case class WaccErr(
 
                     /* Exoected ... line of the error message. */
                     outputBuilder ++= "  expected "
-                    outputBuilder ++= expecteds.map(i => 
-                        i match {
+                    outputBuilder ++= expecteds.map(_ match {
                             case ErrItem.Named(item) => item
                             case ErrItem.EndOfInput => "end of input"
                             case ErrItem.Raw(item) => item
