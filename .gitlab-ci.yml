@@ -29,117 +29,23 @@ build:
       - .scala-build
       - .bsp
 
-.test_job_template:
+.test_template:
   stage: test
-  script:
-    - scala test . -- -z "${TEST_NAME}"
+  script: scala test --test-only "*${TEST_CATEGORY}*"
   dependencies:
     - build
 
-parser_syntax_basic:
-  extends: .test_job_template
+test_valid:
+  extends: .test_template
   variables:
-    TEST_NAME: "basic"
-  rules:
-    - if: '$RUN_SYNTAX_BASIC == "true"'
-      when: on_success
-    - when: never
+    TEST_CATEGORY: ValidTest
 
-parser_syntax_array:
-  extends: .test_job_template
+test_syntax:
+  extends: .test_template
   variables:
-    TEST_NAME: "array"
-  rules:
-    - if: '$RUN_SYNTAX_ARRAY == "true"'
-      when: on_success
-    - when: never
+    TEST_CATEGORY: SyntaxTest
 
-parser_syntax_expressions:
-  extends: .test_job_template
+test_semantic:
+  extends: .test_template
   variables:
-    TEST_NAME: "expressions"
-  rules:
-    - if: '$RUN_SYNTAX_EXPRESSIONS == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_function:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "function"
-  rules:
-    - if: '$RUN_SYNTAX_FUNCTION == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_if:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "if"
-  rules:
-    - if: '$RUN_SYNTAX_IF == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_io:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "io"
-  rules:
-    - if: '$RUN_SYNTAX_IO == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_pairs:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "pairs"
-  rules:
-    - if: '$RUN_SYNTAX_PAIRS == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_runtime:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "runtime"
-  rules:
-    - if: '$RUN_SYNTAX_RUNTIME == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_scope:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "scope"
-  rules:
-    - if: '$RUN_SYNTAX_SCOPE == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_sequence:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "sequence"
-  rules:
-    - if: '$RUN_SYNTAX_SEQUENCE == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_variables:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "variables"
-  rules:
-    - if: '$RUN_SYNTAX_VARIABLES == "true"'
-      when: on_success
-    - when: never
-
-parser_syntax_while:
-  extends: .test_job_template
-  variables:
-    TEST_NAME: "while"
-  rules:
-    - if: '$RUN_SYNTAX_WHILE == "true"'
-      when: on_success
-    - when: never
+    TEST_CATEGORY: SemanticTest
