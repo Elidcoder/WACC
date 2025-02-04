@@ -14,8 +14,8 @@ def pipeline(file: File): Int = {
     parser.parse(file) match {
         case Success(x) => 
             val (tree, env) = rename(x)
-            println(x)
-            println(tree)
+            // println(x)
+            // println(tree)
             0
         case Failure(x) => 
             println(x)
