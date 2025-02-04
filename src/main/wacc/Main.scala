@@ -1,6 +1,7 @@
 package wacc
 
 import wacc.syntax.parser
+import wacc.semantic.rename
 
 import parsley.{Success, Failure}
 import java.io.File
@@ -12,7 +13,9 @@ def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
     parser.parse(file) match {
         case Success(x) => 
-            println("Successfully parsed")
+            val (tree, env) = rename(x)
+            println(x)
+            println(tree)
             0
         case Failure(x) => 
             println(x)
