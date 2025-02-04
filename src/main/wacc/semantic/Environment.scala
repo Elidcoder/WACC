@@ -18,3 +18,4 @@ class Environment() {
 type MutScope = mutable.Map[String, Ident[QualifiedName, Unit]]
 type Scope = Map[String, Ident[QualifiedName, Unit]]
 final val Undeclared = -1
+final val AlreadyDeclaredInScope = -2
