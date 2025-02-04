@@ -26,8 +26,13 @@ case object Skip {
     def apply(): Parsley[Skip[String, Unit]] = pos.map(Skip[String, Unit]()(_))
 }
 
-case object NewAss extends ParserBridgePos3[TypeWrap, Ident, RValue, NewAss]
-case object Assign extends ParserBridgePos2[LValue, RValue, Assign]
+case object NewAss extends ParserBridgePos3[TypeWrap, Ident, RValue, NewAss]{
+    override def labels: List[String] = List("assignment")
+}
+case object Assign extends ParserBridgePos2[LValue, RValue, Assign]{
+    override def labels: List[String] = List("assignment")
+}
+
 case object Read extends ParserBridgePos1[LValue, Read]
 case object Free extends ParserBridgePos1[Expr, Free]
 case object Return extends ParserBridgePos1[Expr, Return]

@@ -30,25 +30,38 @@ case class Call[N, T](i: Ident[N, T], x: List[Expr[N, T]])(val pos: (Int, Int), 
 case class First[N, T](v: LValue[N, T])(val pos: (Int, Int), t: T) extends PairElem[N, T]
 case class Second[N, T](v: LValue[N, T])(val pos: (Int, Int), t: T) extends PairElem[N, T]
 
-case object Ident extends IdentBridge
-case object ArrayElem extends ParserBridgePos2[Ident, ExprList, ArrayElem]
+case object Ident extends IdentBridge {
+    override def labels: List[String] = List("identifier")
+}
+case object ArrayElem extends ParserBridgePos2[Ident, ExprList, ArrayElem]{
+    override def labels: List[String] = List("array")
+}
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionalExprList, ArrayOrIdent] {
     override def apply[String, Unit](i: Ident[String, Unit], exprs: OptionalExprList[String, Unit])(pos: (Int, Int)): ArrayOrIdent[String, Unit] = exprs match {
         case Some(es)   => ArrayElem(i, es)(pos)
         case None       => i
-    }
-    
+    } 
 }
 
 case object PElem extends ParserBridgePosType1[PairElem, PElem]
 
-case object ArrayLit extends ParserBridgePosType1[ExprList, ArrayLit]
-case object NewPair extends ParserBridgePosType2[Expr, Expr, NewPair]
-case object Call extends ParserBridgePosType2[Ident, ExprList, Call]
+case object ArrayLit extends ParserBridgePosType1[ExprList, ArrayLit] {
+    override def labels: List[String] = List("array literal")
+}
+case object NewPair extends ParserBridgePosType2[Expr, Expr, NewPair] {
+    override def labels: List[String] = List("pair literal")
+}
+case object Call extends ParserBridgePosType2[Ident, ExprList, Call] {
+    override def labels: List[String] = List("function call")
+}
 
-case object First extends ParserBridgePosType1[LValue, PairElem]
-case object Second extends ParserBridgePosType1[LValue, PairElem]
+case object First extends ParserBridgePosType1[LValue, PairElem] {
+    override def labels: List[String] = List("fst")
+}
+case object Second extends ParserBridgePosType1[LValue, PairElem] {
+    override def labels: List[String] = List("snd")
+}
 
 // case class UnaryOp[N, T](op: UnOp)(x: Expr[N, T])(val pos: (Int, Int)) extends Expr[N, T]
 // case class BinaryOp[N, T](op: BinOp)(x: Expr[N, T], y: Expr[N, T])(val pos: (Int, Int)) extends Expr[N, T]
@@ -94,33 +107,40 @@ case class CharLit[N, T](c: CharWrap[N, T])(val pos: (Int, Int)) extends Expr[N,
 case class StrLit[N, T](s: StrWrap[N, T])(val pos: (Int, Int)) extends Expr[N, T]
 case class PairLit[N, T]()(val pos: (Int, Int)) extends Expr[N, T]
 
-// case object UnaryOp extends ParserBridgePos1[Expr, UnaryOp]
-// case object BinaryOp extends ParserBridgePos2[Expr, Expr, BinaryOp]
 
-case object Not extends ParserBridgePos1[Expr, Expr]
-case object Neg extends ParserBridgePos1[Expr, Expr]
-case object Len extends ParserBridgePos1[Expr, Expr]
-case object Ord extends ParserBridgePos1[Expr, Expr]
-case object Chr extends ParserBridgePos1[Expr, Expr]
+case object Not extends UnaryOperator[Expr, Expr]
+case object Neg extends UnaryOperator[Expr, Expr]
+case object Len extends UnaryOperator[Expr, Expr]
+case object Ord extends UnaryOperator[Expr, Expr]
+case object Chr extends UnaryOperator[Expr, Expr]
 
-case object Mul extends ParserBridgePos2[Expr, Expr, Expr]
-case object Div extends ParserBridgePos2[Expr, Expr, Expr]
-case object Mod extends ParserBridgePos2[Expr, Expr, Expr]
-case object Add extends ParserBridgePos2[Expr, Expr, Expr]
-case object Sub extends ParserBridgePos2[Expr, Expr, Expr]
-case object Greater extends ParserBridgePos2[Expr, Expr, Expr]
-case object GreaterEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object Less extends ParserBridgePos2[Expr, Expr, Expr]
-case object LessEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object Eq extends ParserBridgePos2[Expr, Expr, Expr]
-case object NotEq extends ParserBridgePos2[Expr, Expr, Expr]
-case object And extends ParserBridgePos2[Expr, Expr, Expr]
-case object Or extends ParserBridgePos2[Expr, Expr, Expr]
+case object Mul extends MathematicalOperator[Expr, Expr, Expr]
+case object Div extends MathematicalOperator[Expr, Expr, Expr]
+case object Mod extends MathematicalOperator[Expr, Expr, Expr]
+case object Add extends MathematicalOperator[Expr, Expr, Expr]
+case object Sub extends MathematicalOperator[Expr, Expr, Expr]
+case object And extends ComparisonOperator[Expr, Expr, Expr]
+case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
-case object IntLit extends ParserBridgePos1[IntWrap, IntLit]
-case object BoolLit extends ParserBridgePos1[BoolWrap, BoolLit]
-case object CharLit extends ParserBridgePos1[CharWrap, CharLit]
-case object StrLit extends ParserBridgePos1[StrWrap, StrLit]
+case object Greater   extends ComparisonOperator[Expr, Expr, Expr]
+case object GreaterEq extends ComparisonOperator[Expr, Expr, Expr]
+case object Less      extends ComparisonOperator[Expr, Expr, Expr]
+case object LessEq    extends ComparisonOperator[Expr, Expr, Expr]
+case object Eq        extends ComparisonOperator[Expr, Expr, Expr]
+case object NotEq     extends ComparisonOperator[Expr, Expr, Expr]
+
+case object IntLit extends ParserBridgePos1[IntWrap, IntLit] {
+    override def labels = List("integer literal")
+}
+case object BoolLit extends ParserBridgePos1[BoolWrap, BoolLit] {
+    override def labels = List("boolean literal")
+}
+case object CharLit extends ParserBridgePos1[CharWrap, CharLit] {
+    override def labels = List("character literal")
+}
+case object StrLit extends ParserBridgePos1[StrWrap, StrLit] {
+    override def labels = List("string literal")
+}
 case object PairLit {
     def apply(): Parsley[PairLit[String, Unit]] = pos.map(PairLit[String, Unit]()(_))
 }

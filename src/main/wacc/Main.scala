@@ -5,12 +5,12 @@ import wacc.semantic.rename
 
 import parsley.{Success, Failure}
 import java.io.File
-import wacc.error.*
+//import wacc.error.*
 import parsley.errors.ErrorBuilder
-import parsley.errors.tokenextractors.SingleChar
+//import parsley.errors.tokenextractors.SingleChar
 
 def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
+    //given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
     parser.parse(file) match {
         case Success(x) => 
             val (tree, env) = rename(x)

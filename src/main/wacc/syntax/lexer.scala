@@ -9,6 +9,9 @@ import wacc.ast.Ident
 import parsley.token.Unicode
 
 object lexer {
+    /* Error message taken from the WACC Reference Compiler. */
+    val ESCAPE_ERR_MSG = "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
+    
     private val desc = LexicalDesc.plain.copy(
         nameDesc = NameDesc.plain.copy(
             identifierStart = Basic((c: Char) => c.isLetter || (c == '_')),
@@ -39,6 +42,8 @@ object lexer {
     )
 
     private val errConfig = new ErrorConfig {
+        override def labelEscapeNumericEnd(a: Char, b: Int):LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
+        override def labelEscapeEnd:LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
     }
 
     private val lexer = new Lexer(desc, errConfig)

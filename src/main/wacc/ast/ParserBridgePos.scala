@@ -30,11 +30,23 @@ trait ParserBridgePos1[-A[String, Unit], +B[String, Unit]] extends ParserSinglet
     override final def con(pos: (Int, Int)): A[String, Unit] => B[String, Unit] = this.apply(_)(pos)
 }
 
+trait UnaryOperator[-A[String, Unit], +B[String, Unit]] extends ParserBridgePos1[A, B]  {
+    override def labels: List[String] = List("unary operator")
+}
+
 trait ParserBridgePos2[-A[String, Unit], -B[String, Unit], +C[String, Unit]] extends ParserSingletonBridgePos[(A[String, Unit], B[String, Unit]) => C[String, Unit]] {
     def apply[String, Unit](x: A[String, Unit], y: B[String, Unit])(pos: (Int, Int)): C[String, Unit]
     def apply(x: Parsley[A[String, Unit]], y: =>Parsley[B[String, Unit]]): Parsley[C[String, Unit]] = error(ap2(pos.map(con), x, y))
 
     override final def con(pos: (Int, Int)): (A[String, Unit], B[String, Unit]) => C[String, Unit] = this.apply(_, _)(pos)
+}
+
+trait ComparisonOperator[-A[String, Unit], -B[String, Unit], +C[String, Unit]] extends ParserBridgePos2[A, B, C]  {
+    override def labels: List[String] = List("comparison operator")
+}
+
+trait MathematicalOperator[-A[String, Unit], -B[String, Unit], +C[String, Unit]] extends ParserBridgePos2[A, B, C]  {
+    override def labels: List[String] = List("mathematical operator")
 }
 
 trait ParserBridgePos3[-A[String, Unit], -B[String, Unit], -C[String, Unit], +D[String, Unit]] extends ParserSingletonBridgePos[(A[String, Unit], B[String, Unit], C[String, Unit]) => D[String, Unit]] {
@@ -50,7 +62,6 @@ trait ParserBridgePos4[-A[String, Unit], -B[String, Unit], -C[String, Unit], -D[
 
     override final def con(pos: (Int, Int)): (A[String, Unit], B[String, Unit], C[String, Unit], D[String, Unit]) => E[String, Unit] = this.apply(_, _, _, _)(pos)
 }
-
 trait ParserBridgePosType1[-A[String, Unit], +B[String, Unit]] extends ParserSingletonBridgePosType[A[String, Unit] => B[String, Unit]] {
     def apply[String, Unit](x: A[String, Unit])(pos: (Int, Int), t: Unit): B[String, Unit]
     def apply(x: Parsley[A[String, Unit]]): Parsley[B[String, Unit]] = error(ap1(pos.map(con(_, ())), x))
