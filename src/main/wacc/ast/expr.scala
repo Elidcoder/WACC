@@ -21,14 +21,14 @@ case class Ident[N, T](v: N)(using val pos: (Int, Int), t: T) extends LValue[N, 
 }
 case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 
-case class PElem[N, T](v: PairElem[N, T])(using val pos: (Int, Int), t: T) extends LValue[N, T], RValue[N, T]
+case class PElem[N, T](v: PairElem[N, T])(using val pos: (Int, Int)) extends LValue[N, T], RValue[N, T]
 
-case class ArrayLit[N, T](x: List[Expr[N, T]])(using val pos: (Int, Int), t: T) extends RValue[N, T]
-case class NewPair[N, T](e1: Expr[N, T], e2: Expr[N, T])(using val pos: (Int, Int), t: T) extends RValue[N, T]
-case class Call[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int), t: T) extends RValue[N, T]
+case class ArrayLit[N, T](x: List[Expr[N, T]])(using val pos: (Int, Int)) extends RValue[N, T]
+case class NewPair[N, T](e1: Expr[N, T], e2: Expr[N, T])(using val pos: (Int, Int)) extends RValue[N, T]
+case class Call[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends RValue[N, T]
 
-case class First[N, T](v: LValue[N, T])(using val pos: (Int, Int), t: T) extends PairElem[N, T]
-case class Second[N, T](v: LValue[N, T])(using val pos: (Int, Int), t: T) extends PairElem[N, T]
+case class First[N, T](v: LValue[N, T])(using val pos: (Int, Int)) extends PairElem[N, T]
+case class Second[N, T](v: LValue[N, T])(using val pos: (Int, Int)) extends PairElem[N, T]
 
 case object Ident extends IdentBridge {
     override def labels: List[String] = List("identifier")
@@ -46,22 +46,22 @@ case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionalExprList, Array
     } 
 }
 
-case object PElem extends ParserBridgePosType1[PairElem, PElem]
+case object PElem extends ParserBridgePos1[PairElem, PElem]
 
-case object ArrayLit extends ParserBridgePosType1[ExprList, ArrayLit] {
+case object ArrayLit extends ParserBridgePos1[ExprList, ArrayLit] {
     override def labels: List[String] = List("array literal")
 }
-case object NewPair extends ParserBridgePosType2[Expr, Expr, NewPair] {
+case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair] {
     override def labels: List[String] = List("pair literal")
 }
-case object Call extends ParserBridgePosType2[Ident, ExprList, Call] {
+case object Call extends ParserBridgePos2[Ident, ExprList, Call] {
     override def labels: List[String] = List("function call")
 }
 
-case object First extends ParserBridgePosType1[LValue, PairElem] {
+case object First extends ParserBridgePos1[LValue, PairElem] {
     override def labels: List[String] = List("fst")
 }
-case object Second extends ParserBridgePosType1[LValue, PairElem] {
+case object Second extends ParserBridgePos1[LValue, PairElem] {
     override def labels: List[String] = List("snd")
 }
 

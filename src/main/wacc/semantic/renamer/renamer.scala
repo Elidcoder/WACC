@@ -64,7 +64,6 @@ def rename(s: Stmt[String, Unit])(using curScope: MutScope, env: Environment, pa
 
 def rename(l: LValue[String, Unit])(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Unit] = 
     given (Int, Int) = l.pos
-    given Unit = ()
     l match {
     case i: Ident[String, Unit] => curScope.rebuildWithIdent(i)(identity(_))
     case ArrayElem(i, x) => curScope.rebuildWithIdent(i)(ArrayElem(_, x.map(rename(_))))
@@ -74,7 +73,6 @@ def rename(l: LValue[String, Unit])(using env: Environment, curScope: MutScope, 
 
 def rename(r: RValue[String, Unit])(using env: Environment, curScope: MutScope, parentScope: Scope): RValue[QualifiedName, Unit] = 
     given (Int, Int) = r.pos
-    given Unit = ()
     r match {
         case e: Expr[String, Unit] => rename(e)
         case ArrayLit(es) => ArrayLit(es.map(rename(_)))
@@ -88,7 +86,6 @@ def rename(r: RValue[String, Unit])(using env: Environment, curScope: MutScope, 
 
 def rename(e: Expr[String, Unit])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Unit] = 
     given (Int, Int) = e.pos
-    given Unit = ()
     e match {
         case Not(e) => Not(rename(e))
         case Neg(e) => Neg(rename(e))
