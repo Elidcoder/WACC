@@ -1,13 +1,13 @@
-package wacc.semantic.typecheck
+package wacc.error
 
-import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation, LinesOfCodeRadius}
-import wacc.ast.{Type, Ident, ?, Typeless}
-import wacc.semantic.{QualifiedName, Environment}
+import wacc.semantic.typecheck.Context
+import wacc.ast.{Type, Ident, Typeless}
+import wacc.semantic.QualifiedName
 import java.io.File
 
-object WaccErr {
+object SemanticWaccErr {
     case object TypeMismatch {
-        def apply(id: Ident[QualifiedName, Typeless], expectedType: Type)(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless], expectedType: Type)(using ctx: Context) = WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -20,7 +20,7 @@ object WaccErr {
         )
     }
     case object IsNotString {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -33,7 +33,7 @@ object WaccErr {
         )
     }
     case object IsNotFreeable {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -46,7 +46,7 @@ object WaccErr {
         )
     }
     case object IsNotReadable {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -59,12 +59,39 @@ object WaccErr {
         )
     }
     case object ReturnInMainBody {
-        def apply(pos: R2)(using ctx: Context) = wacc.error.WaccErr(
+        def apply(pos: R2)(using ctx: Context) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 None,
                 Set(),
                 Set("Return in main body is not allowed"),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
+    case object OutOfScope {
+        def apply(pos: R2)(using ctx: Context) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                None,
+                Set(),
+                Set("This variable has not been declared"),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
+
+    case object AlreadyDeclared {
+        def apply(pos: R2)(using ctx: Context) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                None,
+                Set(),
+                Set("This variable has already been declared"),
                 getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
@@ -86,24 +113,3 @@ def getLineInfo(file: File, pos: R2): LineInformation =
     val linesBefore = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
     val linesAfter = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
     new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col, 1)
-
-enum Body {
-    case Function(returnType: Type)
-    case Main
-}
-
-class Context(var body: Body, val env: Environment, val file: File) {
-    def getType(uid: Int): Type = uid match
-        case -1 => 
-            // TODO(Scope error: Undeclared)
-            ?
-        case -2 => 
-            // TODO(Scope error: Already declared)
-            ?
-        case n => env.get(n)
-    private val errors = List.newBuilder[WaccErr]
-    def result: List[WaccErr] = errors.result()
-    def error(err: WaccErr) = 
-        errors += err
-        None
-}

@@ -1,7 +1,7 @@
 package wacc.semantic.typecheck
 
 import wacc.error.WaccErr
-import wacc.semantic.typecheck.WaccErr.*
+import wacc.error.SemanticWaccErr.*
 import wacc.ast.*
 import wacc.semantic.{QualifiedName, Environment}
 import java.io.File
