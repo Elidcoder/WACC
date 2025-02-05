@@ -15,14 +15,14 @@ import wacc.syntax.lexer.*
 import scala.util.Success
 
 object parser {
-    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Unit]] =  parser.parseFile(input) match {
+    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] =  parser.parseFile(input) match {
         case Success(x) => x
         case _          => 
             println("Error: File not found")
             sys.exit(-1)
     }
 
-    private def isReturnStmt(s: List[Stmt[String, Unit]]): Boolean = s.last match {
+    private def isReturnStmt(s: List[Stmt[String, Typeless]]): Boolean = s.last match {
         case If(_, s1, s2) => isReturnStmt(s1) && isReturnStmt(s2)
         case While(_, s)   => isReturnStmt(s)
         case Nest(s)       => isReturnStmt(s)
@@ -32,22 +32,22 @@ object parser {
     }
     
     // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
-    private val parser: Parsley[Program[String, Unit]] = 
+    private val parser: Parsley[Program[String, Typeless]] = 
         fully(program)
 
     private lazy val end = 
         "end".explain("a scope, function or the main body is unclosed")
     
     // Program parser
-    private lazy val program: Parsley[Program[String, Unit]] = 
+    private lazy val program: Parsley[Program[String, Typeless]] = 
         "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ end
 
     // Function parser
-    private lazy val func: Parsley[Func[String, Unit]] = 
+    private lazy val func: Parsley[Func[String, Typeless]] = 
         atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ end)
 
     // Statements parser for function body
-    private lazy val funcStmts: Parsley[List[Stmt[String, Unit]]] = 
+    private lazy val funcStmts: Parsley[List[Stmt[String, Typeless]]] = 
         semiSep1(stmt).filter(isReturnStmt)
 
     // TODO(unexpected identifier should somehow pass the name/ character through so that it is clear) '| unexpected("identifier")'
@@ -55,7 +55,7 @@ object parser {
         ("=" ~> rvalue).label("assignment")
 
     // Statement parser
-    private lazy val stmt: Parsley[Stmt[String, Unit]] = 
+    private lazy val stmt: Parsley[Stmt[String, Typeless]] = 
         ("skip" ~> Skip())
         | ("read" ~> Read(lvalue))
         | ("free" ~> Free(expr))
@@ -75,7 +75,7 @@ object parser {
         | Assign(lvalue, asgnmt)
 
     // Statements parser
-    private lazy val stmts: Parsley[List[Stmt[String, Unit]]] = 
+    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = 
         semiSep1(stmt).label("statement")
 
     /* Error message taken from the WACC Reference Compiler. */
@@ -86,7 +86,7 @@ object parser {
         option(some(brackets(expr))).label("array index")
 
     // Expression parser
-    private lazy val expr: Parsley[Expr[String, Unit]] = 
+    private lazy val expr: Parsley[Expr[String, Typeless]] = 
         precedence(
             ("null" ~> PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
@@ -130,12 +130,12 @@ object parser {
         ).label("expression").explain(EXPR_ERR_MSG)
 
     // lvalue parser
-    private lazy val lvalue: Parsley[LValue[String, Unit]] = 
+    private lazy val lvalue: Parsley[LValue[String, Typeless]] = 
         PElem(pairElem)
         | ArrayOrIdent(ident, arridx)
 
     // rvalue parser
-    private lazy val rvalue: Parsley[RValue[String, Unit]] = 
+    private lazy val rvalue: Parsley[RValue[String, Typeless]] = 
         PElem(pairElem)
         | "newpair" ~> parens(NewPair(expr, ("," ~> expr)))
         | "call" ~> Call(ident, parens(commaSep(expr)))
@@ -143,7 +143,7 @@ object parser {
         | expr
     
     // pairElem parser
-    private lazy val pairElem: Parsley[PairElem[String, Unit]] = 
+    private lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
         ("fst" ~> First(lvalue))
         | ("snd" ~> Second(lvalue))
     

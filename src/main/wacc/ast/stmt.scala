@@ -21,7 +21,7 @@ case class While[N, T](e: Expr[N, T], s: List[Stmt[N, T]])(using val pos: (Int, 
 case class Nest[N, T](s: List[Stmt[N, T]])(using val pos: (Int, Int)) extends Stmt[N, T]
 
 case object Skip {
-    def apply(): Parsley[Skip[String, Unit]] = pos.map(Skip[String, Unit]()(_))
+    def apply(): Parsley[Skip[String, Typeless]] = pos.map(Skip[String, Typeless]()(_))
 }
 
 case object NewAss extends ParserBridgePos3[Const[Type], Ident, RValue, NewAss]{
