@@ -55,8 +55,7 @@ extension (t: Type)
 
 
 def check(prog: Program[QualifiedName, Unit], env: Environment): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
-    given ctx: Context = new Context(Body.Main)
-    given Environment = env
+    given ctx: Context = new Context(Body.Main, env)
     val typedFuncs: Option[List[Func[QualifiedName, Type]]] = checkFuncs(prog.fs)
     val typedStmts: Option[List[Stmt[QualifiedName, Type]]] = {
         ctx.body = Body.Main 
@@ -68,26 +67,26 @@ def check(prog: Program[QualifiedName, Unit], env: Environment): Either[List[Wac
         else Left(errors)
 }
 
-def checkFuncs(fs: List[Func[QualifiedName, Unit]])(using ctx: Context, env: Environment): Option[List[Func[QualifiedName, Type]]] = 
+def checkFuncs(fs: List[Func[QualifiedName, Unit]])(using ctx: Context): Option[List[Func[QualifiedName, Type]]] = 
     fs.foldRight(Some(List.empty)) {
         (opt: Func[QualifiedName, Unit], acc: Option[List[Func[QualifiedName, Type]]]) =>
             for { xs <- acc; x <- check(opt) } yield x :: xs
         }
 
-def check(f: Func[QualifiedName, Unit])(using ctx: Context, env: Environment): Option[Func[QualifiedName, Type]] = 
+def check(f: Func[QualifiedName, Unit])(using ctx: Context): Option[Func[QualifiedName, Type]] = 
     given (Int, Int) = f.v.pos
     given Type = f.t
     ctx.body = Body.Function(f.t)
     for { tF <- check(f.s) } 
     yield Func(f.t, Ident[QualifiedName, Type](f.v.v), checkParams(f.l), tF)(f.pos)
 
-def check(ss: List[Stmt[QualifiedName, Unit]])(using ctx: Context, env: Environment): Option[List[Stmt[QualifiedName, Type]]] = 
+def check(ss: List[Stmt[QualifiedName, Unit]])(using ctx: Context): Option[List[Stmt[QualifiedName, Type]]] = 
     ss.foldRight(Some(List.empty)) {
         (opt: Stmt[QualifiedName, Unit], acc: Option[List[Stmt[QualifiedName, Type]]]) =>
             for { xs <- acc; x <- check(opt) } yield x :: xs
         }
 
-def check(s: Stmt[QualifiedName, Unit])(using ctx: Context, env: Environment): Option[Stmt[QualifiedName, Type]] =  
+def check(s: Stmt[QualifiedName, Unit])(using ctx: Context): Option[Stmt[QualifiedName, Type]] =  
     given (Int, Int) = s.pos
     s match {
         case NewAss(t, v, r) => check(Assign(v, r))
@@ -128,7 +127,7 @@ def check(s: Stmt[QualifiedName, Unit])(using ctx: Context, env: Environment): O
             for {te <- typedCond; ts <- typedS} yield While(te, ts)
 } 
 
-def check(e: Expr[QualifiedName, Unit], c: Constraint)(using ctx: Context, env: Environment): (Option[Type], Option[Expr[QualifiedName, Type]]) = 
+def check(e: Expr[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[Expr[QualifiedName, Type]]) = 
     given (Int, Int) = e.pos
     e match {
         case Add(x, y) => 
@@ -171,6 +170,6 @@ def checkParams(ps: List[Param[QualifiedName, Unit]]): List[Param[QualifiedName,
         Param(p.t, Ident[QualifiedName, Type](p.v.v))(p.pos)
     )
 
-def check(e: LValue[QualifiedName, Unit], c: Constraint)(using env: Environment): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
+def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
 
-def check(e: RValue[QualifiedName, Unit], c: Constraint)(using env: Environment): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
+def check(e: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
