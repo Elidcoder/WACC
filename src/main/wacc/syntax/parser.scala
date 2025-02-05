@@ -22,6 +22,8 @@ object parser {
             sys.exit(-1)
     }
 
+    // def parse[Err: ErrorBuilder](input: String): Result [Err, Program[String, Unit]] = parser.parse(input)
+
     private def isReturnStmt(s: List[Stmt[String, Unit]]): Boolean = s.last match {
         case If(_, s1, s2) => isReturnStmt(s1) && isReturnStmt(s2)
         case While(_, s)   => isReturnStmt(s)
@@ -86,7 +88,7 @@ object parser {
         option(some(brackets(expr))).label("array index")
 
     // Expression parser
-    private lazy val expr: Parsley[Expr[String, Unit]] = 
+    protected [syntax] lazy val expr: Parsley[Expr[String, Unit]] = 
         precedence(
             ("null" ~> PairLit()),
             BoolLit(("true" as true) | ("false" as false)),

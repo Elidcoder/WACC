@@ -20,17 +20,14 @@ val SYN_ERR_FILES = List(
 )
 
 class SyntaxTest extends AnyFlatSpec {
-    SYN_ERR_FILES.filter{ dir =>
-        val key = s"tests.syntax.$dir"
-        getProperties().get(key).exists(_.toBoolean)
-    }.foreach { dir =>
+    SYN_ERR_FILES.foreach{ dir =>
+        val key = s"tests.syntax.${dir.toLowerCase}"
         val ranTests = getTests(s"invalid/syntaxErr/$dir")
         ranTests.foreach { file =>
-            s"Program [${file.getName()}] from directory [$dir]" should "fail with syntax error code (100)" in {
+            it should s"fail with syntax error (100) in [${dir}/${file.getName()}]" in {
+                assume(getProperties().get(key).exists(_.toBoolean))
                 val result = pipeline(file)
-                println(s"Testing program [${file.getName()}] from [$dir]: Result = $result")
-                
-                result should be (100)
+                result shouldBe (100)
             }
         }
     }
