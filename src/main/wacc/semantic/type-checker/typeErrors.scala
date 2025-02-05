@@ -1,25 +1,26 @@
 package wacc.semantic.typecheck
 
 import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation}
-import wacc.ast.{Type, Ident, ?}
+import wacc.ast.{Type, Ident, ?, Typeless}
 import wacc.semantic.{QualifiedName, Environment}
+import java.io.File
 
 object WaccErr {
     case object TypeMismatch {
-        def apply(id: Ident[QualifiedName, Unit], expectedType: Type) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless], expectedType: Type)(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
-                Set(ErrItem.Raw(expectedType.toString)),
+                Set(ErrItem.Named(expectedType.toString)),
                 Set("Types must match"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None,
+            Option(ctx.file.getPath()),
             "Type"
         )
     }
     case object IsNotString {
-        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -27,12 +28,12 @@ object WaccErr {
                 Set("Must be of string like type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None,
+            Option(ctx.file.getPath()),
             "Type"
         )
     }
     case object IsNotFreeable {
-        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -40,12 +41,12 @@ object WaccErr {
                 Set("Must be of a freeable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None,
+            Option(ctx.file.getPath()),
             "Type"
         )
     }
     case object IsNotReadable {
-        def apply(id: Ident[QualifiedName, Unit]) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -53,12 +54,12 @@ object WaccErr {
                 Set("Must be a readable type"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None,
+            Option(ctx.file.getPath()),
             "Type"
         )
     }
     case object ReturnInMainBody {
-        def apply(pos: R2) = wacc.error.WaccErr(
+        def apply(pos: R2)(using ctx: Context) = wacc.error.WaccErr(
             pos,
             ErrLines.VanillaError(
                 None,
@@ -66,18 +67,24 @@ object WaccErr {
                 Set("Return in main body is not allowed"),
                 new LineInformation("", Seq.empty, Seq.empty, 0, 0)
             ),
-            None,
+            Option(ctx.file.getPath()),
             "Type"
         )
     }
 }
+
+// def getLineInfo(file: File, pos: Pos): LineInformation = 
+//     val source = scala.io.Source.fromFile(file)
+//     val lines = source.getLines().toList
+//     source.close()
+//     lines
 
 enum Body {
     case Function(returnType: Type)
     case Main
 }
 
-class Context(var body: Body, val env: Environment) {
+class Context(var body: Body, val env: Environment, val file: File) {
     def getType(uid: Int): Type = uid match
         case -1 => 
             // TODO(Scope error: Undeclared)

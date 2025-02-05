@@ -21,17 +21,14 @@ val VALID_FILES = List(
 )
 
 class ValidTest extends AnyFlatSpec {
-    VALID_FILES.filter{ dir =>
-        val key = s"tests.valid.$dir"
-        getProperties().get(key).exists(_.toBoolean)
-    }.foreach { dir =>
+    VALID_FILES.foreach{ dir =>
+        val key = s"tests.valid.${dir.toLowerCase}"
         val ranTests = getTests(s"valid/$dir")
         ranTests.foreach { file =>
-            s"Program [${file.getName()}] from directory [$dir]" should "compile without error with code (0)" in {
+            it should s"compile without error in [${dir}/${file.getName()}]" in {
+                assume(getProperties().get(key).exists(_.toBoolean))
                 val result = pipeline(file)
-                println(s"Testing program [${file.getName()}] from [$dir]: Result = $result")
-                
-                result should be (0)
+                result shouldBe (0)
             }
         }
     }

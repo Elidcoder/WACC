@@ -20,12 +20,12 @@ def pipeline(file: File): Int = {
 
             /* Attempt rename and match on result of both rename & typecheck. */
             /* TEMPORARY: disabled typechecking, replaced with a temp value, DELETE temp match when finished */
-            // typechecker.check(renamedTree, env) match
+            // typechecker.check(renamedTree, env, file) match
             //TEMP MATCH (BELOW)
             Right(Some(0)): Either[List[WaccErr], Option[Int]] match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
-                    errs.foreach((err: WaccErr) => println(err.format()))
+                    // errs.foreach((err: WaccErr) => println(err.format()))
                     200
 
                 /* Renamer & typechecker ran successfully. */
@@ -41,7 +41,7 @@ def pipeline(file: File): Int = {
                         
         /* Failed to parse, print error and exit with error code 100. */
         case Failure(x) => 
-            println(x.format())
+            // println(x.format())
             100
 }
 
