@@ -4,7 +4,7 @@ import wacc.error.WaccErr
 import wacc.semantic.typecheck.WaccErr.*
 import wacc.ast.*
 import wacc.semantic.{QualifiedName, Environment}
-import os.makeDir.all
+import java.io.File
 
 object typechecker {
     enum Constraint {
@@ -55,8 +55,8 @@ object typechecker {
     }
 
 
-    def check(prog: Program[QualifiedName, Unit], env: Environment): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
-        given ctx: Context = new Context(Body.Main, env)
+    def check(prog: Program[QualifiedName, Unit], env: Environment, file: File): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
+        given ctx: Context = new Context(Body.Main, env, file)
         val typedFuncs: Option[List[Func[QualifiedName, Type]]] = checkFuncs(prog.fs)
         val typedStmts: Option[List[Stmt[QualifiedName, Type]]] = {
             ctx.body = Body.Main 
@@ -82,8 +82,8 @@ object typechecker {
         yield Func(f.t, Ident[QualifiedName, Type](f.v.v), checkParams(f.l), tF)(f.pos)
 
     private def check(ss: List[Stmt[QualifiedName, Unit]])(using ctx: Context): Option[List[Stmt[QualifiedName, Type]]] = 
-        ss.foldRight(Some(List.empty)) {
-            (opt: Stmt[QualifiedName, Unit], acc: Option[List[Stmt[QualifiedName, Type]]]) =>
+        ss.foldLeft(Some(List.empty)) {
+            (acc: Option[List[Stmt[QualifiedName, Type]]], opt: Stmt[QualifiedName, Unit]) =>
                 for { xs <- acc; x <- check(opt) } yield x :: xs
             }
 
@@ -263,7 +263,11 @@ object typechecker {
         rVal match {
             case expr: Expr[QualifiedName, Unit] => check(expr, c)
             case pairElem: PairElem[QualifiedName, Unit] => check(pairElem, c)
-            case newPair: NewPair[QualifiedName, Unit] => ???
+            case NewPair(e1, e2) => 
+                val (ot1, otE1) = check(e1, Unconstrained)
+                val (ot2, otE2) = check(e2, Unconstrained)
+                val oPair = for { t1 <- otE1; t2 <- otE2} yield NewPair(t1, t2)
+                (for { t1 <- ot1; t2 <- ot2; ft <- PairT(t1, t2).satisfies(c) } yield ft, oPair)
             case call: Call[QualifiedName, Unit] => ???
             case ArrayLit(exprs) => checkArrayLit(exprs, c) 
         }
