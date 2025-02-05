@@ -235,7 +235,7 @@ object typechecker {
                 ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
     }
 
-    private def checkArrayLit(exprs: List[Expr[QualifiedName, Unit]], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+    private def checkArrayLit(exprs: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
         val (types, trees) = exprs.map(check(_, Unconstrained)).unzip
         val posElemsType = types.foldRight(
             Some(?))(
@@ -262,16 +262,16 @@ object typechecker {
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
 
     private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        given (Int, Int) = rVal.pos
+        given Pos = rVal.pos
         rVal match {
-            case expr: Expr[QualifiedName, Unit] => check(expr, c)
-            case pairElem: PairElem[QualifiedName, Unit] => check(pairElem, c)
+            case expr: Expr[QualifiedName, Typeless] => check(expr, c)
+            case pairElem: PairElem[QualifiedName, Typeless] => check(pairElem, c)
             case NewPair(e1, e2) => 
                 val (ot1, otE1) = check(e1, Unconstrained)
                 val (ot2, otE2) = check(e2, Unconstrained)
                 val oPair = for { t1 <- otE1; t2 <- otE2} yield NewPair(t1, t2)
                 (for { t1 <- ot1; t2 <- ot2; ft <- PairT(t1, t2).satisfies(c) } yield ft, oPair)
-            case call: Call[QualifiedName, Unit] => ???
+            case call: Call[QualifiedName, Typeless] => ???
             case ArrayLit(exprs) => checkArrayLit(exprs, c) 
         }
 }
