@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# trap SIGTERM and exit gracefully
+trap 'echo "Job cancelled - exiting gracefully"; exit 0' SIGTERM
+
 usage() {
     echo "Usage: $0 [all|syntax|valid|semantic]"
     exit 1
