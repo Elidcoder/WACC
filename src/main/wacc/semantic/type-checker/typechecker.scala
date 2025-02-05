@@ -272,7 +272,7 @@ object typechecker {
         
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
 
-    private def check(call: Call[QualifiedName, Unit], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+    private def check(call: Call[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
         val (exprsOptTypes, exprsOptTrees) = call.x.map(check(_, Unconstrained)).unzip
         
         if (exprsOptTypes.contains(None)) {
@@ -289,8 +289,8 @@ object typechecker {
         (returnType, for { identTree <- optIdentTrees} yield Call(identTree, exprsOptTrees.map(_.get)))
         
 
-    private def check(rVal: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        given (Int, Int) = rVal.pos
+    private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        given Pos = rVal.pos
         rVal match {
             case expr: Expr[QualifiedName, Typeless] => check(expr, c)
             case pairElem: PairElem[QualifiedName, Typeless] => check(pairElem, c)
