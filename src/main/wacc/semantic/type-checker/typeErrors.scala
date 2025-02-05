@@ -1,13 +1,13 @@
 package wacc.semantic.typecheck
 
 import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation}
-import wacc.ast.{Type, Ident, ?}
+import wacc.ast.{Type, Ident, ?, Typeless}
 import wacc.semantic.{QualifiedName, Environment}
 import java.io.File
 
 object WaccErr {
     case object TypeMismatch {
-        def apply(id: Ident[QualifiedName, Unit], expectedType: Type)(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless], expectedType: Type)(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -20,7 +20,7 @@ object WaccErr {
         )
     }
     case object IsNotString {
-        def apply(id: Ident[QualifiedName, Unit])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -33,7 +33,7 @@ object WaccErr {
         )
     }
     case object IsNotFreeable {
-        def apply(id: Ident[QualifiedName, Unit])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
@@ -46,7 +46,7 @@ object WaccErr {
         )
     }
     case object IsNotReadable {
-        def apply(id: Ident[QualifiedName, Unit])(using ctx: Context) = wacc.error.WaccErr(
+        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = wacc.error.WaccErr(
             id.pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(id.v.oldName)),
