@@ -4,13 +4,6 @@ stages:
   - build
   - test
 
-cache:
-  key: "$CI_COMMIT_REF_SLUG"
-  paths:
-    - /root/.ivy2/cache
-    - /root/.sbt
-    - /root/.coursier
-
 build:
   stage: build
   before_script:
@@ -21,28 +14,7 @@ build:
     - echo "Compiling program..."
     - scala compile .
     - echo "Compilation complete!"
-  artifacts:
-    paths:
-      - .scala-build
-      - .bsp
 
-.test_template:
+test:
   stage: test
-  script: scala test . --test-only "*${TEST_CATEGORY}*"
-  dependencies:
-    - build
-
-test_valid:
-  extends: .test_template
-  variables:
-    TEST_CATEGORY: ValidTest
-
-test_syntax:
-  extends: .test_template
-  variables:
-    TEST_CATEGORY: SyntaxTest
-
-test_semantic:
-  extends: .test_template
-  variables:
-    TEST_CATEGORY: SemanticTest
+  script: scala test .
