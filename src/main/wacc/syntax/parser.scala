@@ -44,7 +44,7 @@ object parser {
 
     // Function parser
     private lazy val func: Parsley[Func[String, Unit]] = 
-        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))), ("is" ~> funcStmts <~ end)))
+        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ end)
 
     // Statements parser for function body
     private lazy val funcStmts: Parsley[List[Stmt[String, Unit]]] = 

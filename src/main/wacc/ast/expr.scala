@@ -15,9 +15,7 @@ sealed trait Expr[N, T] extends RValue[N, T]
 sealed trait PairElem[N, T] extends RValue[N, T]
 sealed trait ArrayOrIdent[N, T] extends LValue[N, T], Expr[N, T]
 
-case class Ident[N, T](v: N)(using val pos: (Int, Int), t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T] {
-    def getType(): T = t
-}
+case class Ident[N, T](v: N)(using val pos: (Int, Int), val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 
 case class PElem[N, T](v: PairElem[N, T])(using val pos: (Int, Int)) extends LValue[N, T], RValue[N, T]
