@@ -211,7 +211,7 @@ object typechecker {
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
-    def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+    private def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
         given Context = ctx
         given (Int, Int) = e.pos
         e match {
