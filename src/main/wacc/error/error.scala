@@ -17,17 +17,17 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
 
     /* Display the line with the error. */
     strBuilder ++= lineInfo._1
-    strBuilder ++= "\n"
+    strBuilder ++= "\n>"
 
     /* Pointer(s) to the erroring character(s). */
-    strBuilder ++= " " * (lineInfo._4 + 1)
-    strBuilder ++= "^" * (lineInfo._5)
+    strBuilder ++= " " * lineInfo._4 
+    strBuilder ++= "^" * lineInfo._5
     strBuilder ++= "\n>"
 
     /* Display the line after the line with the error. */
     if (!lineInfo._3.isEmpty) {
         strBuilder ++= lineInfo._3(0)
-        strBuilder ++= "\n>"
+        strBuilder ++= "\n"
     }
 }
 

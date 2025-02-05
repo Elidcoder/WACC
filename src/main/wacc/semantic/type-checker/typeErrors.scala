@@ -1,7 +1,7 @@
 package wacc.semantic.typecheck
 
 import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation}
-import wacc.ast.*
+import wacc.ast.{Type, Ident}
 import wacc.semantic.QualifiedName
 
 object WaccErr {

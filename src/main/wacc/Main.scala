@@ -1,12 +1,13 @@
 package wacc
 
+import wacc.error.*
 import wacc.syntax.parser
 import wacc.semantic.rename
 // import wacc.semantic.typecheck.check
 
-import parsley.{Success, Failure}
 import java.io.File
-import wacc.error.*
+
+import parsley.{Success, Failure}
 import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
 
@@ -14,19 +15,25 @@ def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
     parser.parse(file) match 
         case Success(x) => 
+            /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(x)
-            /* temporarily disabled typechecking, delete temp match when finished */
-            // check(renamedTree) match
+            /* TEMPORARY: disabled typechecking, replaced with a temp value, DELETE temp match when finished */
+            //TYPECHECKING: check(renamedTree) match
+            //TEMP MATCH (BELOW)
             Right(Some(0)): Either[List[WaccErr], Option[Int]] match
+                /* Failiure in one or both of typechecker & renamer, exit with error code 200 */
                 case Left(errs) => 
                     errs.foreach((err: WaccErr) => println(err.format()))
                     200
                 case Right(value) => value match
+                    /* Renamer & typechecker ran successfully, exit with error code 0 */
                     case Some(finalTree) => 
                         0
+                    /* Should not occur */
                     case None => 
                         println("Tree should not be None")
                         200
+        /* Failed to parse, print error and exit with error code 100 */
         case Failure(x) => 
             println(x.format())
             100
@@ -34,10 +41,15 @@ def pipeline(file: File): Int = {
 
 def main(args: Array[String]): Unit = {
     args.headOption match {
-        case Some(expr) => 
-            val file = new File(expr)
+        /* Ensure that the filepath is given and the file created is valid */
+        case Some(filePath) => 
+            val file = new File(filePath)
             assert(file.exists())
+
+            /* Run the compiler on the file, exiting with the matching output code */
             sys.exit(pipeline(file))
-        case None => println("please enter an expression")
+
+        /* Invalid filepath */
+        case None => println("please enter a valid filepath")
     }
 }
