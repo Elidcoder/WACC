@@ -3,8 +3,8 @@ package wacc.semantic.typecheck
 import wacc.error.WaccErr
 import wacc.semantic.typecheck.WaccErr.*
 import wacc.ast.*
-import wacc.semantic.QualifiedName
-import wacc.semantic.Environment
+import wacc.semantic.{QualifiedName, Environment}
+import os.makeDir.all
 
 object typechecker {
     enum Constraint {
@@ -231,7 +231,40 @@ object typechecker {
                 val (olt, olv) = check(v, IsPair)
                 ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
     }
-    
 
-    private def check(e: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
+    private def checkArrayLit(exprs: List[Expr[QualifiedName, Unit]], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        val (types, trees) = exprs.map(check(_, Unconstrained)).unzip
+        val posElemsType = types.foldRight(
+            Some(?))(
+            (posCurType:Option[Type], posAccType:Option[Type]) => 
+                for {
+                    curType <- posCurType; 
+                    accType <- posAccType; 
+                    matchedType <- curType ~ accType
+                } yield matchedType
+        )
+        val arrayType = posElemsType match {
+            case None => None
+            case Some(elemsType) => Some(ArrayT(elemsType))
+        }
+
+        val arrayTree = if (trees.contains(None)) {
+            None
+        }
+        else {
+
+            Some(ArrayLit(trees.map(_ match {case Some(tree) => tree})))
+        }
+        
+        (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
+
+    private def check(rVal: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        given (Int, Int) = rVal.pos
+        rVal match {
+            case expr: Expr[QualifiedName, Unit] => check(expr, c)
+            case pairElem: PairElem[QualifiedName, Unit] => check(pairElem, c)
+            case newPair: NewPair[QualifiedName, Unit] => ???
+            case call: Call[QualifiedName, Unit] => ???
+            case ArrayLit(exprs) => checkArrayLit(exprs, c) 
+        }
 }
