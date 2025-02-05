@@ -1,6 +1,8 @@
 package wacc.ast
 
 sealed trait Type
+sealed trait SemType
+class Typeless() extends Type
 
 case object ? extends Type
 case class FuncT(returnT: Type, paramTs: List[Type])(val pos: Pos) extends Type
