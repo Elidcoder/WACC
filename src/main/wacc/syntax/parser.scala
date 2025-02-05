@@ -86,7 +86,7 @@ object parser {
         option(some(brackets(expr))).label("array index")
 
     // Expression parser
-    private lazy val expr: Parsley[Expr[String, Typeless]] = 
+    protected [syntax] lazy val expr: Parsley[Expr[String, Typeless]] = 
         precedence(
             ("null" ~> PairLit()),
             BoolLit(("true" as true) | ("false" as false)),
