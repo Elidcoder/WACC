@@ -16,7 +16,7 @@ def pipeline(file: File): Int = {
         case Success(x) => 
             val (renamedTree, env) = rename(x)
             /* temporarily disabled typechecking, delete temp match when finished */
-            // check(renamedTree) match
+            // check(renamedTree, env) match
             Right(Some(0)): Either[List[WaccErr], Option[Int]] match
                 case Left(errs) => 
                     errs.foreach((err: WaccErr) => println(err.format()))
