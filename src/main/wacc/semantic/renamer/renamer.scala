@@ -74,8 +74,8 @@ def rename(l: LValue[String, Unit])(using env: Environment, curScope: MutScope, 
     l match {
     case i: Ident[String, Unit] => curScope.rebuildWithIdent(i)(identity(_))
     case ArrayElem(i, x) => curScope.rebuildWithIdent(i)(ArrayElem(_, x.map(rename(_))))
-    case PElem(First(l)) => rename(l)
-    case PElem(Second(l)) => rename(l)
+    case First(l) => rename(l)
+    case Second(l) => rename(l)
 }
 
 def rename(r: RValue[String, Unit])(using env: Environment, curScope: MutScope, parentScope: Scope): RValue[QualifiedName, Unit] = 
@@ -87,8 +87,6 @@ def rename(r: RValue[String, Unit])(using env: Environment, curScope: MutScope, 
         case Call(i, es) => curScope.rebuildWithIdent(i)(Call(_, es.map(rename(_))))
         case First(l) => First(rename(l))
         case Second(l) => Second(rename(l))
-        case PElem(f: First[String, Unit]) => PElem(First(rename(f.v)))
-        case PElem(s: Second[String, Unit]) => PElem(Second(rename(s.v)))
     }
 
 def rename(e: Expr[String, Unit])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Unit] = 
