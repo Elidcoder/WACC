@@ -3,27 +3,25 @@ package wacc.ast
 import parsley.Parsley
 import parsley.position.pos
 
-type OptionWrap[A[N, T]] = [N, T] =>> Option[A[N, T]]
-
 sealed trait LValue[N, T] {
-    val pos: (Int, Int)
+    val pos: Pos
 }
 sealed trait RValue[N, T] {
-    val pos: (Int, Int)
+    val pos: Pos
 }
 sealed trait Expr[N, T] extends RValue[N, T]
 sealed trait PairElem[N, T] extends LValue[N, T], RValue[N, T]
 sealed trait ArrayOrIdent[N, T] extends LValue[N, T], Expr[N, T]
 
-case class Ident[N, T](v: N)(using val pos: (Int, Int), val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
-case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
+case class Ident[N, T](v: N)(using val pos: Pos, val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
+case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: Pos) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 
-case class ArrayLit[N, T](x: List[Expr[N, T]])(using val pos: (Int, Int)) extends RValue[N, T]
-case class NewPair[N, T](e1: Expr[N, T], e2: Expr[N, T])(using val pos: (Int, Int)) extends RValue[N, T]
-case class Call[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends RValue[N, T]
+case class ArrayLit[N, T](x: List[Expr[N, T]])(using val pos: Pos) extends RValue[N, T]
+case class NewPair[N, T](e1: Expr[N, T], e2: Expr[N, T])(using val pos: Pos) extends RValue[N, T]
+case class Call[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: Pos) extends RValue[N, T]
 
-case class First[N, T](v: LValue[N, T])(using val pos: (Int, Int)) extends PairElem[N, T]
-case class Second[N, T](v: LValue[N, T])(using val pos: (Int, Int)) extends PairElem[N, T]
+case class First[N, T](v: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
+case class Second[N, T](v: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
 
 case object Ident extends IdentBridge {
     override def labels: List[String] = List("identifier")
@@ -33,8 +31,8 @@ case object ArrayElem extends ParserBridgePos2[Ident, ListWrap[Expr], ArrayElem]
 }
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Expr]], ArrayOrIdent] {
-    override def apply[String, Unit](i: Ident[String, Unit], exprs: Option[List[Expr[String, Unit]]])(pos: (Int, Int)): ArrayOrIdent[String, Unit] = 
-        given (Int, Int) = pos
+    override def apply[String, Typeless](i: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(pos: Pos): ArrayOrIdent[String, Typeless] = 
+        given Pos = pos
         exprs match {
         case Some(es)   => ArrayElem(i, es)
         case None       => i
@@ -58,8 +56,8 @@ case object Second extends ParserBridgePos1[LValue, PairElem] {
     override def labels: List[String] = List("snd")
 }
 
-// case class UnaryOp[N, T](op: UnOp)(x: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-// case class BinaryOp[N, T](x: Expr[N, T], y: Expr[N, T], op: BinOp)(using val pos: (Int, Int)) extends Expr[N, T]
+// case class UnaryOp[N, T](op: UnOp)(x: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+// case class BinaryOp[N, T](x: Expr[N, T], y: Expr[N, T], op: BinOp)(using val pos: Pos) extends Expr[N, T]
 
 // enum UnOp {
 //     case Not, Neg, Len, Ord, Chr
@@ -76,31 +74,31 @@ case object Second extends ParserBridgePos1[LValue, PairElem] {
 //     override def labels = List("unary operator")
 // }
 
-case class Not[N, T](e: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Neg[N, T](e: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Len[N, T](e: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Ord[N, T](e: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Chr[N, T](e: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
+case class Not[N, T](e: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Neg[N, T](e: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Len[N, T](e: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Ord[N, T](e: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Chr[N, T](e: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 
-case class Mul[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Div[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Mod[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Add[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Sub[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Greater[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class GreaterEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Less[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class LessEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Eq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class NotEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class And[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
-case class Or[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: (Int, Int)) extends Expr[N, T]
+case class Mul[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Div[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Mod[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Add[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Sub[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Greater[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class GreaterEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Less[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class LessEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Eq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class NotEq[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class And[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Or[N, T](x: Expr[N, T], y: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 
-case class IntLit[N, T](n: Int)(using val pos: (Int, Int)) extends Expr[N, T]
-case class BoolLit[N, T](b: Boolean)(using val pos: (Int, Int)) extends Expr[N, T]
-case class CharLit[N, T](c: Char)(using val pos: (Int, Int)) extends Expr[N, T]
-case class StrLit[N, T](s: String)(using val pos: (Int, Int)) extends Expr[N, T]
-case class PairLit[N, T]()(val pos: (Int, Int)) extends Expr[N, T]
+case class IntLit[N, T](n: Int)(using val pos: Pos) extends Expr[N, T]
+case class BoolLit[N, T](b: Boolean)(using val pos: Pos) extends Expr[N, T]
+case class CharLit[N, T](c: Char)(using val pos: Pos) extends Expr[N, T]
+case class StrLit[N, T](s: String)(using val pos: Pos) extends Expr[N, T]
+case class PairLit[N, T]()(val pos: Pos) extends Expr[N, T]
 
 
 case object Not extends UnaryOperator[Expr, Expr]
@@ -137,5 +135,5 @@ case object StrLit extends ParserBridgePos1[Const[String], StrLit] {
     override def labels = List("string literal")
 }
 case object PairLit {
-    def apply(): Parsley[PairLit[String, Unit]] = pos.map(PairLit[String, Unit]()(_))
+    def apply(): Parsley[PairLit[String, Typeless]] = pos.map((x: (Int, Int)) => PairLit[String, Typeless]()(Pos(x)))
 }

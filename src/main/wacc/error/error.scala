@@ -1,5 +1,7 @@
 package wacc.error
 
+import wacc.ast.Pos
+
 /* Enum representing data used in a WaccErr */
 enum ErrItem {
     case Raw(item: String)
@@ -16,7 +18,7 @@ def readErrItem(errItem: ErrItem): String = errItem match {
     case EndOfInput => "end of input"
 }
 /* R2 = (line: Int, column: Int) */
-type R2 = (Int, Int)
+type R2 = Pos
 
 /* LineInformation = (line: String, linesBefore: Seq[String], linesAfter: Seq[String], errorPointsAt: Int, errorWidth: Int) */
 type LineInformation = (String, Seq[String], Seq[String], Int, Int)
@@ -66,9 +68,9 @@ case class WaccErr(
             outputBuilder ++= " error in file '"
             outputBuilder ++= fName
             outputBuilder ++= "' (line "
-            outputBuilder ++= errorPos._1.toString()
+            outputBuilder ++= errorPos.row.toString()
             outputBuilder ++= ", column "
-            outputBuilder ++= errorPos._2.toString()
+            outputBuilder ++= errorPos.col.toString()
             outputBuilder ++= "):\n  "
             
             /* Build body of the error message. */
