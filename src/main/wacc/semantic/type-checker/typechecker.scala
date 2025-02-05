@@ -205,13 +205,33 @@ object typechecker {
             given Type = p.t
             Param(p.t, Ident[QualifiedName, Type](p.v.v))(p.pos)
         )
-    
-    private def check(i: Ident[QualifiedName, Unit], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
+
+    private def check(i: Ident[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
+        given (Int, Int) = i.pos
         val ot = ctx.getType(i.v.uid).satisfies(c)
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
-    private def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
+    private def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+        given Context = ctx
+        given (Int, Int) = e.pos
+        e match {
+            case ArrayElem(i, xs) => checkArrayElem(i, xs, c)
+            case l: PairElem[QualifiedName, Unit] => checkPairElem(l, c)
+            case i: Ident[QualifiedName, Unit] => check(i, c)
+    }
+
+    private def checkPairElem(l: PairElem[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+        given (Int, Int) = l.pos
+        l match {
+            case First(v) => 
+                val (olt, olv) = check(v, IsPair)
+                ((for { case PairT(f, _) <- olt; ft <- f.satisfies(c) } yield ft ), (for { fv <- olv } yield fv))
+            case Second(v) =>
+                val (olt, olv) = check(v, IsPair)
+                ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
+    }
+    
 
     private def check(e: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
 }

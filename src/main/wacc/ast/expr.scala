@@ -12,13 +12,11 @@ sealed trait RValue[N, T] {
     val pos: (Int, Int)
 }
 sealed trait Expr[N, T] extends RValue[N, T]
-sealed trait PairElem[N, T] extends RValue[N, T]
+sealed trait PairElem[N, T] extends LValue[N, T], RValue[N, T]
 sealed trait ArrayOrIdent[N, T] extends LValue[N, T], Expr[N, T]
 
 case class Ident[N, T](v: N)(using val pos: (Int, Int), val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 case class ArrayElem[N, T](i: Ident[N, T], x: List[Expr[N, T]])(using val pos: (Int, Int)) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
-
-case class PElem[N, T](v: PairElem[N, T])(using val pos: (Int, Int)) extends LValue[N, T], RValue[N, T]
 
 case class ArrayLit[N, T](x: List[Expr[N, T]])(using val pos: (Int, Int)) extends RValue[N, T]
 case class NewPair[N, T](e1: Expr[N, T], e2: Expr[N, T])(using val pos: (Int, Int)) extends RValue[N, T]
@@ -42,8 +40,6 @@ case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Exp
         case None       => i
     } 
 }
-
-case object PElem extends ParserBridgePos1[PairElem, PElem]
 
 case object ArrayLit extends ParserBridgePos1[ListWrap[Expr], ArrayLit] {
     override def labels: List[String] = List("array literal")

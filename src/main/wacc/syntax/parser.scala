@@ -131,12 +131,12 @@ object parser {
 
     // lvalue parser
     private lazy val lvalue: Parsley[LValue[String, Unit]] = 
-        PElem(pairElem)
+        pairElem
         | ArrayOrIdent(ident, arridx)
 
     // rvalue parser
     private lazy val rvalue: Parsley[RValue[String, Unit]] = 
-        PElem(pairElem)
+        pairElem
         | "newpair" ~> parens(NewPair(expr, ("," ~> expr)))
         | "call" ~> Call(ident, parens(commaSep(expr)))
         | ArrayLit(brackets(commaSep(expr)))
