@@ -36,6 +36,17 @@ object typechecker {
                 case (ArrayT(t), ArrayT(refT)) =>
                     for {commonT <- t ~ refT}
                     yield ArrayT(commonT)
+                case (FuncT(t, ts), FuncT(refT, refTs)) =>
+                    if ts.size != refTs.size then return None
+                    val ots = (ts zip refTs).foldRight(
+                        Some(List.empty)
+                        )( (curElem: (Type, Type), oacc: Option[List[Type]]) =>
+                            for {
+                                t <- curElem._1 ~ curElem._2
+                                acc <- oacc
+                            } yield t :: acc
+                    )
+                    for {fts <- ots; ft <- t ~ refT} yield FuncT(ft, fts)(pos)
                 case (t, refT) if t == refT => Some(t)
                 case _                      => None
             }
@@ -236,30 +247,47 @@ object typechecker {
     }
 
     private def checkArrayLit(exprs: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        val (types, trees) = exprs.map(check(_, Unconstrained)).unzip
-        val posElemsType = types.foldRight(
+        val (exprsOptTypes, exprsOptTrees) = exprs.map(check(_, Unconstrained)).unzip
+        val optElemsType = exprsOptTypes.foldRight(
             Some(?))(
-            (posCurType:Option[Type], posAccType:Option[Type]) => 
+            (optCurType:Option[Type], optAccType:Option[Type]) => 
                 for {
-                    curType <- posCurType; 
-                    accType <- posAccType; 
+                    curType <- optCurType; 
+                    accType <- optAccType; 
                     matchedType <- curType ~ accType
                 } yield matchedType
         )
-        val arrayType = posElemsType match {
+
+        val arrayType = optElemsType match {
             case None => None
             case Some(elemsType) => Some(ArrayT(elemsType))
         }
-
-        val arrayTree = if (trees.contains(None)) {
+        
+        val arrayTree = if (exprsOptTrees.contains(None)) {
             None
         }
         else {
-
-            Some(ArrayLit(trees.map(_ match {case Some(tree) => tree})))
+            Some(ArrayLit(exprsOptTrees.map(_.get)))
         }
         
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
+
+    private def check(call: Call[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        val (exprsOptTypes, exprsOptTrees) = call.x.map(check(_, Unconstrained)).unzip
+        
+        if (exprsOptTypes.contains(None)) {
+            (None, None)
+        }
+
+        val exprTypes = exprsOptTypes.map(_.get)
+        val (optIdentTypes, optIdentTrees) = check(call.i, Is(FuncT(? , exprTypes)(pos)))
+        val returnType = for { case FuncT(identType, _) <- optIdentTypes; defIdentType <- identType.satisfies(c)} yield defIdentType
+        if (exprsOptTrees.contains(None)) {
+            return (returnType, None)
+        }
+
+        (returnType, for { identTree <- optIdentTrees} yield Call(identTree, exprsOptTrees.map(_.get)))
+        
 
     private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
         given Pos = rVal.pos
@@ -271,7 +299,7 @@ object typechecker {
                 val (ot2, otE2) = check(e2, Unconstrained)
                 val oPair = for { t1 <- otE1; t2 <- otE2} yield NewPair(t1, t2)
                 (for { t1 <- ot1; t2 <- ot2; ft <- PairT(t1, t2).satisfies(c) } yield ft, oPair)
-            case call: Call[QualifiedName, Typeless] => ???
+            case call: Call[QualifiedName, Typeless] => check(call, c)
             case ArrayLit(exprs) => checkArrayLit(exprs, c) 
         }
 }

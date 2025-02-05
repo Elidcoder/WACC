@@ -2,10 +2,9 @@ package wacc.syntax
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.*
-import parsley.{Success, Failure, Result}
+import parsley.Success
 
 import wacc.ast.*
-import org.scalactic.Bool
 
 val UNIT_TEST_CATS = List(
     "expr",
