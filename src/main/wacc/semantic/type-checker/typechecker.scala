@@ -211,7 +211,15 @@ object typechecker {
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
-    private def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
+    def check(e: LValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+        given Context = ctx
+        given (Int, Int) = e.pos
+        e match {
+            case ArrayElem(i, xs) => checkArrayElem(i, xs, c)
+            case PElem(First(l)) => check(l, c)
+            case PElem(Second(l)) => check(l, c)
+            case i: Ident[QualifiedName, Unit] => check(i, c)
+    }
 
     private def check(e: RValue[QualifiedName, Unit], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
 }
