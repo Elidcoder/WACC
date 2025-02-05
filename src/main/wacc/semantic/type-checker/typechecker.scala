@@ -235,15 +235,15 @@ object typechecker {
             case i: Ident[QualifiedName, Typeless] => check(i, c)
     }
 
-    private def checkPairElem(l: PairElem[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+    private def checkPairElem(l: PairElem[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[PairElem[QualifiedName, Type]]) =
         given Pos = l.pos
         l match {
             case First(v) => 
                 val (olt, olv) = check(v, IsPair)
-                ((for { case PairT(f, _) <- olt; ft <- f.satisfies(c) } yield ft ), (for { fv <- olv } yield fv))
+                ((for { case PairT(f, _) <- olt; ft <- f.satisfies(c) } yield ft ), (for { fv <- olv } yield First(fv)))
             case Second(v) =>
                 val (olt, olv) = check(v, IsPair)
-                ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
+                ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield Second(sv)))
     }
 
     private def checkArrayLit(exprs: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
@@ -293,7 +293,7 @@ object typechecker {
         given Pos = rVal.pos
         rVal match {
             case expr: Expr[QualifiedName, Typeless] => check(expr, c)
-            case pairElem: PairElem[QualifiedName, Typeless] => check(pairElem, c)
+            case pairElem: PairElem[QualifiedName, Typeless] => checkPairElem(pairElem, c)
             case NewPair(e1, e2) => 
                 val (ot1, otE1) = check(e1, Unconstrained)
                 val (ot2, otE2) = check(e2, Unconstrained)

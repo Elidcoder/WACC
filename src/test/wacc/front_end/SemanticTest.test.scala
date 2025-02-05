@@ -29,7 +29,7 @@ class SemanticTest extends AnyFlatSpec {
             it should s"fail with semantic error (200) in [${dir}/${file.getName()}]" in {
                 assume(getProperties().get(key).exists(_.toBoolean))
                 val result = pipeline(file)
-                result shouldBe (100)
+                result shouldBe (200)
             }
         }
     }

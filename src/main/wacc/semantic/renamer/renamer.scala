@@ -18,7 +18,7 @@ def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainSc
     fs.foreach { f =>
         given Pos = f.v.pos
         given Typeless = Typeless()
-        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, env.add(f.v.v, FuncT(f.t, f.l.map(_.t))(f.pos)))))
+        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos)))))
     }
     fs.map(rename(_))
 }
@@ -28,13 +28,14 @@ def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScop
     given Typeless = Typeless()
     f.l.foreach {param => 
         given Pos = param.v.pos
-        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, env.add(param.v.v, param.t))))  
+        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, env.add(param.v.v, rename(param.t)))))  
     }
+    given Pos = f.pos
     Func(
-        f.t,
+        rename(f.t),
         funcScope(f.v.v),
         f.l.map(p => 
-            Param(p.t, funcScope(p.v.v))(p.pos)
+            Param(rename(p.t), funcScope(p.v.v))(p.pos)
         ),
         rename(f.s))(f.pos)
 
@@ -52,7 +53,9 @@ def rename(s: Stmt[String, Typeless])(using curScope: MutScope, env: Environment
         case NewAss(t, i, r) => 
             val newUID: Int = if (curScope.contains(i.v)) 
                 then AlreadyDeclaredInScope
-                else env.add(i.v, t)
+                else 
+                    given Pos = s.pos
+                    env.add(i.v, rename(t))
             val rR = rename(r)
             given Pos = i.pos
             curScope.put(i.v, Ident[QualifiedName, Typeless](QualifiedName(i.v, newUID)))
@@ -127,3 +130,11 @@ extension (curScope: MutScope)
         build(curScope.get(id.v)
         .getOrElse(parentScope.get(id.v)
         .getOrElse(Ident[QualifiedName, Typeless](QualifiedName(id.v, Undeclared)))))
+
+def rename(t: Type)(using pos: Pos): Type = t match {
+    case PairT(t1, t2) => PairT(rename(t1), rename(t2))
+    case ArrayT(t) => ArrayT(rename(t))
+    case ft@FuncT(t, ps) => FuncT(rename(t), ps.map(rename(_)))(ft.pos)
+    case RedPairT() => PairT(?, ?)
+    case t => t
+}
