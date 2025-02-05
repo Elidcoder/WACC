@@ -1,6 +1,7 @@
 package wacc.error
 
 import parsley.errors.ErrorBuilder
+import wacc.ast.Pos
 
 /* Representation of an err on a line can be either:
  * VanillaError -> Contains info about what went wrong, where, why and the code in the area, or,
@@ -15,7 +16,7 @@ abstract class WaccErrorBuilder extends ErrorBuilder[WaccErr] {
     override def build(pos: Position, source: Source, lines: ErrorInfoLines): WaccErr = WaccErr(pos, lines, source, "Syntax")
 
     type Position = R2
-    override def pos(line: Int, col: Int): Position = (line, col)
+    override def pos(line: Int, col: Int): Position = Pos(line, col)
 
     type Source = Option[String]
     override def source(sourceName: Option[String]): Option[String] = sourceName
