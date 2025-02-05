@@ -3,8 +3,8 @@ package wacc.semantic.typecheck
 import wacc.error.WaccErr
 import wacc.semantic.typecheck.WaccErr.*
 import wacc.ast.*
-import wacc.semantic.QualifiedName
-import wacc.semantic.Environment
+import wacc.semantic.{QualifiedName, Environment}
+import java.io.File
 
 object typechecker {
     enum Constraint {
@@ -58,8 +58,8 @@ object typechecker {
     }
 
 
-    def check(prog: Program[QualifiedName, Typeless], env: Environment): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
-        given ctx: Context = new Context(Body.Main, env)
+    def check(prog: Program[QualifiedName, Typeless], env: Environment, file: File): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
+        given ctx: Context = new Context(Body.Main, env, file)
         val typedFuncs: Option[List[Func[QualifiedName, Type]]] = checkFuncs(prog.fs)
         val typedStmts: Option[List[Stmt[QualifiedName, Type]]] = {
             ctx.body = Body.Main 
@@ -85,8 +85,8 @@ object typechecker {
         yield Func(f.t, Ident[QualifiedName, Type](f.v.v), checkParams(f.l), tF)(f.pos)
 
     private def check(ss: List[Stmt[QualifiedName, Typeless]])(using ctx: Context): Option[List[Stmt[QualifiedName, Type]]] = 
-        ss.foldRight(Some(List.empty)) {
-            (opt: Stmt[QualifiedName, Typeless], acc: Option[List[Stmt[QualifiedName, Type]]]) =>
+        ss.foldLeft(Some(List.empty)) {
+            (acc: Option[List[Stmt[QualifiedName, Type]]], opt: Stmt[QualifiedName, Typeless]) =>
                 for { xs <- acc; x <- check(opt) } yield x :: xs
             }
 
@@ -234,7 +234,44 @@ object typechecker {
                 val (olt, olv) = check(v, IsPair)
                 ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
     }
-    
 
-    private def check(e: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
+    private def checkArrayLit(exprs: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        val (types, trees) = exprs.map(check(_, Unconstrained)).unzip
+        val posElemsType = types.foldRight(
+            Some(?))(
+            (posCurType:Option[Type], posAccType:Option[Type]) => 
+                for {
+                    curType <- posCurType; 
+                    accType <- posAccType; 
+                    matchedType <- curType ~ accType
+                } yield matchedType
+        )
+        val arrayType = posElemsType match {
+            case None => None
+            case Some(elemsType) => Some(ArrayT(elemsType))
+        }
+
+        val arrayTree = if (trees.contains(None)) {
+            None
+        }
+        else {
+
+            Some(ArrayLit(trees.map(_ match {case Some(tree) => tree})))
+        }
+        
+        (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
+
+    private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
+        given Pos = rVal.pos
+        rVal match {
+            case expr: Expr[QualifiedName, Typeless] => check(expr, c)
+            case pairElem: PairElem[QualifiedName, Typeless] => check(pairElem, c)
+            case NewPair(e1, e2) => 
+                val (ot1, otE1) = check(e1, Unconstrained)
+                val (ot2, otE2) = check(e2, Unconstrained)
+                val oPair = for { t1 <- otE1; t2 <- otE2} yield NewPair(t1, t2)
+                (for { t1 <- ot1; t2 <- ot2; ft <- PairT(t1, t2).satisfies(c) } yield ft, oPair)
+            case call: Call[QualifiedName, Typeless] => ???
+            case ArrayLit(exprs) => checkArrayLit(exprs, c) 
+        }
 }

@@ -74,8 +74,8 @@ def rename(l: LValue[String, Typeless])(using env: Environment, curScope: MutSco
     l match {
     case i: Ident[String, Typeless] => curScope.rebuildWithIdent(i)(identity(_))
     case ArrayElem(i, x) => curScope.rebuildWithIdent(i)(ArrayElem(_, x.map(rename(_))))
-    case First(l) => rename(l)
-    case Second(l) => rename(l)
+    case First(l) => First(rename(l))
+    case Second(l) => First(rename(l))
 }
 
 def rename(r: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): RValue[QualifiedName, Typeless] = 
