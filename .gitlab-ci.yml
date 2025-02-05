@@ -17,4 +17,4 @@ build:
 
 test:
   stage: test
-  script: scala test .
+  script: ./run_tests.sh
