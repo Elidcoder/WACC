@@ -20,7 +20,7 @@ def pipeline(file: File): Int = {
 
             /* Attempt rename and match on result of both rename & typecheck. */
             /* TEMPORARY: disabled typechecking, replaced with a temp value, DELETE temp match when finished */
-            //TYPECHECKING: check(renamedTree) match
+            //TYPECHECKING: check(renamedTree, env) match
             //TEMP MATCH (BELOW)
             Right(Some(0)): Either[List[WaccErr], Option[Int]] match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */

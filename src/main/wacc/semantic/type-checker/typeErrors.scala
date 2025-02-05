@@ -3,6 +3,7 @@ package wacc.semantic.typecheck
 import wacc.error.{WaccErr, R2, ErrLines, ErrItem, LineInformation}
 import wacc.ast.{Type, Ident}
 import wacc.semantic.QualifiedName
+import wacc.semantic.Environment
 
 object WaccErr {
     case object TypeMismatch {
@@ -77,7 +78,8 @@ enum Body {
     case Main
 }
 
-class Context(var body: Body) {
+class Context(var body: Body, val env: Environment) {
+    def getType(uid: Int): Type = env.get(uid)
     private val errors = List.newBuilder[WaccErr]
     def result: List[WaccErr] = errors.result()
     def error(err: WaccErr) = 

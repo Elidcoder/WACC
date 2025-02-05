@@ -16,20 +16,26 @@ def rename(prog: Program[String, Unit]): (Program[QualifiedName, Unit], Environm
 
 def renameFuncs(fs: List[Func[String, Unit]])(using env: Environment, mainScope: MutScope, parentScope: Scope) = {
     fs.foreach { f =>
-        mainScope.put(f.v.v, env.add(f.v.v, f.pos))
+        given (Int, Int) = f.v.pos
+        given Unit = ()
+        mainScope.put(f.v.v, Ident[QualifiedName, Unit](QualifiedName(f.v.v, env.add(f.v.v, FuncT(f.t, f.l.map(_.t))(f.pos)))))
     }
     fs.map(rename(_))
 }
 
 def rename(f: Func[String, Unit])(using env: Environment, mainScope: MutScope, parentScope: Scope): Func[QualifiedName, Unit] = 
     given funcScope: MutScope = from(mainScope)
+    given Unit = ()
     f.l.foreach {param => 
-        funcScope.put(param.v.v, env.add(param.v.v, param.pos))    
+        given (Int, Int) = param.v.pos
+        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, env.add(param.v.v, param.t))))  
     }
     Func(
         f.t,
         funcScope(f.v.v),
-        f.l.map(p => Param(p.t, funcScope(p.v.v))(p.pos)),
+        f.l.map(p => 
+            Param(p.t, funcScope(p.v.v))(p.pos)
+        ),
         rename(f.s))(f.pos)
 
 def rename(ss: List[Stmt[String, Unit]])(using env: Environment, curScope: MutScope, parentScope: Scope): List[Stmt[QualifiedName, Unit]] = {
@@ -44,12 +50,13 @@ def rename(s: Stmt[String, Unit])(using curScope: MutScope, env: Environment, pa
     s match {
         case Skip() => Skip()(s.pos)
         case NewAss(t, i, r) => 
-            val newI = if (curScope.contains(i.v)) 
-                then Ident[QualifiedName, Unit](QualifiedName(i.v, AlreadyDeclaredInScope))
-                else env.add(i.v, i.pos)
+            val newUID: Int = if (curScope.contains(i.v)) 
+                then AlreadyDeclaredInScope
+                else env.add(i.v, t)
             val rR = rename(r)
-            curScope.put(i.v, newI)
-            Assign(newI, rR)
+            given (Int, Int) = i.pos
+            curScope.put(i.v, Ident[QualifiedName, Unit](QualifiedName(i.v, newUID)))
+            Assign(curScope(i.v), rR)
         case Assign(l, r) => Assign(rename(l), rename(r))
         case Read(l) => Read(rename(l))
         case Free(e) => Free(rename(e))
