@@ -19,7 +19,6 @@ def pipeline(file: File): Int = {
             val (renamedTree, env) = rename(x)
 
             /* Attempt rename and match on result of both rename & typecheck. */
-            /* TEMPORARY: disabled typechecking, replaced with a temp value, DELETE temp match when finished */
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
