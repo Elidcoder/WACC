@@ -193,8 +193,169 @@ class UnitTest extends AnyFlatSpec {
         }
     }
 
-    /* Test for LValues */
-
     /* Test for types */
+    it should "parse base type 'int' successfully" in {
+        parser.ptype.parse("int") match {
+            case Success(IntT()) => succeed
+            case _               => fail()
+        }
+    }
+
+    it should "parse base type 'bool' successfully" in {
+        parser.ptype.parse("bool") match {
+            case Success(BoolT()) => succeed
+            case _                => fail()
+        }
+    }
+
+    it should "parse base type 'char' successfully" in {
+        parser.ptype.parse("char") match {
+            case Success(CharT()) => succeed
+            case _                => fail()
+        }
+    }
+
+    it should "parse base type 'string' successfully" in {
+        parser.ptype.parse("string") match {
+            case Success(StringT()) => succeed
+            case _                  => fail()
+        }
+    }
+
+    it should "parse array type successfully" in {
+        parser.ptype.parse("int[]") match {
+            case Success(ArrayT(int)) => succeed
+            case _                    => fail()
+        }
+    }
+
+    it should "parse nested array types successfully" in {
+        parser.ptype.parse("int[][]") match {
+            case Success(ArrayT(ArrayT(int))) => succeed
+            case _                            => fail()
+        }
+    }
+
+    it should "parse pair type successfully" in {
+        parser.ptype.parse("pair(int,string)") match {
+            case Success(PairT(IntT(), StringT())) => succeed
+            case _                                 => fail()
+        }
+    }
+
+    it should "parse nested pair types successfully" in {
+        parser.ptype.parse("pair(pair,pair)") match {
+            case Success(PairT(_, _)) => succeed
+            case _                    => fail()
+        }
+    }
+
+    /* Test for Statements */
+    it should "parse programs successfully" in {
+        parser.program.parse("begin skip end") match {
+            case Success(Program(_, List(Skip()))) => succeed
+            case _                                 => fail()
+        }
+    }
+
+    it should "parse functions successfully" in {
+        parser.func.parse("int f() is return 1 end skip end") match {
+            case Success(Func(IntT(), Ident(x), List(), List(Return(IntLit(1))))) => x shouldBe "f"
+            case _                                                                => fail()
+        }
+    }
+    
+    it should "parse 'skip' statements successfully" in {
+        parser.stmt.parse("skip") match {
+            case Success(Skip()) => succeed
+            case _               => fail()
+        }
+    }
+
+    it should "parse new assignment statements successfully" in {
+        parser.stmt.parse("int buzz = 37") match {
+            case Success(NewAss(IntT(), Ident(x), IntLit(37))) => x shouldBe "buzz"
+            case _                                             => fail()
+        }
+    }
+
+    it should "parse non-new assignment statements successfully" in {
+        parser.stmt.parse("buzz = 37") match {
+            case Success(Assign(Ident(x), IntLit(37))) => x shouldBe "buzz"
+            case _                                     => fail()
+        }
+    }
+
+    it should "parse 'read' statements successfully" in {
+        parser.stmt.parse("read serhii") match {
+            case Success(Read(Ident(x))) => x shouldBe "serhii"
+            case _                       => fail()
+        }
+    }
+
+    it should "parse 'free' statements successfully" in {
+        parser.stmt.parse("free 37") match {
+            case Success(Free(IntLit(x))) => x shouldBe 37
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'return' statements successfully" in {
+        parser.stmt.parse("return 37") match {
+            case Success(Return(IntLit(x))) => x shouldBe 37
+            case _                          => fail()
+        }
+    }
+
+    it should "parse 'exit' statements successfully" in {
+        parser.stmt.parse("exit 37") match {
+            case Success(Exit(IntLit(x))) => x shouldBe 37
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'print' statements successfully" in {
+        parser.stmt.parse("print 37") match {
+            case Success(Print(IntLit(x))) => x shouldBe 37
+            case _                         => fail()
+        }
+    }
+
+    it should "parse 'println' statements successfully" in {
+        parser.stmt.parse("println 37") match {
+            case Success(PrintLn(IntLit(x))) => x shouldBe 37
+            case _                           => fail()
+        }
+    }
+
+    it should "parse 'if' statements successfully" in {
+        parser.stmt.parse("if 37 then skip else skip fi") match {
+            case Success(If(IntLit(x), List(Skip()), List(Skip()))) => x shouldBe 37
+            case _                                                  => fail()
+        }
+    }
+
+    it should "parse 'while' statements successfully" in {
+        parser.stmt.parse("while 37 do skip done") match {
+            case Success(While(IntLit(x), List(Skip()))) => x shouldBe 37
+            case _                                       => fail()
+        }
+    }
+    
+    it should "parse nested statements successfully" in {
+        parser.stmt.parse("begin skip end") match {
+            case Success(Nest(List(Skip()))) => succeed
+            case _                           => fail()
+        }
+    }
+
+    it should "parse consecutive statements successfully" in {
+        parser.stmt.parse("skip;skip") match {
+            case Success(Skip()) => succeed
+            case _               => fail()
+        }
+    }
+
+    /* Tests for LValues */
 
 }
