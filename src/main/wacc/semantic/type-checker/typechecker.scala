@@ -220,8 +220,8 @@ object typechecker {
         given Pos = e.pos
         e match {
             case ArrayElem(i, xs) => checkArrayElem(i, xs, c)
-            case l: PairElem[QualifiedName, Unit] => checkPairElem(l, c)
-            case i: Ident[QualifiedName, Unit] => check(i, c)
+            case l: PairElem[QualifiedName, Typeless] => checkPairElem(l, c)
+            case i: Ident[QualifiedName, Typeless] => check(i, c)
     }
 
     private def checkPairElem(l: PairElem[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
