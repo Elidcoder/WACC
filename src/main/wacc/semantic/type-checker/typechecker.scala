@@ -43,12 +43,12 @@ extension (t: Type)
                 ctx.error(TypeMismatch(Ident[QualifiedName, Unit](QualifiedName("blah", -1)), refT))
             }
             case (?, _) => Some(?)
-            case (kt@(ArrayT(CharT()) | StringT()), IsStringLike) => Some(kt)
-            case (kt, IsStringLike) => ctx.error(IsNotString(Ident[QualifiedName, Unit](QualifiedName("blah", -1))))
-            case (kt@(ArrayT(_) | PairT(_,_)), IsFreeable) => Some(kt)
-            case (kt, IsFreeable) => ctx.error(IsNotFreeable(Ident[QualifiedName, Unit](QualifiedName("blah", -1))))
-            case (kt@(IntT() | CharT()), IsReadable) => Some(kt)
-            case (kt, IsReadable) => ctx.error(IsNotFreeable(Ident[QualifiedName, Unit](QualifiedName("blah", -1))))
+            case (ArrayT(CharT()) | StringT(), IsStringLike) => Some(t)
+            case (kt, IsStringLike) => ctx.error(IsNotString(Ident(QualifiedName("blah", -1))))
+            case (ArrayT(_) | PairT(_,_), IsFreeable) => Some(t)
+            case (kt, IsFreeable) => ctx.error(IsNotFreeable(Ident(QualifiedName("blah", -1))))
+            case (IntT() | CharT(), IsReadable) => Some(t)
+            case (kt, IsReadable) => ctx.error(IsNotFreeable(Ident(QualifiedName("blah", -1))))
 }
 
 
@@ -76,7 +76,7 @@ def check(f: Func[QualifiedName, Unit])(using ctx: Context): Option[Func[Qualifi
     given Type = f.t
     ctx.body = Body.Function(f.t)
     for { tF <- check(f.s) } 
-    yield Func[QualifiedName, Type](f.t, Ident[QualifiedName, Type](QualifiedName(f.v.v.oldName, f.v.v.uid)), checkParams(f.l), tF)(f.pos)
+    yield Func(f.t, Ident[QualifiedName, Type](f.v.v), checkParams(f.l), tF)(f.pos)
 
 def check(ss: List[Stmt[QualifiedName, Unit]])(using ctx: Context): Option[List[Stmt[QualifiedName, Type]]] = 
     ss.foldRight(Some(List.empty)) {
@@ -118,11 +118,11 @@ def check(s: Stmt[QualifiedName, Unit])(using ctx: Context): Option[Stmt[Qualifi
                 given Type = returnType
                 for { te <- check(e, Is(returnType))._2 } yield Return(te)
         }
-        case s@Skip() => Some(Skip[QualifiedName, Type]()(s.pos))
+        case Skip() => Some(Skip()(s.pos))
         case While(e, s) => 
             val (_, typedCond) = check(e, Is(BoolT()))
             val typedS = check(s)
-            for {te <- typedCond; ts <- typedS} yield While[QualifiedName, Type](te, ts)
+            for {te <- typedCond; ts <- typedS} yield While(te, ts)
 } 
 
 def check(e: Expr[QualifiedName, Unit], c: Constraint): (Option[Type], Option[Expr[QualifiedName, Type]]) = e match {
@@ -153,7 +153,12 @@ def check(e: Expr[QualifiedName, Unit], c: Constraint): (Option[Type], Option[Ex
     case i: Ident[QualifiedName, Unit] => ???
 }
 
-def checkParams(ps: List[Param[QualifiedName, Unit]]): List[Param[QualifiedName, Type]] = ???
+def checkParams(ps: List[Param[QualifiedName, Unit]]): List[Param[QualifiedName, Type]] = 
+    ps.map(p => 
+        given (Int, Int) = p.v.pos
+        given Type = p.t
+        Param(p.t, Ident[QualifiedName, Type](p.v.v))(p.pos)
+    )
 
 def check(e: LValue[QualifiedName, Unit], c: Constraint): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
 

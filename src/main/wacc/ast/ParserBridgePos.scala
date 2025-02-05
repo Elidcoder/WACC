@@ -26,6 +26,14 @@ trait IdentBridge extends ParserSingletonBridgePosType[String => Ident[String, U
     override final def con(pos: (Int, Int), t: Unit): String => Ident[String, Unit] = this.apply(_)(pos, t)
 }
 
+trait FuncBridge extends ParserSingletonBridgePos[(Type, Ident[String, Unit], List[Param[String, Unit]]) => (List[Stmt[String, Unit]]) => Func[String, Unit]] {
+    def apply[String, Unit](x: Type, y: Ident[String, Unit], z: List[Param[String, Unit]], zz: List[Stmt[String, Unit]])(pos: (Int, Int)): Func[String, Unit]
+    def apply(x: Parsley[Type], y: Parsley[Ident[String, Unit]], z: Parsley[List[Param[String, Unit]]]): Parsley[(List[Stmt[String, Unit]]) => Func[String, Unit]] = 
+        error(ap3(pos.map(con), x, y, z))
+    override final def con(pos: (Int, Int)): (Type, Ident[String, Unit], List[Param[String, Unit]]) => (List[Stmt[String, Unit]]) => Func[String, Unit] = 
+        (x: Type, y: Ident[String, Unit], z: List[Param[String, Unit]]) => this.apply(x, y, z, _)(pos)
+}
+
 trait ParserBridgePos1[-A[String, Unit], +B[String, Unit]] extends ParserSingletonBridgePos[A[String, Unit] => B[String, Unit]] {
     def apply[String, Unit](x: A[String, Unit])(pos: (Int, Int)): B[String, Unit]
     def apply(x: Parsley[A[String, Unit]]): Parsley[B[String, Unit]] = error(ap1(pos.map(con), x))
