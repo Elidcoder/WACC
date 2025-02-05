@@ -1,5 +1,20 @@
 package wacc.error
 
+/* Enum representing data used in a WaccErr */
+enum ErrItem {
+    case Raw(item: String)
+    case Named(item: String)
+    case EndOfInput
+}
+import ErrItem.*
+
+/* Takes in an ErrItem
+ * Returns a string representing the given errItem */
+def readErrItem(errItem: ErrItem): String = errItem match {
+    case Named(item) => item
+    case Raw(item) => item
+    case EndOfInput => "end of input"
+}
 /* R2 = (line: Int, column: Int) */
 type R2 = (Int, Int)
 
@@ -42,8 +57,11 @@ case class WaccErr(
     def format():String = fileName match {
         case None => "Bad filename, no error message could be built"
         case Some(fName) => 
-            /* Build title of the error message. */
+            /* Create string builder and set colour to red*/
             val outputBuilder: StringBuilder = new StringBuilder()
+            outputBuilder ++= "\u001b[31m"
+
+            /* Build title of the error message. */
             outputBuilder ++= errType
             outputBuilder ++= " error in file '"
             outputBuilder ++= fName
@@ -51,24 +69,25 @@ case class WaccErr(
             outputBuilder ++= errorPos._1.toString()
             outputBuilder ++= ", column "
             outputBuilder ++= errorPos._2.toString()
-            outputBuilder ++= "):\n"
+            outputBuilder ++= "):\n  "
             
             /* Build body of the error message. */
             errStyle match {
                 case ErrLines.SpecialisedError(msgs, errStyle) =>
                     /* Join the given messages. */
-                    msgs.mkString(",\n") 
-                    
+                    outputBuilder ++= msgs.mkString(",\n  ") 
+
                     /* Display code near the error. */
+                    outputBuilder ++= "\n\n>"
                     parseLineInfo(errStyle, outputBuilder)
 
                 case ErrLines.VanillaError(unexpected, expecteds, reasons, errStyle) => 
                     /* Unexpected ... line of the error message. */
                     unexpected match {
                         case None => 
-                            outputBuilder ++= "  No 'unexpected item' found"
+                            outputBuilder ++= "No 'unexpected item' found"
                         case Some(unexpectd) => 
-                            outputBuilder ++= "  unexpected "
+                            outputBuilder ++= "unexpected "
                             unexpectd match {
                                 case ErrItem.EndOfInput => 
                                     outputBuilder ++= "end of input"
@@ -78,17 +97,18 @@ case class WaccErr(
                                     outputBuilder ++= "identifier \""
                                     outputBuilder ++= item
                                     outputBuilder ++= "\""
-                                
                             }
                     }
 
                     /* Expected ... line of the error message. */
-                    outputBuilder ++= "\n  expected "
-                    outputBuilder ++= expecteds.map(_ match {
-                            case ErrItem.Named(item) => item
-                            case ErrItem.EndOfInput => "end of input"
-                            case ErrItem.Raw(item) => item
-                        }).mkString(", or ")
+                    if (!expecteds.isEmpty) {
+                        outputBuilder ++= "\n  expected "
+                        outputBuilder ++= expecteds.dropRight(1).map(readErrItem).mkString(", ")
+                        if (expecteds.size > 1) {
+                            outputBuilder ++= " or "
+                        }
+                        outputBuilder ++= readErrItem(expecteds.last)
+                    }
                     
                     /* Explanations for the error. */
                     if (!reasons.isEmpty) {
@@ -100,6 +120,9 @@ case class WaccErr(
                     outputBuilder ++= "\n\n>"
                     parseLineInfo(errStyle, outputBuilder)
             }
+            
+            /* Reset colour at the end and return the resulting string. */
+            outputBuilder ++= "\u001b[0m"
             outputBuilder.result()
     }
 }

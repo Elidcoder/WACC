@@ -42,8 +42,9 @@ object lexer {
     )
 
     private val errConfig = new ErrorConfig {
-        override def labelEscapeNumericEnd(a: Char, b: Int):LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
         override def labelEscapeEnd:LabelWithExplainConfig = LabelAndReason(reason = ESCAPE_ERR_MSG, label = "end of escape sequence")
+        override def labelCharAsciiEnd: LabelConfig = Label("end of character literal")
+        override def labelStringAsciiEnd(a: Boolean, b: Boolean): LabelConfig = Label("end of string literal")
     }
 
     private val lexer = new Lexer(desc, errConfig)
