@@ -2,12 +2,16 @@ package wacc.error
 
 import parsley.errors.ErrorBuilder
 
+/* Enum representing data used in a WaccErr */
 enum ErrItem {
     case Raw(item: String)
     case Named(item: String)
     case EndOfInput
 }
 
+/* Representation of an err on a line can be either:
+ * VanillaError -> Contains info about what went wrong, where, why and the code in the area, or,
+ * SpecialisedError -> Contains only a set of messages & info on the area of code with the error */
 enum ErrLines {
     case VanillaError(unexpected: Option[ErrItem], expecteds: Set[ErrItem], reasons: Set[String], lineInfo: LineInformation)
     case SpecialisedError(msgs: Set[String], lineInfo: LineInformation)

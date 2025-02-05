@@ -31,6 +31,7 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     }
 }
 
+/* Representation of an error within the wacc compilation pipeline. */
 case class WaccErr(
     errorPos: R2,
     errStyle: ErrLines,
@@ -65,25 +66,24 @@ case class WaccErr(
                     /* Unexpected ... line of the error message. */
                     unexpected match {
                         case None => 
-                            outputBuilder ++= "  No 'unexpected item' found\n"
+                            outputBuilder ++= "  No 'unexpected item' found"
                         case Some(unexpectd) => 
                             outputBuilder ++= "  unexpected "
                             unexpectd match {
                                 case ErrItem.EndOfInput => 
                                     outputBuilder ++= "end of input"
                                 case ErrItem.Named(item) =>
-                                    outputBuilder ++= "keyword "
                                     outputBuilder ++= item
                                 case ErrItem.Raw(item) =>
                                     outputBuilder ++= "identifier \""
                                     outputBuilder ++= item
                                     outputBuilder ++= "\""
-                                outputBuilder ++= "\n"
+                                
                             }
                     }
 
-                    /* Exoected ... line of the error message. */
-                    outputBuilder ++= "  expected "
+                    /* Expected ... line of the error message. */
+                    outputBuilder ++= "\n  expected "
                     outputBuilder ++= expecteds.map(_ match {
                             case ErrItem.Named(item) => item
                             case ErrItem.EndOfInput => "end of input"
