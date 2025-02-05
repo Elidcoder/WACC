@@ -22,19 +22,14 @@ def pipeline(file: File): Int = {
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
-                    // errs.foreach((err: WaccErr) => println(err.format()))
+                    errs.foreach((err: WaccErr) => println(err.format()))
                     200
 
                 /* Renamer & typechecker ran successfully. */
-                case Right(value) => value match
+                case Right(value) => 
+                    value.get 
                     /* Exit with error code 0 if the final tree exists. */
-                    case Some(finalTree) => 
-                        0
-
-                    /* Exit with error code 200 if the final tree doesn't exist. SHOULD NEVER OCCUR. */
-                    case None => 
-                        println("Tree should not be None")
-                        200
+                    0
                         
         /* Failed to parse, print error and exit with error code 100. */
         case Failure(x) => 
