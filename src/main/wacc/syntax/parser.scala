@@ -22,7 +22,7 @@ object parser {
             sys.exit(-1)
     }
 
-    def isReturnStmt(s: List[Stmt[String, Unit]]): Boolean = s.last match {
+    private def isReturnStmt(s: List[Stmt[String, Unit]]): Boolean = s.last match {
         case If(_, s1, s2) => isReturnStmt(s1) && isReturnStmt(s2)
         case While(_, s)   => isReturnStmt(s)
         case Nest(s)       => isReturnStmt(s)
