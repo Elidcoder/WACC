@@ -8,13 +8,13 @@ import wacc.semantic.Environment
 
 object typechecker {
     enum Constraint {
-        case Is(refT: Type)(using (Int, Int))
+        case Is(refT: Type)(using Pos)
         case IsStringLike
         case IsFreeable
         case IsReadable
     }
     object Constraint {
-        given (Int, Int) = (0,0)
+        given Pos = Pos(0,0)
         val Unconstrained = Is(?)
         val IsArray = Is(ArrayT(?))
         val IsPair  = Is(PairT(?, ?))
@@ -22,12 +22,14 @@ object typechecker {
     import Constraint.*
 
     extension (t: Type) 
-        def ~(refT: Type)(using pos: (Int, Int)): Option[Type] =
-            given (Int, Int) = pos
+        def ~(refT: Type)(using pos: Pos): Option[Type] =
+            given Pos = pos
             given Typeless = Typeless()
             (t, refT) match {
                 case (?, refT) => Some(refT)
                 case (t, ?)    => Some(t)
+                case (StringT(), ArrayT(CharT())) => Some(StringT())
+                case (ArrayT(CharT()), StringT()) => Some(StringT())
                 case (PairT(t1, t2), PairT(refT1, refT2)) =>
                     for {commonT1 <- t1 ~ refT1; commonT2 <- t2 ~ refT2}
                     yield PairT(commonT1, commonT2)
@@ -37,11 +39,12 @@ object typechecker {
                 case (t, refT) if t == refT => Some(t)
                 case _                      => None
             }
-        def satisfies(c: Constraint)(using ctx: Context, pos: (Int, Int)): Option[Type] = 
-            given (Int, Int) = pos
+        def satisfies(c: Constraint)(using ctx: Context, pos: Pos): Option[Type] = 
+            given Pos = pos
             given Typeless = Typeless()
             (t,c) match {
-                case (ArrayT(CharT()), Is(StringT())) => Some(StringT())
+                case (StringT(), Is(ArrayT(CharT()))) => 
+                    ctx.error(TypeMismatch(Ident[QualifiedName, Typeless](QualifiedName("blah", -1)), ArrayT(CharT())))
                 case (t, Is(refT)) => (t ~ refT).orElse {
                     ctx.error(TypeMismatch(Ident[QualifiedName, Typeless](QualifiedName("blah", -1)), refT))
                 }
@@ -75,7 +78,7 @@ object typechecker {
             }
 
     private def check(f: Func[QualifiedName, Typeless])(using ctx: Context): Option[Func[QualifiedName, Type]] = 
-        given (Int, Int) = f.v.pos
+        given Pos = f.v.pos
         given Type = f.t
         ctx.body = Body.Function(f.t)
         for { tF <- check(f.s) } 
@@ -88,7 +91,7 @@ object typechecker {
             }
 
     private def check(s: Stmt[QualifiedName, Typeless])(using ctx: Context): Option[Stmt[QualifiedName, Type]] =  
-        given (Int, Int) = s.pos
+        given Pos = s.pos
         s match {
             case NewAss(t, v, r) => check(Assign(v, r))
             case Assign(l, r) => 
@@ -116,7 +119,7 @@ object typechecker {
                 val (ot, otE) = check(l, IsReadable)
                 for { t <- ot; tE <- otE; given Type = t} yield Read(tE)
             case Return(e) => ctx.body match {
-                case Body.Main => ctx.error(ReturnInMainBody((1,1)))
+                case Body.Main => ctx.error(ReturnInMainBody(Pos(1,1)))
                 case Body.Function(returnType) => 
                     given Type = returnType
                     for { te <- check(e, Is(returnType))._2 } yield Return(te)
@@ -129,7 +132,7 @@ object typechecker {
     } 
 
     private def check(e: Expr[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[Expr[QualifiedName, Type]]) = 
-        given (Int, Int) = e.pos
+        given Pos = e.pos
         e match {
             case Not(e) => checkUnOp(e, BoolT(), c, Is(BoolT()), Not.apply)
             case Neg(e) => checkUnOp(e, IntT(), c, Is(IntT()), Neg.apply)
@@ -158,7 +161,7 @@ object typechecker {
             case i: Ident[QualifiedName, Typeless] => check(i, c)
     }
 
-    private def checkArrayElem(i: Ident[QualifiedName, Typeless], es: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[ArrayElem[QualifiedName, Type]]) = 
+    private def checkArrayElem(i: Ident[QualifiedName, Typeless], es: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[ArrayElem[QualifiedName, Type]]) = 
         val it: Type = ctx.getType(i.v.uid)
         val (ot, otes) = es.foldRight((Some(it), Some(List.empty))) {
             (e: Expr[QualifiedName, Typeless], x: (Option[Type], Option[List[Expr[QualifiedName, Type]]])) =>
@@ -179,7 +182,7 @@ object typechecker {
         returnType: Type,
         valCon: Constraint,
         build: (Expr[QualifiedName, Type], Expr[QualifiedName, Type]) => Expr[QualifiedName, Type]
-    )(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[Expr[QualifiedName, Type]]) = 
+    )(using ctx: Context, pos: Pos): (Option[Type], Option[Expr[QualifiedName, Type]]) = 
         val ot = returnType.satisfies(returnCon)
         val (_, otx) = check(x, valCon)
         val (_, oty) = check(y, valCon)
@@ -194,24 +197,44 @@ object typechecker {
         returnCon: Constraint, 
         exprCon: Constraint,
         build: Expr[QualifiedName, Type] => Expr[QualifiedName, Type]
-    )(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[Expr[QualifiedName, Type]]) =
+    )(using ctx: Context, pos: Pos): (Option[Type], Option[Expr[QualifiedName, Type]]) =
         val ot = returnType.satisfies(returnCon)
         val te = for { te <- check(e, exprCon)._2 } yield build(te)
         (ot, te)
 
     private def checkParams(ps: List[Param[QualifiedName, Typeless]]): List[Param[QualifiedName, Type]] = 
         ps.map(p => 
-            given (Int, Int) = p.v.pos
+            given Pos = p.v.pos
             given Type = p.t
             Param(p.t, Ident[QualifiedName, Type](p.v.v))(p.pos)
         )
-    
-    private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: (Int, Int)): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
+
+    private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
+        given Pos = i.pos
         val ot = ctx.getType(i.v.uid).satisfies(c)
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
-    private def check(e: LValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) = ???
+    private def check(e: LValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+        given Context = ctx
+        given Pos = e.pos
+        e match {
+            case ArrayElem(i, xs) => checkArrayElem(i, xs, c)
+            case l: PairElem[QualifiedName, Unit] => checkPairElem(l, c)
+            case i: Ident[QualifiedName, Unit] => check(i, c)
+    }
+
+    private def checkPairElem(l: PairElem[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
+        given Pos = l.pos
+        l match {
+            case First(v) => 
+                val (olt, olv) = check(v, IsPair)
+                ((for { case PairT(f, _) <- olt; ft <- f.satisfies(c) } yield ft ), (for { fv <- olv } yield fv))
+            case Second(v) =>
+                val (olt, olv) = check(v, IsPair)
+                ((for { case PairT(_, s) <- olt; st <- s.satisfies(c) } yield st ), (for { sv <- olv } yield sv))
+    }
+    
 
     private def check(e: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = ???
 }
