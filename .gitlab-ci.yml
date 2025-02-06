@@ -12,7 +12,7 @@ build:
     - echo "Clean complete!"
   script:
     - echo "Compiling program..."
-    - scala compile .
+    - scala compile . --server=false
     - echo "Compilation complete!"
 
 test:

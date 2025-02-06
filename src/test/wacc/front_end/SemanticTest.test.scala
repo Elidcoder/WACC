@@ -21,15 +21,16 @@ val SEM_ERR_FILES = List(
     "while"
 )
 
-class SemanticTest extends AnyFlatSpec {
+class SemanticTest extends AnyFlatSpec with ConditionalTest {
+    val flags = getProperties()
     SEM_ERR_FILES.foreach{ dir =>
         val key = s"tests.semantic.${dir.toLowerCase}"
-        val ranTests = getTests(s"invalid/semanticErr/$dir")
-        ranTests.foreach { file =>
-            it should s"fail with semantic error (200) in [${dir}/${file.getName()}]" in {
-                assume(getProperties().get(key).exists(_.toBoolean))
+        val tests = getTests(s"invalid/semanticErr/$dir")
+        tests.foreach { file =>
+            val name = s"should fail with semantic error (200) in [${dir}/${file.getName()}]"
+            conditionalTest(flags, name, key) {
                 val result = pipeline(file)
-                result shouldBe (200)
+                result shouldBe 200
             }
         }
     }

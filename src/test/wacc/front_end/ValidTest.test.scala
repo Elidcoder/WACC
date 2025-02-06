@@ -20,15 +20,16 @@ val VALID_FILES = List(
     "while"
 )
 
-class ValidTest extends AnyFlatSpec {
+class ValidTest extends AnyFlatSpec with ConditionalTest {
+    val flags = getProperties()
     VALID_FILES.foreach{ dir =>
         val key = s"tests.valid.${dir.toLowerCase}"
-        val ranTests = getTests(s"valid/$dir")
-        ranTests.foreach { file =>
-            it should s"compile without error in [${dir}/${file.getName()}]" in {
-                assume(getProperties().get(key).exists(_.toBoolean))
+        val tests = getTests(s"valid/$dir")
+        tests.foreach { file =>
+            val name = s"should compile without error in [${dir}/${file.getName()}]"
+            conditionalTest(flags, name, key) {
                 val result = pipeline(file)
-                result shouldBe (0)
+                result shouldBe 0
             }
         }
     }
