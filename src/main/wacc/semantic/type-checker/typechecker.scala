@@ -254,7 +254,7 @@ object typechecker {
                 for {
                     curType <- optCurType; 
                     accType <- optAccType; 
-                    matchedType <- curType ~ accType
+                    matchedType <- curType.satisfies(Is(accType))
                 } yield matchedType
         )
 
