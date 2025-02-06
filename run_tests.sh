@@ -11,10 +11,6 @@ usage() {
 
 CATEGORY=${1:-all}
 
-echo "Compiling project..."
-scala compile . --server=false
-echo "Compilation complete!"
-
 case "$CATEGORY" in
     all)
         echo "Running all tests..."
