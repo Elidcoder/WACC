@@ -26,3 +26,4 @@ type MutScope = mutable.Map[String, QualifiedName]
 type Scope = Map[String, QualifiedName]
 final val Undeclared = -1
 final val AlreadyDeclaredInScope = -2
+final val FuncAlreadyDeclaredInScope = -3

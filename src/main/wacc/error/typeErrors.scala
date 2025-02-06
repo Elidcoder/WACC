@@ -87,7 +87,7 @@ object TypeErr {
         )
     }
     case object OutOfScope {
-        def apply(varName: String, pos: R2)(using ctx: Context) =
+        def apply(varName: String)(using ctx: Context, pos: Pos) =
             WaccErr(
                 pos,
                 ErrLines.SpecialisedError(
@@ -100,7 +100,7 @@ object TypeErr {
     }
 
     case object AlreadyDeclared {
-        def apply(varName: String, pos: R2)(using ctx: Context) =
+        def apply(varName: String)(using ctx: Context, pos: Pos) =
             WaccErr(
                 pos,
                 ErrLines.SpecialisedError(
@@ -109,6 +109,19 @@ object TypeErr {
                 ),
                 Option(ctx.file.getName()),
                 "Scope"
+            )
+    }
+
+    case object FuncAlreadyDeclared {
+        def apply(funcName: String)(using ctx: Context, pos: Pos) =
+            WaccErr(
+                pos,
+                ErrLines.SpecialisedError(
+                    Set(s"illegal redefinition of function $funcName"),
+                    getLineInfo(ctx.file, pos, funcName.size)
+                ),
+                Option(ctx.file.getName()),
+                "Function redefinition"
             )
     }
     
