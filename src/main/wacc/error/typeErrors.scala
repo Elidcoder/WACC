@@ -90,7 +90,7 @@ object TypeErr {
                 getLineInfo(ctx.file, pos, 6)
             ),
             Option(ctx.file.getName()),
-            "Type"
+            "Return Placement"
         )
     }
     case object OutOfScope {
@@ -104,7 +104,7 @@ object TypeErr {
                     getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
-                "Type"
+                "Scope"
             )
     }
 
@@ -119,7 +119,7 @@ object TypeErr {
                     getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
-                "Type"
+                "Scope"
             )
     }
     

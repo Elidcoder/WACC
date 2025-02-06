@@ -183,7 +183,7 @@ object typechecker {
     }
 
     private def checkArrayElem(i: Ident[QualifiedName, Typeless], es: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[ArrayElem[QualifiedName, Type]]) = 
-        val it: Type = ctx.getType(i.v.uid)
+        val it: Type = ctx.getType(i.v)
         val (ot, otes) = es.foldRight((Some(it), Some(List.empty))) {
             (e: Expr[QualifiedName, Typeless], x: (Option[Type], Option[List[Expr[QualifiedName, Type]]])) =>
                 val (ot, otes) = x
@@ -232,7 +232,7 @@ object typechecker {
 
     private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
         given Pos = i.pos
-        val ot = ctx.getType(i.v.uid).satisfies(c)
+        val ot = ctx.getType(i.v).satisfies(c)
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
