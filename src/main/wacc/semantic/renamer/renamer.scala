@@ -15,117 +15,117 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
     val Ss = rename(prog.stmts)
     (Program(Fs, Ss)(prog.pos), env)
 
-def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, fNameScope: FuncScope) = {
-    fs.foreach { f =>
-        given Pos = f.id.pos
-        val newUID: Int = if (fNameScope.contains(f.id.v)) 
+def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope) = {
+    funcs.foreach { func =>
+        given Pos = func.id.pos
+        val newUID: Int = if (funcNameScope.contains(func.id.name)) 
             then AlreadyDeclaredInScope
-            else env.add(f.id.v, FuncT(rename(f.retType), f.params.map(p => rename(p.paramType)))(f.pos))
-        fNameScope.put(f.id.v, QualifiedName(f.id.v, newUID))
+            else env.add(func.id.name, FuncT(rename(func.retType), func.params.map(p => rename(p.paramType)))(func.pos))
+        funcNameScope.put(func.id.name, QualifiedName(func.id.name, newUID))
     }
-    fs.map(rename(_))
+    funcs.map(rename(_))
 }
 
-def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, fNameScope: FuncScope): Func[QualifiedName, Typeless] = 
+def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): Func[QualifiedName, Typeless] = 
     given funcScope: MutScope = from(mainScope)
     given Typeless = Typeless()
-    f.params.foreach {param => 
+    func.params.foreach { param => 
         given Pos = param.paramId.pos
-        val newUID: Int = if (funcScope.contains(param.paramId.v)) 
+        val newUID: Int = if (funcScope.contains(param.paramId.name)) 
             then AlreadyDeclaredInScope
-            else env.add(param.paramId.v, rename(param.paramType))
-        funcScope.put(param.paramId.v, QualifiedName(param.paramId.v, newUID)) 
+            else env.add(param.paramId.name, rename(param.paramType))
+        funcScope.put(param.paramId.name, QualifiedName(param.paramId.name, newUID)) 
     }
-    given Pos = f.pos
+    given Pos = func.pos
     Func(
-        rename(f.retType),
-        Ident[QualifiedName, Typeless](fNameScope.get(f.id.v)),
-        f.params.map(p => 
-            Param(rename(p.paramType), Ident[QualifiedName, Typeless](funcScope(p.paramId.v)))(p.pos)
+        rename(func.retType),
+        Ident[QualifiedName, Typeless](funcNameScope.get(func.id.name)),
+        func.params.map(p => 
+            Param(rename(p.paramType), Ident[QualifiedName, Typeless](funcScope(p.paramId.name)))(p.pos)
         ),
-        rename(f.stmts))(f.pos)
+    rename(func.stmts))(func.pos)
 
-def rename(ss: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, fNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
+def rename(stmts: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = parentScope ++ curScope.toMap
     given MutScope = empty
-    ss.map(rename(_))
+    stmts.map(rename(_))
 }
 
-def rename(s: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope, fNameScope: FuncScope): Stmt[QualifiedName, Typeless] = 
-    given Pos = s.pos
+def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope, funcNameScope: FuncScope): Stmt[QualifiedName, Typeless] = 
+    given Pos = stmt.pos
     given Typeless = Typeless()
-    s match {
-        case Skip() => Skip()(s.pos)
-        case NewAss(t, i, r) => 
-            val newUID: Int = if (curScope.contains(i.v)) 
+    stmt match {
+        case Skip()                         => Skip()(stmt.pos)
+        case NewAss(newType, id, rval)      => 
+            val newUID: Int = if (curScope.contains(id.name)) 
                 then AlreadyDeclaredInScope
                 else 
-                    given Pos = s.pos
-                    env.add(i.v, rename(t))
-            val rR = rename(r)
-            given Pos = i.pos
-            curScope.put(i.v, QualifiedName(i.v, newUID))
-            Assign(Ident[QualifiedName, Typeless](curScope(i.v)), rR)
-        case Assign(l, r) => Assign(rename(l), rename(r))
-        case Read(l) => Read(rename(l))
-        case Free(e) => Free(rename(e))
-        case Return(e) => Return(rename(e))
-        case Exit(e) => Exit(rename(e))
-        case Print(e) => Print(rename(e))
-        case PrintLn(e) => PrintLn(rename(e))
-        case If(e, s1s, s2s) => If(rename(e), rename(s1s), rename(s2s))
-        case While(e, ss) => While(rename(e), rename(ss))
-        case Nest(ss) => Nest(rename(ss))
+                    given Pos = stmt.pos
+                    env.add(id.name, rename(newType))
+            val rR = rename(rval)
+            given Pos = id.pos
+            curScope.put(id.name, QualifiedName(id.name, newUID))
+            Assign(Ident[QualifiedName, Typeless](curScope(id.name)), rR)
+        case Assign(lval, rval)             => Assign(rename(lval), rename(rval))
+        case Read(lval)                     => Read(rename(lval))
+        case Free(expr)                     => Free(rename(expr))
+        case Return(expr)                   => Return(rename(expr))
+        case Exit(expr)                     => Exit(rename(expr))
+        case Print(expr)                    => Print(rename(expr))
+        case PrintLn(expr)                  => PrintLn(rename(expr))
+        case If(expr, stmtsThen, stmtsElse) => If(rename(expr), rename(stmtsThen), rename(stmtsElse))
+        case While(expr, stmts)             => While(rename(expr), rename(stmts))
+        case Nest(stmts)                    => Nest(rename(stmts))
     }
 
-def rename(l: LValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
-    given Pos = l.pos
-    l match {
-    case i: Ident[String, Typeless] => curScope.rebuildWithIdent(i)(identity(_))
-    case ArrayElem(i, x) => curScope.rebuildWithIdent(i)(ArrayElem(_, x.map(rename(_))))
-    case First(l) => First(rename(l))
-    case Second(l) => Second(rename(l))
+def rename(lval: LValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
+    given Pos = lval.pos
+    lval match {
+    case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
+    case ArrayElem(id, exprs)        => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename(_))))
+    case First(lval)                 => First(rename(lval))
+    case Second(lval)                => Second(rename(lval))
 }
 
-def rename(r: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope, fNameScope: FuncScope): RValue[QualifiedName, Typeless] = 
-    given Pos = r.pos
-    r match {
-        case e: Expr[String, Typeless] => rename(e)
-        case ArrayLit(es) => ArrayLit(es.map(rename(_)))
-        case NewPair(e1, e2) => NewPair(rename(e1), rename(e2))
-        case Call(i, es) => fNameScope.rebuildWithIdent(i)(Call(_, es.map(rename(_))))
-        case First(l) => First(rename(l))
-        case Second(l) => Second(rename(l))
+def rename(rval: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): RValue[QualifiedName, Typeless] = 
+    given Pos = rval.pos
+    rval match {
+        case expr: Expr[String, Typeless] => rename(expr)
+        case ArrayLit(exprs)              => ArrayLit(exprs.map(rename(_)))
+        case NewPair(lexpr, rexpr)        => NewPair(rename(lexpr), rename(rexpr))
+        case Call(id, exprs)              => funcNameScope.rebuildWithIdent(id)(Call(_, exprs.map(rename(_))))
+        case First(lval)                  => First(rename(lval))
+        case Second(lval)                 => Second(rename(lval))
     }
 
-def rename(e: Expr[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Typeless] = 
-    given Pos = e.pos
-    e match {
-        case Not(e) => Not(rename(e))
-        case Neg(e) => Neg(rename(e))
-        case Len(e) => Len(rename(e))
-        case Ord(e) => Ord(rename(e))
-        case Chr(e) => Chr(rename(e))
-        case Mul(x, y) => Mul(rename(x), rename(y))
-        case Div(x, y) => Div(rename(x), rename(y))
-        case Mod(x, y) => Mod(rename(x), rename(y))
-        case Add(x, y) => Add(rename(x), rename(y))
-        case Sub(x, y) => Sub(rename(x), rename(y))
-        case Greater(x, y) => Greater(rename(x), rename(y))
-        case GreaterEq(x, y) => GreaterEq(rename(x), rename(y))
-        case Less(x, y) => Less(rename(x), rename(y))
-        case LessEq(x, y) => LessEq(rename(x), rename(y))
-        case Eq(x, y) => Eq(rename(x), rename(y))
-        case NotEq(x, y) => NotEq(rename(x), rename(y))
-        case And(x, y) => And(rename(x), rename(y))
-        case Or(x, y) => Or(rename(x), rename(y))
-        case IntLit(n: Int) => IntLit(n)
-        case BoolLit(b: Boolean) => BoolLit(b)
-        case CharLit(c: Char) => CharLit(c)
-        case StrLit(s: String) => StrLit(s)
-        case PairLit() => PairLit()(e.pos)
-        case i: Ident[String, Typeless] => curScope.rebuildWithIdent(i)(identity(_))
-        case ArrayElem(i, es) => curScope.rebuildWithIdent(i)(ArrayElem(_, es.map(rename(_))))
+def rename(expr: Expr[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Typeless] = 
+    given Pos = expr.pos
+    expr match {
+        case Not(e)               => Not(rename(e))
+        case Neg(e)               => Neg(rename(e))
+        case Len(e)               => Len(rename(e))
+        case Ord(e)               => Ord(rename(e))
+        case Chr(e)               => Chr(rename(e))
+        case Mul(x, y)            => Mul(rename(x), rename(y))
+        case Div(x, y)            => Div(rename(x), rename(y))
+        case Mod(x, y)            => Mod(rename(x), rename(y))
+        case Add(x, y)            => Add(rename(x), rename(y))
+        case Sub(x, y)            => Sub(rename(x), rename(y))
+        case Greater(x, y)        => Greater(rename(x), rename(y))
+        case GreaterEq(x, y)      => GreaterEq(rename(x), rename(y))
+        case Less(x, y)           => Less(rename(x), rename(y))
+        case LessEq(x, y)         => LessEq(rename(x), rename(y))
+        case Eq(x, y)             => Eq(rename(x), rename(y))
+        case NotEq(x, y)          => NotEq(rename(x), rename(y))
+        case And(x, y)            => And(rename(x), rename(y))
+        case Or(x, y)             => Or(rename(x), rename(y))
+        case IntLit(n: Int)       => IntLit(n)
+        case BoolLit(b: Boolean)  => BoolLit(b)
+        case CharLit(c: Char)     => CharLit(c)
+        case StrLit(s: String)    => StrLit(s)
+        case PairLit()            => PairLit()(expr.pos)
+        case ArrayElem(id, exprs) => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename(_))))
+        case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
     }
 
 extension (curScope: MutScope) 
@@ -133,22 +133,22 @@ extension (curScope: MutScope)
     (build: Ident[QualifiedName, Typeless] => A)
     (using parentScope: Scope, pos: Pos): A = 
         given Typeless = Typeless()
-        build(Ident(curScope.get(id.v)
-        .getOrElse(parentScope.get(id.v)
-        .getOrElse(QualifiedName(id.v, Undeclared)))))
+        build(Ident(curScope.get(id.name)
+        .getOrElse(parentScope.get(id.name)
+        .getOrElse(QualifiedName(id.name, Undeclared)))))
 
-extension (fNameScope: FuncScope) 
+extension (funcNameScope: FuncScope) 
     def rebuildWithIdent[A](id: Ident[String, Typeless])
     (build: Ident[QualifiedName, Typeless] => A)
     (using pos: Pos): A = 
         given Typeless = Typeless()
-        build(Ident(fNameScope.getOption(id.v)
-        .getOrElse(QualifiedName(id.v, Undeclared))))
+        build(Ident(funcNameScope.getOption(id.name)
+        .getOrElse(QualifiedName(id.name, Undeclared))))
 
 def rename(t: Type)(using pos: Pos): Type = t match {
-    case PairT(t1, t2) => PairT(rename(t1), rename(t2))
-    case ArrayT(t) => ArrayT(rename(t))
-    case ft@FuncT(t, ps) => FuncT(rename(t), ps.map(rename(_)))(ft.pos)
-    case RedPairT() => PairT(?, ?)
-    case t => t
+    case PairT(t1, t2)         => PairT(rename(t1), rename(t2))
+    case ArrayT(t)             => ArrayT(rename(t))
+    case funcType@FuncT(t, ps) => FuncT(rename(t), ps.map(rename(_)))(funcType.pos)
+    case RedPairT()            => PairT(?, ?)
+    case t                     => t
 }

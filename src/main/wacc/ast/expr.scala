@@ -13,7 +13,7 @@ sealed trait Expr[N, T] extends RValue[N, T]
 sealed trait PairElem[N, T] extends LValue[N, T], RValue[N, T]
 sealed trait ArrayOrIdent[N, T] extends LValue[N, T], Expr[N, T]
 
-case class Ident[N, T](v: N)(using val pos: Pos, val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
+case class Ident[N, T](name: N)(using val pos: Pos, val t: T) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 case class ArrayElem[N, T](id: Ident[N, T], exprs: List[Expr[N, T]])(using val pos: Pos) extends LValue[N, T], Expr[N, T], ArrayOrIdent[N, T]
 
 case class ArrayLit[N, T](exprs: List[Expr[N, T]])(using val pos: Pos) extends RValue[N, T]
@@ -31,11 +31,11 @@ case object ArrayElem extends ParserBridgePos2[Ident, ListWrap[Expr], ArrayElem]
 }
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Expr]], ArrayOrIdent] {
-    override def apply[String, Typeless](i: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(pos: Pos): ArrayOrIdent[String, Typeless] = 
+    override def apply[String, Typeless](id: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(pos: Pos): ArrayOrIdent[String, Typeless] = 
         given Pos = pos
         exprs match {
-        case Some(es)   => ArrayElem(i, es)
-        case None       => i
+        case Some(es)   => ArrayElem(id, es)
+        case None       => id
     } 
 }
 
