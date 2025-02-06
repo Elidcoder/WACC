@@ -161,7 +161,7 @@ object parser {
 
     // Reduced Pair Type parser
     private lazy val reducedPairType: Parsley[Type] = 
-        "pair" as RedPairT()
+        "pair" as PairT(?, ?)
 
     // Base Type parser
     private lazy val baseType: Parsley[Type] = 

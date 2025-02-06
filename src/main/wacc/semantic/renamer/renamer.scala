@@ -17,10 +17,9 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
 
 def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope) = {
     funcs.foreach { func =>
-        given Pos = func.id.pos
         val newUID: Int = if (funcNameScope.contains(func.id.name)) 
             then AlreadyDeclaredInScope
-            else env.add(func.id.name, FuncT(rename(func.retType), func.params.map(p => rename(p.paramType)))(func.pos))
+            else env.add(func.id.name, FuncT(func.retType, func.params.map(p => p.paramType))(func.pos))
         funcNameScope.put(func.id.name, QualifiedName(func.id.name, newUID))
     }
     funcs.map(rename(_))
@@ -30,18 +29,17 @@ def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutS
     given funcScope: MutScope = from(mainScope)
     given Typeless = Typeless()
     func.params.foreach { param => 
-        given Pos = param.paramId.pos
         val newUID: Int = if (funcScope.contains(param.paramId.name)) 
             then AlreadyDeclaredInScope
-            else env.add(param.paramId.name, rename(param.paramType))
+            else env.add(param.paramId.name, param.paramType)
         funcScope.put(param.paramId.name, QualifiedName(param.paramId.name, newUID)) 
     }
     given Pos = func.pos
     Func(
-        rename(func.retType),
+        func.retType,
         Ident[QualifiedName, Typeless](funcNameScope.get(func.id.name)),
         func.params.map(p => 
-            Param(rename(p.paramType), Ident[QualifiedName, Typeless](funcScope(p.paramId.name)))(p.pos)
+            Param(p.paramType, Ident[QualifiedName, Typeless](funcScope(p.paramId.name)))(p.pos)
         ),
     rename(func.stmts))(func.pos)
 
@@ -60,8 +58,7 @@ def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environm
             val newUID: Int = if (curScope.contains(id.name)) 
                 then AlreadyDeclaredInScope
                 else 
-                    given Pos = stmt.pos
-                    env.add(id.name, rename(newType))
+                    env.add(id.name, newType)
             val rR = rename(rval)
             given Pos = id.pos
             curScope.put(id.name, QualifiedName(id.name, newUID))
@@ -144,11 +141,3 @@ extension (funcNameScope: FuncScope)
         given Typeless = Typeless()
         build(Ident(funcNameScope.getOption(id.name)
         .getOrElse(QualifiedName(id.name, Undeclared))))
-
-def rename(t: Type)(using pos: Pos): Type = t match {
-    case PairT(t1, t2)         => PairT(rename(t1), rename(t2))
-    case ArrayT(t)             => ArrayT(rename(t))
-    case funcType@FuncT(t, ps) => FuncT(rename(t), ps.map(rename(_)))(funcType.pos)
-    case RedPairT()            => PairT(?, ?)
-    case t                     => t
-}
