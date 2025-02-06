@@ -102,7 +102,7 @@ case class WaccErr(
                                 case ErrItem.Named(item) =>
                                     outputBuilder ++= item
                                 case ErrItem.Raw(item) =>
-                                    outputBuilder ++= "identifier \""
+                                    outputBuilder ++= "\""
                                     outputBuilder ++= item
                                     outputBuilder ++= "\""
                             }

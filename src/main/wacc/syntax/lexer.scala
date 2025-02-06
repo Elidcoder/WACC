@@ -69,10 +69,11 @@ object lexer {
         override def tokens: Seq[Parsley[String]] = 
             desc.symbolDesc.hardKeywords.map(kw => lexer.nonlexeme.symbol(kw).as(s"keyword $kw")).toSeq ++ 
             desc.symbolDesc.hardOperators.map(kw => lexer.nonlexeme.symbol(kw).as(s"operator $kw")).toSeq ++ Seq(
-                lexer.nonlexeme.integer.decimal32.map("number ".+),
+                lexer.nonlexeme.integer.decimal32.map("integer ".+),
                 lexer.nonlexeme.character.ascii.map("character ".+),
                 lexer.nonlexeme.string.ascii.map("string ".+),
-                lexer.nonlexeme.names.identifier.map("identifier ".+)
+                lexer.nonlexeme.names.identifier.map("identifier ".+),
+                lexer.nonlexeme.symbol('(') as "opening parenthesis"
             )
     }
 }
