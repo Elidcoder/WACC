@@ -71,12 +71,8 @@ case object Call extends ParserBridgePos2[Ident, ListWrap[Expr], Call] {
     override def labels: List[String] = List("function call")
 }
 
-case object First extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("fst")
-}
-case object Second extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("snd")
-}
+case object First extends ParserBridgePos1[LValue, PairElem] 
+case object Second extends ParserBridgePos1[LValue, PairElem]
 
 case object Not extends UnaryOperator[Expr, Expr]
 case object Neg extends UnaryOperator[Expr, Expr]

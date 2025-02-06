@@ -1,12 +1,13 @@
 package wacc.syntax
 
 import wacc.ast.{Ident, Typeless}
+import wacc.error.SyntaxErrBuilder
 
 import parsley.Parsley
-import parsley.token.Unicode
-import parsley.token.{Lexer, Basic}
+import parsley.token.{Basic, Lexer, Unicode}
+import parsley.errors.tokenextractors.LexToken
 import parsley.token.errors.{ErrorConfig, Label, LabelAndReason, LabelConfig, LabelWithExplainConfig}
-import parsley.token.descriptions.{LexicalDesc, NameDesc, SpaceDesc, TextDesc, SymbolDesc, EscapeDesc}
+import parsley.token.descriptions.{EscapeDesc, LexicalDesc, NameDesc, SpaceDesc, SymbolDesc, TextDesc}
 
 object lexer {
     /* Error message taken from the WACC Reference Compiler. */

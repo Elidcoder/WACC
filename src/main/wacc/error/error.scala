@@ -19,8 +19,8 @@ import ErrItem.*
  * Returns a string representing the given errItem */
 def readErrItem(errItem: ErrItem): String = errItem match {
     case Named(item) => item
-    case Raw(item) => item
-    case EndOfInput => "end of input"
+    case Raw(item)   => s"\"$item\""
+    case EndOfInput  => "end of input"
 }
 /* R2 = (line: Int, column: Int) */
 type R2 = Pos
@@ -107,7 +107,7 @@ case class WaccErr(
                                 case ErrItem.Named(item) =>
                                     outputBuilder ++= item
                                 case ErrItem.Raw(item) =>
-                                    outputBuilder ++= "identifier \""
+                                    outputBuilder ++= "\""
                                     outputBuilder ++= item
                                     outputBuilder ++= "\""
                             }

@@ -5,7 +5,7 @@ import wacc.syntax.lexer._
 
 import parsley.{Parsley, Result}
 import parsley.errors.ErrorBuilder
-import parsley.errors.combinator.ErrorMethods
+import parsley.errors.combinator.{ErrorMethods, fail}
 import parsley.quick.{atomic, many, notFollowedBy, option, some}
 import parsley.expr.chain.postfix
 import parsley.expr.{InfixL, InfixN, InfixR, Ops, Prefix, precedence}
@@ -17,6 +17,7 @@ import java.io.File
 private final val ERR_FILE_NOT_FOUND = -1
 
 object parser {
+    
     def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
         parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
 
@@ -31,16 +32,14 @@ object parser {
     
     // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
     private val parser: Parsley[Program[String, Typeless]] = fully(program)
-
-    private lazy val end = "end".explain("a scope, function or the main body is unclosed")
     
     // Program parser
     protected [syntax] lazy val program: Parsley[Program[String, Typeless]] = 
-        "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ end
+        "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ "end"
 
     // Function parser
     protected [syntax] lazy val func: Parsley[Func[String, Typeless]] = 
-        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ end)
+        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ "end")
 
     // Statements parser for function body
     private lazy val funcStmts: Parsley[List[Stmt[String, Typeless]]] = 
@@ -67,7 +66,7 @@ object parser {
                 ("else".explain("all if statements must have an else clause") ~> stmts)
             ) <~ "fi".explain("unclosed if statement")
         | "while" ~> While(expr, ("do" ~> stmts)) <~ "done"
-        | "begin" ~> Nest(stmts) <~ end
+        | "begin" ~> Nest(stmts) <~ "end"
         | NewAss(ptype, ident, asgnmt)
         | Assign(lvalue, asgnmt)
 
@@ -155,7 +154,10 @@ object parser {
     
     // PairElemType parser
     private lazy val pairElemType: Parsley[SemType] = 
-        postfix(baseType | reducedPairType)(ArrayT <# "[]")
+        nestPairCheck ~> postfix(baseType | reducedPairType)(ArrayT <# "[]")
+
+    private lazy val nestPairCheck =
+        notFollowedBy(atomic(pairType)) | fail("pair nesting not allowed in WACC")
 
     // Reduced Pair Type parser
     private lazy val reducedPairType: Parsley[SemType] = 

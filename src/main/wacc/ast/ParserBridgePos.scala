@@ -75,12 +75,12 @@ trait ParserBridgePos2[-A[String, Typeless], -B[String, Typeless], +C[String, Ty
     override final def con(pos: (Int, Int)): (A[String, Typeless], B[String, Typeless]) => C[String, Typeless] = this.apply(_, _)(Pos(pos))
 }
 
-trait ComparisonOperator[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserBridgePos2[A, B, C]  {
+trait ComparisonOperator[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends Operator[A, B, C]  {
     override def labels: List[String] = List("comparison operator")
 }
 
-trait MathematicalOperator[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserBridgePos2[A, B, C]  {
-    override def labels: List[String] = List("mathematical operator")
+trait Operator[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserBridgePos2[A, B, C]  {
+    override def labels: List[String] = List("operator")
 }
 
 trait ParserBridgePos3[-A[String, Typeless], -B[String, Typeless], -C[String, Typeless], +D[String, Typeless]] extends ParserSingletonBridgePos[(A[String, Typeless], B[String, Typeless], C[String, Typeless]) => D[String, Typeless]] {
