@@ -4,7 +4,9 @@ import wacc.ast._
 
 class QualifiedName(val oldName: String, val uid: Int)
 
-def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], Environment) = 
+def rename(
+    prog: Program[String, Typeless]
+): (Program[QualifiedName, Typeless], Environment) = 
     given env: Environment = new Environment()
     given MutScope = MutScope()
     given Scope = Scope()
@@ -13,7 +15,13 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
     val Ss = rename(prog.stmts)
     (Program(Fs, Ss)(prog.pos), env)
 
-def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope) = {
+def renameFuncs(
+    funcs: List[Func[String, Typeless]]
+)(using env: Environment, 
+    mainScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+) = {
     funcs.foreach { func =>
         val newUID: Int = if (funcNameScope.contains(func.id.name)) 
             then UID_ALREADY_IN_SCOPE
@@ -23,7 +31,13 @@ def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mai
     funcs.map(rename(_))
 }
 
-def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): Func[QualifiedName, Typeless] = 
+def rename(
+    func: Func[String, Typeless]
+)(using env: Environment, 
+    mainScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): Func[QualifiedName, Typeless] = 
     given funcScope: MutScope = MutScope(mainScope)
     given Typeless = Typeless()
     func.params.foreach { param => 
@@ -41,13 +55,25 @@ def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutS
         ),
     rename(func.stmts))(func.pos)
 
-def rename(stmts: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
+def rename(
+    stmts: List[Stmt[String, Typeless]]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = Scope(parentScope ++ curScope)
     given MutScope = MutScope()
     stmts.map(rename(_))
 }
 
-def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope, funcNameScope: FuncScope): Stmt[QualifiedName, Typeless] = 
+def rename(
+    stmt: Stmt[String, Typeless]
+)(using curScope: MutScope, 
+    env: Environment, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): Stmt[QualifiedName, Typeless] = 
     given Pos = stmt.pos
     given Typeless = Typeless()
     stmt match {
@@ -73,7 +99,9 @@ def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environm
         case Nest(stmts)                    => Nest(rename(stmts))
     }
 
-def rename(lval: LValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
+def rename(
+    lval: LValue[String, Typeless]
+)(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
     given Pos = lval.pos
     lval match {
     case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
@@ -82,7 +110,13 @@ def rename(lval: LValue[String, Typeless])(using env: Environment, curScope: Mut
     case Second(lval)                => Second(rename(lval))
 }
 
-def rename(rval: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): RValue[QualifiedName, Typeless] = 
+def rename(
+    rval: RValue[String, Typeless]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): RValue[QualifiedName, Typeless] = 
     given Pos = rval.pos
     rval match {
         case expr: Expr[String, Typeless] => rename(expr)
@@ -93,7 +127,12 @@ def rename(rval: RValue[String, Typeless])(using env: Environment, curScope: Mut
         case Second(lval)                 => Second(rename(lval))
     }
 
-def rename(expr: Expr[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Typeless] = 
+def rename(
+    expr: Expr[String, Typeless]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope
+): Expr[QualifiedName, Typeless] = 
     given Pos = expr.pos
     expr match {
         case Not(e)               => Not(rename(e))

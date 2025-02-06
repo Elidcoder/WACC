@@ -1,6 +1,11 @@
 package wacc.ast
 
-case class Func[N, T](retType: SemType, id: Ident[N, T], params: List[Param[N, T]], stmts: List[Stmt[N, T]])(val pos: Pos)
+case class Func[N, T](
+    retType: SemType, 
+    id: Ident[N, T], 
+    params: List[Param[N, T]], 
+    stmts: List[Stmt[N, T]]
+)(val pos: Pos)  
 case object Func extends FuncBridge {
     override def labels: List[String] = List("function declaration")
 }
