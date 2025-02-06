@@ -66,6 +66,20 @@ object TypeErr {
                 "Type"
             )
     }
+    case object IsNotComparable {
+        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(actualType.toString)),
+                Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
+                Set("Must be a comparable type"),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
+
     case object ReturnInMainBody {
         def apply(pos: R2)(using ctx: Context) = WaccErr(
             pos,
@@ -107,9 +121,10 @@ object TypeErr {
                 Option(ctx.file.getName()),
                 "Type"
             )
+    }
     
     case object UnknownPairTypes {
-        def apply(pos: R2)(using ctx: Context) = WaccErr(
+        def apply()(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.SpecialisedError(
                 Set(
@@ -124,7 +139,7 @@ object TypeErr {
     }
 
     case object ReadUnknownType {
-        def apply(pos: R2)(using ctx: Context) = WaccErr(
+        def apply()(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.SpecialisedError(
                 Set(
@@ -137,7 +152,6 @@ object TypeErr {
             "Type"
         )
     }
-}
 
     /* Takes in a file as well as a position within a file
     * Returns a lineInformation created using the information in the file */

@@ -116,7 +116,7 @@ object typechecker {
             case Assign(l, r) => 
                 val (lvalType, typedLval) = check(l, Unconstrained)
                 val (rvalType, typedRval) = check(r, Is(lvalType.getOrElse(?)))
-                if rvalType == Some(?) then ctx.error(UnknownPairTypes(s.pos))
+                if rvalType == Some(?) then ctx.error(UnknownPairTypes())
                 for {l <- typedLval; r <- typedRval} yield Assign(l, r)
             case Exit(e) => 
                 for {tE <- check(e, Is(IntT()))._2} yield Exit(tE)
@@ -137,7 +137,7 @@ object typechecker {
                 for { t <- ot; tE <- otE; given Type = t} yield PrintLn(tE)
             case Read(l) => 
                 val (ot, otE) = check(l, IsReadable)
-                if ot == Some(?) then ctx.error(ReadUnknownType(s.pos))
+                if ot == Some(?) then ctx.error(ReadUnknownType())
                 for { t <- ot; tE <- otE; given Type = t} yield Read(tE)
             case Return(e) => ctx.body match {
                 case Body.Main => ctx.error(ReturnInMainBody(Pos(1,1)))
