@@ -18,11 +18,11 @@ def pipeline(file: File): Int = {
             /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(x)
 
-            /* Attempt rename and match on result of both rename & typecheck. */
+            /* Attempt typecheck and match on result of both rename & typecheck. */
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
-                    // errs.foreach((err: WaccErr) => println(err.format()))
+                    errs.foreach((err: WaccErr) => println(err.format()))
                     200
 
                 /* Renamer & typechecker ran successfully. */
@@ -33,7 +33,7 @@ def pipeline(file: File): Int = {
                         
         /* Failed to parse, print error and exit with error code 100. */
         case Failure(x) => 
-            // println(x.format())
+            println(x.format())
             100
 }
 
