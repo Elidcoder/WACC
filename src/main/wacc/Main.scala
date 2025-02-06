@@ -15,8 +15,12 @@ def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
     parser.parse(file) match 
         case Success(x) => 
+            // println(x)
+            // println()
             /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(x)
+            // println(renamedTree)
+            // println()
 
             /* Attempt rename and match on result of both rename & typecheck. */
             typechecker.check(renamedTree, env, file) match
