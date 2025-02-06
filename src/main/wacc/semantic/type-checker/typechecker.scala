@@ -79,10 +79,10 @@ object typechecker {
 
     def check(prog: Program[QualifiedName, Typeless], env: Environment, file: File): Either[List[WaccErr], Option[Program[QualifiedName, Type]]] = {
         given ctx: Context = new Context(Body.Main, env, file)
-        val typedFuncs: Option[List[Func[QualifiedName, Type]]] = checkFuncs(prog.fs)
+        val typedFuncs: Option[List[Func[QualifiedName, Type]]] = checkFuncs(prog.funcs)
         val typedStmts: Option[List[Stmt[QualifiedName, Type]]] = {
             ctx.body = Body.Main 
-            check(prog.x)
+            check(prog.stmts)
         }
         val errors = ctx.result
         if errors.isEmpty 

@@ -10,8 +10,8 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
     given env: Environment = new Environment()
     given MutScope = empty
     given Scope = Map.empty
-    val Fs = renameFuncs(prog.fs)
-    val Ss = rename(prog.x)
+    val Fs = renameFuncs(prog.funcs)
+    val Ss = rename(prog.stmts)
     (Program(Fs, Ss)(prog.pos), env)
 
 def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope) = {
