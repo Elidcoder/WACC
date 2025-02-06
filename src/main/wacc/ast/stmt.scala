@@ -8,7 +8,7 @@ sealed trait Stmt[N, T] {
 }
 
 case class Skip[N, T]()(val pos: Pos) extends Stmt[N, T]
-case class NewAss[N, T](assType: Type, id: Ident[N, T], rVal: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class NewAss[N, T](assType: SemType, id: Ident[N, T], rVal: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
 case class Assign[N, T](lVal: LValue[N, T], rVal: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
 case class Read[N, T](lVal: LValue[N, T])(using val pos: Pos) extends Stmt[N, T]
 case class Free[N, T](expr: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
@@ -24,7 +24,7 @@ case object Skip {
     def apply(): Parsley[Skip[String, Typeless]] = pos.map((x: (Int, Int)) => Skip[String, Typeless]()(Pos(x)))
 }
 
-case object NewAss extends ParserBridgePos3[Const[Type], Ident, RValue, NewAss]{
+case object NewAss extends ParserBridgePos3[Const[SemType], Ident, RValue, NewAss]{
     override def labels: List[String] = List("assignment")
 }
 case object Assign extends ParserBridgePos2[LValue, RValue, Assign]{

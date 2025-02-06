@@ -35,12 +35,12 @@ trait IdentBridge extends ParserSingletonBridgePosType[String => Ident[String, T
     override final def con(pos: (Int, Int), t: Typeless): String => Ident[String, Typeless] = this.apply(_)(Pos(pos), t)
 }
 
-trait FuncBridge extends ParserSingletonBridgePos[(Type, Ident[String, Typeless], List[Param[String, Typeless]]) => (List[Stmt[String, Typeless]]) => Func[String, Typeless]] {
-    def apply[String, Typeless](x: Type, y: Ident[String, Typeless], z: List[Param[String, Typeless]], zz: List[Stmt[String, Typeless]])(pos: Pos): Func[String, Typeless]
-    def apply(x: Parsley[Type], y: Parsley[Ident[String, Typeless]], z: Parsley[List[Param[String, Typeless]]]): Parsley[(List[Stmt[String, Typeless]]) => Func[String, Typeless]] = 
+trait FuncBridge extends ParserSingletonBridgePos[(SemType, Ident[String, Typeless], List[Param[String, Typeless]]) => (List[Stmt[String, Typeless]]) => Func[String, Typeless]] {
+    def apply[String, Typeless](x: SemType, y: Ident[String, Typeless], z: List[Param[String, Typeless]], zz: List[Stmt[String, Typeless]])(pos: Pos): Func[String, Typeless]
+    def apply(x: Parsley[SemType], y: Parsley[Ident[String, Typeless]], z: Parsley[List[Param[String, Typeless]]]): Parsley[(List[Stmt[String, Typeless]]) => Func[String, Typeless]] = 
         error(ap3(pos.map(con), x, y, z))
-    override final def con(pos: (Int, Int)): (Type, Ident[String, Typeless], List[Param[String, Typeless]]) => (List[Stmt[String, Typeless]]) => Func[String, Typeless] = 
-        (x: Type, y: Ident[String, Typeless], z: List[Param[String, Typeless]]) => this.apply(x, y, z, _)(Pos(pos))
+    override final def con(pos: (Int, Int)): (SemType, Ident[String, Typeless], List[Param[String, Typeless]]) => (List[Stmt[String, Typeless]]) => Func[String, Typeless] = 
+        (x: SemType, y: Ident[String, Typeless], z: List[Param[String, Typeless]]) => this.apply(x, y, z, _)(Pos(pos))
 }
 
 trait ParserBridge1[-A[String, Typeless], +B[String, Typeless]] extends ParserSingletonBridge[A[String, Typeless] => B[String, Typeless]] {

@@ -1,6 +1,6 @@
 package wacc.semantic.typecheck
 
-import wacc.ast.{Type, ?, Pos}
+import wacc.ast.{SemType, ?, Pos}
 import wacc.error.WaccErr
 import wacc.error.TypeErr.{OutOfScope, AlreadyDeclared, FuncAlreadyDeclared}
 import wacc.semantic.{Environment, QualifiedName, Undeclared, AlreadyDeclaredInScope, FuncAlreadyDeclaredInScope}
@@ -8,12 +8,12 @@ import wacc.semantic.{Environment, QualifiedName, Undeclared, AlreadyDeclaredInS
 import java.io.File
 
 enum Body {
-    case Function(returnType: Type)
+    case Function(returnType: SemType)
     case Main
 }
 
 class Context(var body: Body, val env: Environment, val file: File) {
-    def getType(n: QualifiedName)(using pos: Pos): Type = 
+    def getType(n: QualifiedName)(using pos: Pos): SemType = 
         given Context = this
         n.uid match
         case Undeclared => 
