@@ -5,7 +5,7 @@ import wacc.syntax.lexer._
 
 import parsley.{Parsley, Result}
 import parsley.errors.ErrorBuilder
-import parsley.errors.combinator.ErrorMethods
+import parsley.errors.combinator.{ErrorMethods, fail}
 import parsley.quick.{atomic, many, notFollowedBy, option, some}
 import parsley.expr.chain.postfix
 import parsley.expr.{InfixL, InfixN, InfixR, Ops, Prefix, precedence}
@@ -151,7 +151,10 @@ object parser {
     
     // PairElemType parser
     private lazy val pairElemType: Parsley[Type] = 
-        postfix(baseType | reducedPairType)(ArrayT <# "[]")
+        nestPairCheck ~> postfix(baseType | reducedPairType)(ArrayT <# "[]")
+
+    private lazy val nestPairCheck =
+        notFollowedBy(atomic(pairType)) | fail("pair nesting not allowed in WACC")
 
     // Reduced Pair Type parser
     private lazy val reducedPairType: Parsley[Type] = 
