@@ -283,14 +283,14 @@ object typechecker {
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
 
     private def check(call: Call[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        val (optTypes, optExprs) = call.x.foldRight((Some(List.empty[Type]), Some(List.empty[Expr[QualifiedName, Type]]))){ 
+        val (optTypes, optExprs) = call.exprs.foldRight((Some(List.empty[Type]), Some(List.empty[Expr[QualifiedName, Type]]))){ 
             (e: Expr[QualifiedName, Typeless], acc: (Option[List[Type]], Option[List[Expr[QualifiedName, Type]]])) =>
                 val (optTypes, optTrees) = acc
                 val (optType, optTree) = check(e, Unconstrained)
                 (for { t <- optType; ts <- optTypes } yield t :: ts, for { e <- optTree; es <- optTrees } yield e :: es)
         }
         val (ot, oti) = optTypes match {
-            case Some(value) => check(call.i, Is(FuncT(?, value)(pos)))
+            case Some(value) => check(call.id, Is(FuncT(?, value)(pos)))
             case None => (None, None)
         }
         (for {case FuncT(t, _) <- ot; ft <- t.satisfies(c)} yield ft, for {ti <- oti; exprs <- optExprs} yield Call(ti, exprs))
