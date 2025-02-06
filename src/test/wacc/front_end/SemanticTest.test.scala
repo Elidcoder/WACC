@@ -1,7 +1,7 @@
 package wacc.test
 
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers.*
+import org.scalatest.matchers.should.Matchers.shouldBe
 
 import wacc.pipeline
 

@@ -1,6 +1,6 @@
 package wacc.semantic
 
-import wacc.ast.*
+import wacc.ast._
 
 class QualifiedName(val oldName: String, val uid: Int)
 

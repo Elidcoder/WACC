@@ -1,11 +1,11 @@
 package wacc.ast
 
 import parsley.Parsley
-import parsley.position._
-import parsley.ap._
+import parsley.position.pos
 import parsley.syntax.zipped._
 import parsley.generic.ErrorBridge
 import parsley.generic.ParserSingletonBridge
+import parsley.ap.{ap1,ap2, ap3, ap4}
 
 type Const[T] = [_, _] =>> T
 type ListWrap[A[N, T]] = [N, T] =>> List[A[N, T]]
@@ -70,7 +70,7 @@ trait UnaryOperator[-A[String, Typeless], +B[String, Typeless]] extends ParserBr
 
 trait ParserBridgePos2[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserSingletonBridgePos[(A[String, Typeless], B[String, Typeless]) => C[String, Typeless]] {
     def apply[String, Typeless](x: A[String, Typeless], y: B[String, Typeless])(pos: Pos): C[String, Typeless]
-    def apply(x: Parsley[A[String, Typeless]], y: =>Parsley[B[String, Typeless]]): Parsley[C[String, Typeless]] = error(ap2(pos.map(con), x, y))
+    def apply(x: Parsley[A[String, Typeless]], y: => Parsley[B[String, Typeless]]): Parsley[C[String, Typeless]] = error(ap2(pos.map(con), x, y))
 
     override final def con(pos: (Int, Int)): (A[String, Typeless], B[String, Typeless]) => C[String, Typeless] = this.apply(_, _)(Pos(pos))
 }
@@ -85,14 +85,14 @@ trait MathematicalOperator[-A[String, Typeless], -B[String, Typeless], +C[String
 
 trait ParserBridgePos3[-A[String, Typeless], -B[String, Typeless], -C[String, Typeless], +D[String, Typeless]] extends ParserSingletonBridgePos[(A[String, Typeless], B[String, Typeless], C[String, Typeless]) => D[String, Typeless]] {
     def apply[String, Typeless](x: A[String, Typeless], y: B[String, Typeless], z: C[String, Typeless])(pos: Pos): D[String, Typeless]
-    def apply(x: Parsley[A[String, Typeless]], y: =>Parsley[B[String, Typeless]], z: =>Parsley[C[String, Typeless]]): Parsley[D[String, Typeless]] = error(ap3(pos.map(con), x, y, z))
+    def apply(x: Parsley[A[String, Typeless]], y: => Parsley[B[String, Typeless]], z: => Parsley[C[String, Typeless]]): Parsley[D[String, Typeless]] = error(ap3(pos.map(con), x, y, z))
 
     override final def con(pos: (Int, Int)): (A[String, Typeless], B[String, Typeless], C[String, Typeless]) => D[String, Typeless] = this.apply(_, _, _)(Pos(pos))
 }
 
 trait ParserBridgePos4[-A[String, Typeless], -B[String, Typeless], -C[String, Typeless], -D[String, Typeless], +E[String, Typeless]] extends ParserSingletonBridgePos[(A[String, Typeless], B[String, Typeless], C[String, Typeless], D[String, Typeless]) => E[String, Typeless]] {
     def apply[String, Typeless](x: A[String, Typeless], y: B[String, Typeless], z: C[String, Typeless], zz: D[String, Typeless])(pos: Pos): E[String, Typeless]
-    def apply(x: Parsley[A[String, Typeless]], y: =>Parsley[B[String, Typeless]], z: =>Parsley[C[String, Typeless]], zz: =>Parsley[D[String, Typeless]]): Parsley[E[String, Typeless]] = error(ap4(pos.map(con), x, y, z, zz))
+    def apply(x: Parsley[A[String, Typeless]], y: => Parsley[B[String, Typeless]], z: => Parsley[C[String, Typeless]], zz: => Parsley[D[String, Typeless]]): Parsley[E[String, Typeless]] = error(ap4(pos.map(con), x, y, z, zz))
 
     override final def con(pos: (Int, Int)): (A[String, Typeless], B[String, Typeless], C[String, Typeless], D[String, Typeless]) => E[String, Typeless] = this.apply(_, _, _, _)(Pos(pos))
 }
@@ -105,7 +105,7 @@ trait ParserBridgePosType1[-A[String, Typeless], +B[String, Typeless]] extends P
 
 trait ParserBridgePosType2[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserSingletonBridgePosType[(A[String, Typeless], B[String, Typeless]) => C[String, Typeless]] {
     def apply[String, Typeless](x: A[String, Typeless], y: B[String, Typeless])(pos: Pos, t: Typeless): C[String, Typeless]
-    def apply(x: Parsley[A[String, Typeless]], y: =>Parsley[B[String, Typeless]]): Parsley[C[String, Typeless]] = error(ap2(pos.map(con(_, Typeless())), x, y))
+    def apply(x: Parsley[A[String, Typeless]], y: => Parsley[B[String, Typeless]]): Parsley[C[String, Typeless]] = error(ap2(pos.map(con(_, Typeless())), x, y))
 
     override final def con(pos: (Int, Int), t: Typeless): (A[String, Typeless], B[String, Typeless]) => C[String, Typeless] = this.apply(_, _)(Pos(pos), t)
 }
