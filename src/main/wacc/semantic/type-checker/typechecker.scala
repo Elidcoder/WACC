@@ -22,19 +22,23 @@ object typechecker {
     import Constraint.*
 
     extension (t: Type) 
-        def ~(refT: Type)(using pos: Pos): Option[Type] =
-            given Pos = pos
+        private def ~(refT: Type)(using pos: Pos): Option[Type] =
+            given Typeless = Typeless()
+            (t, refT) match 
+                case (StringT(), ArrayT(CharT())) => Some(StringT())
+                case (ArrayT(CharT()), StringT()) => Some(StringT())
+                case (t, refT) => t ~~ refT
+                
+        private def ~~(refT: Type)(using pos: Pos): Option[Type] =
             given Typeless = Typeless()
             (t, refT) match {
                 case (?, refT) => Some(refT)
                 case (t, ?)    => Some(t)
-                case (StringT(), ArrayT(CharT())) => Some(StringT())
-                case (ArrayT(CharT()), StringT()) => Some(StringT())
                 case (PairT(t1, t2), PairT(refT1, refT2)) =>
-                    for {commonT1 <- t1 ~ refT1; commonT2 <- t2 ~ refT2}
+                    for {commonT1 <- t1 ~~ refT1; commonT2 <- t2 ~~ refT2}
                     yield PairT(commonT1, commonT2)
                 case (ArrayT(t), ArrayT(refT)) =>
-                    for {commonT <- t ~ refT}
+                    for {commonT <- t ~~ refT}
                     yield ArrayT(commonT)
                 case (FuncT(t, ts), FuncT(refT, refTs)) =>
                     if ts.size != refTs.size then return None
@@ -50,6 +54,7 @@ object typechecker {
                 case (t, refT) if t == refT => Some(t)
                 case _                      => None
             }
+
         def satisfies(c: Constraint)(using ctx: Context, pos: Pos): Option[Type] = 
             given Pos = pos
             given Typeless = Typeless()
