@@ -3,8 +3,8 @@ package wacc.error
 import wacc.ast.Pos
 
 /* Color constants for error printing */
-private final val COLOR_ORANGE = "\u001b[31m"
-private final val COLOR_RED    = "\u001b[38;5;214m"
+private final val COLOR_ORANGE = "\u001b[38;5;214m"
+private final val COLOR_RED    = "\u001b[31m"
 private final val COLOR_WHITE  = "\u001b[0m"
 
 /* Enum representing data used in a WaccErr */
