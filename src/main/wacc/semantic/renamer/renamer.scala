@@ -1,15 +1,13 @@
 package wacc.semantic
 
-import scala.collection.mutable.Map.{empty, from}
-
 import wacc.ast.*
 
 class QualifiedName(val oldName: String, val uid: Int)
 
 def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], Environment) = 
     given env: Environment = new Environment()
-    given MutScope = empty
-    given Scope = Map.empty
+    given MutScope = MutScope()
+    given Scope = Scope()
     given FuncScope = FuncScope()
     val Fs = renameFuncs(prog.funcs)
     val Ss = rename(prog.stmts)
@@ -26,7 +24,7 @@ def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mai
 }
 
 def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): Func[QualifiedName, Typeless] = 
-    given funcScope: MutScope = from(mainScope)
+    given funcScope: MutScope = MutScope(mainScope)
     given Typeless = Typeless()
     func.params.foreach { param => 
         val newUID: Int = if (funcScope.contains(param.paramId.name)) 
@@ -44,8 +42,8 @@ def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutS
     rename(func.stmts))(func.pos)
 
 def rename(stmts: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
-    given Scope    = parentScope ++ curScope.toMap
-    given MutScope = empty
+    given Scope    = Scope(parentScope ++ curScope)
+    given MutScope = MutScope()
     stmts.map(rename(_))
 }
 
