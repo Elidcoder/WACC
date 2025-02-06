@@ -1,7 +1,7 @@
 package wacc.ast
 
 sealed trait Type
-sealed trait SemType
+sealed trait SemType extends Type
 sealed trait KnownType extends SemType
 class Typeless() extends Type
 

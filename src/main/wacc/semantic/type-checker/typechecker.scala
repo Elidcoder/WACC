@@ -116,17 +116,21 @@ object typechecker {
     private def check(stmt: Stmt[QualifiedName, Typeless])(using ctx: Context): Option[Stmt[QualifiedName, KnownType]] =  
         given Pos = stmt.pos
         stmt match {
-            case NewAss(newType, id, rval) => check(Assign(id, rval))
+            case NewAss(newType, id, rval) => 
+                given Typeless = Typeless()
+                check(Assign(id, rval))
             case Assign(lval, rval) => 
-                val (lvalType, typedLval) = check(lval, Unconstrained)
-                val (rvalType, typedRval) = check(rval, Is(lvalType.getOrElse(?)))
+                val (lvalTypeOpt, typedLval) = check(lval, Unconstrained)
+                val (rvalType, typedRval) = check(rval, Is(lvalTypeOpt.getOrElse(?)))
                 if rvalType == Some(?) then ctx.error(UnknownPairTypes())
-                for {lval <- typedLval; rval <- typedRval} yield Assign(lval, rval)
+                for {lval <- typedLval; rval <- typedRval; lvalType <- lvalTypeOpt;
+                     knownTy <- isKnown(lvalType); given KnownType = knownTy} yield Assign(lval, rval)
             case Exit(expr) => 
                 for {typeExpr <- check(expr, Is(IntT()))._2} yield Exit(typeExpr)
             case Free(expr) =>
                 val (exprTypeOpt, typedExprOpt) = check(expr, IsFreeable)
-                for {exprType <- exprTypeOpt; expr <- typedExprOpt; given SemType = exprType} yield Free(expr)
+                for {exprType <- exprTypeOpt; expr <- typedExprOpt;
+                     knownTy <- isKnown(exprType); given KnownType = knownTy} yield Free(expr)
             case If(expr, stmtThen, stmtElse) => 
                 val (_, typedCond) = check(expr, Is(BoolT()))
                 val (typedStmtThenOpt, typedStmtElseOpt) = (check(stmtThen), check(stmtElse))
@@ -136,14 +140,17 @@ object typechecker {
                 for {typedStmt <- check(stmt)} yield Nest(typedStmt)
             case Print(expr) => 
                 val (typeOpt, typedExprOpt) = check(expr, Unconstrained)
-                for { ty <- typeOpt; typedExpr <- typedExprOpt; given SemType = ty } yield Print(typedExpr)
+                for { ty <- typeOpt; typedExpr <- typedExprOpt; 
+                      knownTy <- isKnown(ty); given KnownType = knownTy } yield Print(typedExpr)
             case PrintLn(expr) => 
                 val (typeOpt, typedExprOpt) = check(expr, Unconstrained)
-                for { ty <- typeOpt; typedExpr <- typedExprOpt; given SemType = ty } yield PrintLn(typedExpr)
+                for { ty <- typeOpt; typedExpr <- typedExprOpt; 
+                      knownTy <- isKnown(ty); given KnownType = knownTy } yield PrintLn(typedExpr)
             case Read(lval) => 
                 val (typeOpt, typedExprOpt) = check(lval, IsReadable)
                 if typeOpt == Some(?) then ctx.error(ReadUnknownType())
-                for { ty <- typeOpt; typedExpr <- typedExprOpt; given SemType = ty } yield Read(typedExpr)
+                for { ty <- typeOpt; typedExpr <- typedExprOpt; 
+                    knownTy <- isKnown(ty); given KnownType = knownTy } yield Read(typedExpr)
             case Return(expr) => ctx.body match {
                 case Body.Main => ctx.error(ReturnInMainBody())
                 case Body.Function(returnType) => 
@@ -153,7 +160,7 @@ object typechecker {
                         given KnownType = knownTy 
                     } yield Return(typedExpr)
             }
-            case Skip() => Some(Skip()(stmt.pos))
+            case Skip() => Some(Skip[QualifiedName, KnownType]()(stmt.pos))
             case While(expr, stmt) => 
                 val (_, typedExprOpt) = check(expr, Is(BoolT()))
                 val typedStmtOpt = check(stmt)
