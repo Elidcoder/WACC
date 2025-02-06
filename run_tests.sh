@@ -12,7 +12,7 @@ usage() {
 CATEGORY=${1:-all}
 
 echo "Compiling project..."
-scala compile .
+scala compile . --server=false
 echo "Compilation complete!"
 
 case "$CATEGORY" in
