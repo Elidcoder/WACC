@@ -108,6 +108,7 @@ object typechecker {
             case Assign(l, r) => 
                 val (lvalType, typedLval) = check(l, Unconstrained)
                 val (rvalType, typedRval) = check(r, Is(lvalType.getOrElse(?)))
+                if rvalType == Some(?) then ctx.error(UnknownPairTypes(s.pos))
                 for {l <- typedLval; r <- typedRval} yield Assign(l, r)
             case Exit(e) => 
                 for {tE <- check(e, Is(IntT()))._2} yield Exit(tE)

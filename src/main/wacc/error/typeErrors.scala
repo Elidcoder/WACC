@@ -98,6 +98,21 @@ object SemanticWaccErr {
             "Type"
         )
     }
+
+    case object UnknownPairTypes {
+        def apply(pos: R2)(using ctx: Context) = WaccErr(
+            pos,
+            ErrLines.SpecialisedError(
+                Set(
+                    "attempting to exchange values between pairs of unknown types",
+                    "pair exchange is only legal when the type of at least one of the sides is known or specified"
+                ),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
 }
 
 /* Takes in a file as well as a position within a file
