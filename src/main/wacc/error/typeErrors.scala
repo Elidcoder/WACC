@@ -10,7 +10,7 @@ object TypeErr {
         def apply(readType: Type, expectedType: Type)(using ctx: Context, pos: Pos) = 
             val badToken = readType.toString()
             WaccErr(
-                id.pos,
+                pos,
                 ErrLines.VanillaError(
                     Some(ErrItem.Named(badToken)),
                     Set(ErrItem.Named(expectedType.toString)),
@@ -25,7 +25,7 @@ object TypeErr {
         def apply(readType: Type)(using ctx: Context, pos: Pos) =
                 val badToken = readType.toString()
                 WaccErr(
-                id.pos,
+                pos,
                 ErrLines.VanillaError(
                     Some(ErrItem.Named(badToken)),
                     Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
@@ -40,7 +40,7 @@ object TypeErr {
         def apply(givenType: Type)(using ctx: Context, pos: Pos) = 
             val badToken = givenType.toString()
             WaccErr(
-                id.pos,
+                pos,
                 ErrLines.VanillaError(
                     Some(ErrItem.Named(badToken)),
                     Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
@@ -55,7 +55,7 @@ object TypeErr {
         def apply(givenType: Type)(using ctx: Context, pos: Pos) = 
             val badToken = givenType.toString()
             WaccErr(
-                id.pos,
+                pos,
                 ErrLines.VanillaError(
                     Some(ErrItem.Named(badToken)),
                     Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
@@ -80,15 +80,14 @@ object TypeErr {
         )
     }
     case object OutOfScope {
-        def apply(id: Ident[QualifiedName, Typeless], pos: R2)(using ctx: Context) = 
-            val badToken = id.v.oldName
+        def apply(varName: String, pos: R2)(using ctx: Context) =
             WaccErr(
                 pos,
                 ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
+                    Some(ErrItem.Named(varName)),
                     Set(),
-                    Set("Variable used before decleration"),
-                    getLineInfo(ctx.file, pos, badToken.size)
+                    Set("Variable used before declaration"),
+                    getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
                 "Type"
@@ -96,15 +95,14 @@ object TypeErr {
     }
 
     case object AlreadyDeclared {
-        def apply(id: Ident[QualifiedName, Typeless], pos: R2)(using ctx: Context) = 
-            val badToken = id.v.oldName
+        def apply(varName: String, pos: R2)(using ctx: Context) =
             WaccErr(
                 pos,
                 ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
+                    Some(ErrItem.Named(varName)),
                     Set(),
                     Set("This variable has already been declared"),
-                    getLineInfo(ctx.file, pos, badToken.size)
+                    getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
                 "Type"
