@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers.shouldBe
 import wacc.pipeline
 import wacc.CODE_SYNTAX_ERR
 
-val SYN_ERR_FILES = List(
+private final val SYN_ERR_FILES = List(
     "basic",
     "array",
     "expressions",

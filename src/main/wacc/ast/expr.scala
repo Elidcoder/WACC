@@ -23,6 +23,32 @@ case class Call[N, T](id: Ident[N, T], exprs: List[Expr[N, T]])(using val pos: P
 case class First[N, T](value: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
 case class Second[N, T](value: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
 
+case class Not[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Neg[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Len[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Ord[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Chr[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+
+case class Mul[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Div[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Mod[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Add[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Sub[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Greater[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class GreaterEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Less[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class LessEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Eq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class NotEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class And[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+case class Or[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
+
+case class IntLit[N, T](numb: Int)(using val pos: Pos) extends Expr[N, T]
+case class BoolLit[N, T](bool: Boolean)(using val pos: Pos) extends Expr[N, T]
+case class CharLit[N, T](char: Char)(using val pos: Pos) extends Expr[N, T]
+case class StrLit[N, T](str: String)(using val pos: Pos) extends Expr[N, T]
+case class PairLit[N, T]()(val pos: Pos) extends Expr[N, T]
+
 case object Ident extends IdentBridge {
     override def labels: List[String] = List("identifier")
 }
@@ -52,33 +78,6 @@ case object Second extends ParserBridgePos1[LValue, PairElem] {
     override def labels: List[String] = List("snd")
 }
 
-case class Not[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Neg[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Len[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Ord[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Chr[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-
-case class Mul[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Div[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Mod[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Add[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Sub[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Greater[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class GreaterEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Less[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class LessEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Eq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class NotEq[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class And[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-case class Or[N, T](lhsExpr: Expr[N, T], rhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
-
-case class IntLit[N, T](numb: Int)(using val pos: Pos) extends Expr[N, T]
-case class BoolLit[N, T](bool: Boolean)(using val pos: Pos) extends Expr[N, T]
-case class CharLit[N, T](char: Char)(using val pos: Pos) extends Expr[N, T]
-case class StrLit[N, T](str: String)(using val pos: Pos) extends Expr[N, T]
-case class PairLit[N, T]()(val pos: Pos) extends Expr[N, T]
-
-
 case object Not extends UnaryOperator[Expr, Expr]
 case object Neg extends UnaryOperator[Expr, Expr]
 case object Len extends UnaryOperator[Expr, Expr]
@@ -90,8 +89,6 @@ case object Div extends MathematicalOperator[Expr, Expr, Expr]
 case object Mod extends MathematicalOperator[Expr, Expr, Expr]
 case object Add extends MathematicalOperator[Expr, Expr, Expr]
 case object Sub extends MathematicalOperator[Expr, Expr, Expr]
-case object And extends ComparisonOperator[Expr, Expr, Expr]
-case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
 case object Greater   extends ComparisonOperator[Expr, Expr, Expr]
 case object GreaterEq extends ComparisonOperator[Expr, Expr, Expr]
@@ -99,6 +96,8 @@ case object Less      extends ComparisonOperator[Expr, Expr, Expr]
 case object LessEq    extends ComparisonOperator[Expr, Expr, Expr]
 case object Eq        extends ComparisonOperator[Expr, Expr, Expr]
 case object NotEq     extends ComparisonOperator[Expr, Expr, Expr]
+case object And extends ComparisonOperator[Expr, Expr, Expr]
+case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
 case object IntLit extends ParserBridgePos1[Const[Int], IntLit] {
     override def labels = List("integer literal")

@@ -11,8 +11,8 @@ import parsley.errors.tokenextractors.SingleChar
 
 import java.io.File
 
-final val CODE_SUCCESS = 0
-final val CODE_SYNTAX_ERR = 100
+final val CODE_SUCCESS      = 0
+final val CODE_SYNTAX_ERR   = 100
 final val CODE_SEMATNIC_ERR = 200
 
 def pipeline(file: File): Int = {

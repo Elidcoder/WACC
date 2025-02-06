@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers.shouldBe
 import wacc.pipeline
 import wacc.CODE_SEMATNIC_ERR
 
-val SEM_ERR_FILES = List(
+private final val SEM_ERR_FILES = List(
     "array",
     "exit",
     "expressions",

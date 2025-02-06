@@ -73,7 +73,6 @@ object TypeErr {
             "Type"
         )
     }
-
     case object ReturnInMainBody {
         def apply()(using ctx: Context, pos: Pos) = WaccErr(
             pos,
@@ -112,7 +111,6 @@ object TypeErr {
                 "Scope"
             )
     }
-
     case object FuncAlreadyDeclared {
         def apply(funcName: String)(using ctx: Context, pos: Pos) =
             WaccErr(
@@ -125,7 +123,6 @@ object TypeErr {
                 "Function redefinition"
             )
     }
-    
     case object UnknownPairTypes {
         def apply()(using ctx: Context,  pos: Pos) = WaccErr(
             pos,
@@ -140,7 +137,6 @@ object TypeErr {
             "Type"
         )
     }
-
     case object ReadUnknownType {
         def apply()(using ctx: Context,  pos: Pos) = WaccErr(
             pos,
@@ -155,8 +151,7 @@ object TypeErr {
             "Type"
         )
     }
-
-        case object WrongArgNums {
+    case object WrongArgNums {
         def apply(actNum: Int, expNum: Int, name: QualifiedName)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.SpecialisedError(

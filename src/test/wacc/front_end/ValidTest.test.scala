@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers.shouldBe
 import wacc.pipeline
 import wacc.CODE_SUCCESS
 
-val VALID_FILES = List(
+private final val VALID_FILES = List(
     "basic",
     "array",
     "expressions",
