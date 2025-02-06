@@ -1,6 +1,6 @@
 package wacc.error
 
-import wacc.ast.{Type, Pos}
+import wacc.ast.{SemType, Pos}
 import wacc.semantic.QualifiedName
 import wacc.semantic.typecheck.Context
 
@@ -9,7 +9,7 @@ import java.io.File
 /* The possible type errors that can occur during type checking. */
 object TypeErr {
     case object TypeMismatch {
-        def apply(readType: Type, expectedType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+        def apply(readType: SemType, expectedType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(readType.toString)),
@@ -22,7 +22,7 @@ object TypeErr {
         )
     }
     case object IsNotString {
-        def apply(readType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+        def apply(readType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(readType.toString)),
@@ -35,7 +35,7 @@ object TypeErr {
         )
     }
     case object IsNotFreeable {
-        def apply(givenType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+        def apply(givenType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(givenType.toString)),
@@ -48,7 +48,7 @@ object TypeErr {
         )
     }
     case object IsNotReadable {
-        def apply(givenType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+        def apply(givenType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(givenType.toString)),
@@ -61,7 +61,7 @@ object TypeErr {
         )
     }
     case object IsNotComparable {
-        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+        def apply(actualType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named(actualType.toString)),

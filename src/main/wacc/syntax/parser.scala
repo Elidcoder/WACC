@@ -140,26 +140,26 @@ object parser {
         | ("snd" ~> Second(lvalue))
     
     // PairType parser
-    private lazy val pairType: Parsley[Type] = 
+    private lazy val pairType: Parsley[KnownType] = 
         ("pair" ~> PairT(("(" ~> pairElemType), ("," ~> pairElemType <~ ")")))
 
     // Type parser
-    protected [syntax] lazy val ptype: Parsley[Type] = 
+    protected [syntax] lazy val ptype: Parsley[KnownType] = 
         postfix(pairType | baseType)(ArrayT <# "[]")
     
     // PairElemType parser
-    private lazy val pairElemType: Parsley[Type] = 
+    private lazy val pairElemType: Parsley[SemType] = 
         nestPairCheck ~> postfix(baseType | reducedPairType)(ArrayT <# "[]")
 
     private lazy val nestPairCheck =
         notFollowedBy(atomic(pairType)) | fail("pair nesting not allowed in WACC")
 
     // Reduced Pair Type parser
-    private lazy val reducedPairType: Parsley[Type] = 
-        "pair" as RedPairT()
+    private lazy val reducedPairType: Parsley[SemType] = 
+        "pair" as PairT(?, ?)
 
     // Base Type parser
-    private lazy val baseType: Parsley[Type] = 
+    private lazy val baseType: Parsley[KnownType] = 
         ("int" as IntT()) |
         ("bool" as BoolT()) |
         ("char" as CharT()) | 

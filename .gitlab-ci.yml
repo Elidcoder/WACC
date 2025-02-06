@@ -7,6 +7,8 @@ stages:
 build:
   stage: build
   before_script:
+    - echo "Killing runaway scala processes..."
+    - pkill -9 -u gitlab-runner -f "scala" || true
     - echo "Cleaning Scala..."
     - scala clean .
     - echo "Clean complete!"
