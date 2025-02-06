@@ -295,11 +295,7 @@ object typechecker {
                 } yield matchedType
         )
 
-        val arrayType = optElemsType match {
-            case None => None
-            case Some(elemsType) => Some(ArrayT(elemsType))
-        }
-        
+        val arrayType = optElemsType.fold(None)(elemsType => Some(ArrayT(elemsType))) 
         val arrayTree = if (exprsOptTrees.contains(None)) {
             None
         }

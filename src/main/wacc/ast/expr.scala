@@ -45,12 +45,8 @@ case object Call extends ParserBridgePos2[Ident, ListWrap[Expr], Call] {
     override def labels: List[String] = List("function call")
 }
 
-case object First extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("fst")
-}
-case object Second extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("snd")
-}
+case object First extends ParserBridgePos1[LValue, PairElem] 
+case object Second extends ParserBridgePos1[LValue, PairElem]
 
 case class Not[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 case class Neg[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
@@ -85,11 +81,11 @@ case object Len extends UnaryOperator[Expr, Expr]
 case object Ord extends UnaryOperator[Expr, Expr]
 case object Chr extends UnaryOperator[Expr, Expr]
 
-case object Mul extends MathematicalOperator[Expr, Expr, Expr]
-case object Div extends MathematicalOperator[Expr, Expr, Expr]
-case object Mod extends MathematicalOperator[Expr, Expr, Expr]
-case object Add extends MathematicalOperator[Expr, Expr, Expr]
-case object Sub extends MathematicalOperator[Expr, Expr, Expr]
+case object Mul extends Operator[Expr, Expr, Expr]
+case object Div extends Operator[Expr, Expr, Expr]
+case object Mod extends Operator[Expr, Expr, Expr]
+case object Add extends Operator[Expr, Expr, Expr]
+case object Sub extends Operator[Expr, Expr, Expr]
 case object And extends ComparisonOperator[Expr, Expr, Expr]
 case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
