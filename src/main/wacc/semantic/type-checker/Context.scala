@@ -1,9 +1,10 @@
 package wacc.semantic.typecheck
 
 import wacc.ast.{Type, ?, Pos}
-import wacc.semantic.{Environment, QualifiedName, Undeclared, AlreadyDeclaredInScope, FuncAlreadyDeclaredInScope}
-import wacc.error.TypeErr.{OutOfScope, AlreadyDeclared, FuncAlreadyDeclared}
 import wacc.error.WaccErr
+import wacc.error.TypeErr.{OutOfScope, AlreadyDeclared, FuncAlreadyDeclared}
+import wacc.semantic.{Environment, QualifiedName, Undeclared, AlreadyDeclaredInScope, FuncAlreadyDeclaredInScope}
+
 import java.io.File
 
 enum Body {

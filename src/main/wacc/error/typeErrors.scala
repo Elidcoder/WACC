@@ -1,8 +1,9 @@
 package wacc.error
 
-import wacc.semantic.typecheck.Context
-import wacc.semantic.QualifiedName
 import wacc.ast.{Type, Pos}
+import wacc.semantic.QualifiedName
+import wacc.semantic.typecheck.Context
+
 import java.io.File
 
 /* The possible type errors that can occur during type checking. */

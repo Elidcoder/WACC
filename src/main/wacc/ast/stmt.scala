@@ -1,7 +1,7 @@
 package wacc.ast
 
 import parsley.Parsley
-import parsley.position._
+import parsley.position.pos
 
 sealed trait Stmt[N, T] {
     val pos: Pos

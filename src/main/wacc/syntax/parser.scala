@@ -1,42 +1,36 @@
 package wacc.syntax
 
+import wacc.ast._
+import wacc.syntax.lexer._
+
 import parsley.{Parsley, Result}
-import parsley.quick.*
-import parsley.expr.*
-import parsley.expr.chain.postfix
 import parsley.errors.ErrorBuilder
-import parsley.errors.combinator._
-import java.io.File
+import parsley.errors.combinator.ErrorMethods
+import parsley.quick.{atomic, many, notFollowedBy, option, some}
+import parsley.expr.chain.postfix
+import parsley.expr.{InfixL, InfixN, InfixR, Ops, Prefix, precedence}
 
 import lexer.implicits.implicitSymbol
 
-import wacc.ast.*
-import wacc.syntax.lexer.*
-import scala.util.Success
+import java.io.File
 
 object parser {
-    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] =  parser.parseFile(input) match {
-        case Success(x) => x
-        case _          => 
-            println("Error: File not found")
-            sys.exit(-1)
-    }
+    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
+        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(-1)}
 
-    private def isReturnStmt(s: List[Stmt[String, Typeless]]): Boolean = s.last match {
-        case If(_, s1, s2) => isReturnStmt(s1) && isReturnStmt(s2)
-        case While(_, s)   => isReturnStmt(s)
-        case Nest(s)       => isReturnStmt(s)
-        case Return(_)     => true
-        case Exit(_)       => true
-        case _             => false
+    private def isReturnStmt(stmts: List[Stmt[String, Typeless]]): Boolean = stmts.last match {
+        case If(_, ifStmts, elseStmts) => isReturnStmt(ifStmts) && isReturnStmt(elseStmts)
+        case While(_, wStmts)          => isReturnStmt(wStmts)
+        case Nest(nStmts)              => isReturnStmt(nStmts)
+        case Return(_)                 => true
+        case Exit(_)                   => true
+        case _                         => false
     }
     
     // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
-    private val parser: Parsley[Program[String, Typeless]] = 
-        fully(program)
+    private val parser: Parsley[Program[String, Typeless]] = fully(program)
 
-    private lazy val end = 
-        "end".explain("a scope, function or the main body is unclosed")
+    private lazy val end = "end".explain("a scope, function or the main body is unclosed")
     
     // Program parser
     protected [syntax] lazy val program: Parsley[Program[String, Typeless]] = 
@@ -75,8 +69,7 @@ object parser {
         | Assign(lvalue, asgnmt)
 
     // Statements parser
-    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = 
-        semiSep1(stmt).label("statement")
+    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt).label("statement")
 
     /* Error message taken from the WACC Reference Compiler. */
     val EXPR_ERR_MSG = "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses in addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators";

@@ -1,8 +1,9 @@
 package wacc.syntax
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers.*
 import parsley.Success
+
+import org.scalatest.matchers.should.Matchers.shouldBe
+import org.scalatest.flatspec.AnyFlatSpec
 
 import wacc.ast.*
 

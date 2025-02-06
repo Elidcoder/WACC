@@ -2,7 +2,7 @@ package wacc.semantic
 
 import scala.collection.mutable
 import scala.collection.mutable.Map.empty
-import wacc.ast.*
+import wacc.ast.Type
 
 class Environment() {
     private val map: mutable.Map[Int, Type] = mutable.Map.empty
