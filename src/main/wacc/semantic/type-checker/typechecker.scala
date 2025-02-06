@@ -273,20 +273,17 @@ object typechecker {
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
 
     private def check(call: Call[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        val (exprsOptTypes, exprsOptTrees) = call.x.map(check(_, Unconstrained)).unzip
-        
-        if (exprsOptTypes.contains(None)) {
-            (None, None)
+        val (optTypes, optExprs) = call.x.foldLeft((Some(List.empty[Type]), Some(List.empty[Expr[QualifiedName, Type]]))){ 
+            (acc: (Option[List[Type]], Option[List[Expr[QualifiedName, Type]]]), e: Expr[QualifiedName, Typeless]) =>
+                val (optTypes, optTrees) = acc
+                val (optType, optTree) = check(e, Unconstrained)
+                (for { t <- optType; ts <- optTypes } yield t :: ts, for { e <- optTree; es <- optTrees } yield e :: es)
         }
-
-        val exprTypes = exprsOptTypes.map(_.get)
-        val (optIdentTypes, optIdentTrees) = check(call.i, Is(FuncT(? , exprTypes)(pos)))
-        val returnType = for { case FuncT(identType, _) <- optIdentTypes; defIdentType <- identType.satisfies(c)} yield defIdentType
-        if (exprsOptTrees.contains(None)) {
-            return (returnType, None)
+        val (ot, oti) = optTypes match {
+            case Some(value) => check(call.i, Is(FuncT(?, value)(pos)))
+            case None => (None, None)
         }
-
-        (returnType, for { identTree <- optIdentTrees} yield Call(identTree, exprsOptTrees.map(_.get)))
+        (for {t <- ot; ft <- t.satisfies(c)} yield ft, for {ti <- oti; exprs <- optExprs} yield Call(ti, exprs))
         
 
     private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
