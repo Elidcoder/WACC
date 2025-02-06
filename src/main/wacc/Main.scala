@@ -3,16 +3,16 @@ package wacc
 import wacc.syntax.parser
 import wacc.semantic.rename
 import wacc.semantic.typecheck.typechecker
-import wacc.error.{SyntaxErrBuilder, WaccErr}
+import wacc.error.WaccErr
 
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
-import parsley.errors.tokenextractors.SingleChar
 
 import java.io.File
+import wacc.syntax.lexer.lexErrBuilder
 
 def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new SyntaxErrBuilder with SingleChar
+    given ErrorBuilder[WaccErr] = lexErrBuilder
     parser.parse(file) match 
         case Success(x) => 
             /* Successfully parsed, attempt rename. */

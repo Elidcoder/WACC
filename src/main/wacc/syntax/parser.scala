@@ -15,6 +15,7 @@ import lexer.implicits.implicitSymbol
 import java.io.File
 
 object parser {
+    
     def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
         parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(-1)}
 

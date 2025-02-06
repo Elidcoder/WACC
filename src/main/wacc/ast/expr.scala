@@ -45,12 +45,8 @@ case object Call extends ParserBridgePos2[Ident, ListWrap[Expr], Call] {
     override def labels: List[String] = List("function call")
 }
 
-case object First extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("fst")
-}
-case object Second extends ParserBridgePos1[LValue, PairElem] {
-    override def labels: List[String] = List("snd")
-}
+case object First extends ParserBridgePos1[LValue, PairElem] 
+case object Second extends ParserBridgePos1[LValue, PairElem]
 
 case class Not[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 case class Neg[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
