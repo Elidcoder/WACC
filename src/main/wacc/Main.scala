@@ -1,9 +1,10 @@
 package wacc
 
 import wacc.syntax.parser
-import wacc.semantic.rename
-import wacc.semantic.typecheck.typechecker
 import wacc.error.WaccErr
+import wacc.semantic.rename
+import wacc.syntax.lexer.lexErrBuilder
+import wacc.semantic.typecheck.typechecker
 
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
@@ -17,11 +18,14 @@ final val CODE_SEMATNIC_ERR = 200
 
 def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = lexErrBuilder
+    println("Starting parsing...")
     parser.parse(file) match 
         case Success(syntaxTree) => 
+            println("Success!\nStarting renaming...")
             /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(syntaxTree)
 
+            println("Success!\nStarting typechecking...")
             /* Attempt typecheck and match on result of both rename & typecheck. */
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
@@ -31,6 +35,7 @@ def pipeline(file: File): Int = {
 
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
+                    println("Success")
                     value.get 
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS

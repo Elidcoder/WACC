@@ -18,9 +18,11 @@ private final val ERR_FILE_NOT_FOUND = -1
 
 object parser {
     
-    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
-        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
+    /* Function to read a given file and return it's parsing or a failiure code. */
+    def parse[Err: ErrorBuilder](file: File): Result[Err, Program[String, Typeless]] = 
+        parser.parseFile(file).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
 
+    /* Checks if a given group of statements end in a return or exit. */
     private def isReturnStmt(stmts: List[Stmt[String, Typeless]]): Boolean = stmts.last match {
         case If(_, ifStmts, elseStmts) => isReturnStmt(ifStmts) && isReturnStmt(elseStmts)
         case While(_, wStmts)          => isReturnStmt(wStmts)
@@ -30,28 +32,29 @@ object parser {
         case _                         => false
     }
     
-    // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
+    /* Ensure the whole input is consumed. */
     private val parser: Parsley[Program[String, Typeless]] = fully(program)
     
-    // Program parser
+    /* Extract the main body of the program. */
     protected [syntax] lazy val program: Parsley[Program[String, Typeless]] = 
         "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ "end"
 
-    // Function parser
+    /* Parse functions (but not calls).  */
     protected [syntax] lazy val func: Parsley[Func[String, Typeless]] = 
         atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ "end")
 
     // Statements parser for function body
-    private lazy val funcStmts: Parsley[List[Stmt[String, Typeless]]] = 
-        semiSep1(stmt).filter(isReturnStmt)
+    private lazy val funcStmts: Parsley[List[Stmt[String, Typeless]]] = stmts.filter(isReturnStmt)
+
+    // Statements parser
+    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt)
 
     // TODO(unexpected identifier should somehow pass the name/ character through so that it is clear) '| unexpected("identifier")'
-    private lazy val asgnmt = 
-        ("=" ~> rvalue).label("assignment")
+    private lazy val asgnmt = ("=" ~> rvalue).label("assignment")
 
     // Statement parser
     protected [syntax] lazy val stmt: Parsley[Stmt[String, Typeless]] = 
-        ("skip" ~> Skip())
+        (("skip" ~> Skip())
         | ("read" ~> Read(lvalue))
         | ("free" ~> Free(expr))
         | ("return" ~> Return(expr))
@@ -68,10 +71,9 @@ object parser {
         | "while" ~> While(expr, ("do" ~> stmts)) <~ "done"
         | "begin" ~> Nest(stmts) <~ "end"
         | NewAss(ptype, ident, asgnmt)
-        | Assign(lvalue, asgnmt)
+        | Assign(lvalue, asgnmt)).label("statement")
 
-    // Statements parser
-    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt).label("statement")
+
 
     /* Error message taken from the WACC Reference Compiler. */
     val EXPR_ERR_MSG = 
@@ -79,8 +81,7 @@ object parser {
   in addition, expressions may contain array indexing operations and comparison, logical, or arithmetic operators."""
 
     // optional array index parser
-    private lazy val arridx = 
-        option(some(brackets(expr))).label("array index")
+    private lazy val arridx = option(some(brackets(expr))).label("array index")
 
     // Expression parser
     protected [syntax] lazy val expr: Parsley[Expr[String, Typeless]] = 
