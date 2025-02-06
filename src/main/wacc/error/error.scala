@@ -61,11 +61,12 @@ case class WaccErr(
         case Some(fName) => 
             /* Create string builder and set the colour of the error. */
             val outputBuilder: StringBuilder = new StringBuilder()
-            outputBuilder ++= (errType match {
-                /* Add the RED colour string to make semantic errors display in red. */
-                case "Syntax" => "\u001b[31m"
+            outputBuilder ++= (if (errType == "Syntax") {
+                /* Add the RED colour string to make syntax errors display in red. */
+                "\u001b[31m"
+            } else {
                 /* Add the ORANGE colour string to make semantic errors display in orange. */
-                case _ => "\u001b[38;5;214m"
+                "\u001b[38;5;214m"
             })
             
             /* Build title of the error message. */

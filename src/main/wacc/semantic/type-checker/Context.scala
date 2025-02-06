@@ -2,7 +2,7 @@ package wacc.semantic.typecheck
 
 import wacc.ast.{Type, ?}
 import wacc.semantic.Environment
-import wacc.error.SemanticWaccErr.{OutOfScope, AlreadyDeclared}
+import wacc.error.TypeErr.{OutOfScope, AlreadyDeclared}
 import wacc.error.{WaccErr, R2}
 import java.io.File
 
