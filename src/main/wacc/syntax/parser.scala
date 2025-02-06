@@ -14,9 +14,11 @@ import lexer.implicits.implicitSymbol
 
 import java.io.File
 
+private final val ERR_FILE_NOT_FOUND = -1
+
 object parser {
     def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
-        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(-1)}
+        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
 
     private def isReturnStmt(stmts: List[Stmt[String, Typeless]]): Boolean = stmts.last match {
         case If(_, ifStmts, elseStmts) => isReturnStmt(ifStmts) && isReturnStmt(elseStmts)

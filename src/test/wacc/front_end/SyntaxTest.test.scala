@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
 
 import wacc.pipeline
+import wacc.CODE_SYNTAX_ERR
 
 val SYN_ERR_FILES = List(
     "basic",
@@ -28,7 +29,7 @@ class SyntaxTest extends AnyFlatSpec with ConditionalTest {
             val name = s"should fail with syntax error (100) in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
-                result shouldBe 100
+                result shouldBe CODE_SYNTAX_ERR
             }
         }
     }

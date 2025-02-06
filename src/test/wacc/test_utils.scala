@@ -5,6 +5,7 @@ import scala.io.Source
 
 final val WACC_EXAMPLES_PATH = "./src/test/wacc/wacc_examples/"
 final val CONFIG_PATH        = "./src/test/wacc/tests.properties"
+final val FLAG_SPLIT_INDEX   = 2
 
 /* 
     PRE: wacc-examples/folder_path exist and is a valid folder
@@ -33,8 +34,8 @@ def getProperties(): Map[String, String] = {
         source.getLines()
         .filter(line => line.trim.nonEmpty && !line.trim.startsWith("#"))
         .map { line =>
-            val parts = line.split("=", 2)
-            (parts(0).trim, parts(1).trim)
+            val parts = line.split("=", FLAG_SPLIT_INDEX)
+            (parts.head.trim, parts.tail.head.trim)
         }
         .toMap
     } finally {

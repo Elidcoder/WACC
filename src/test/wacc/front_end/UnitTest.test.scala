@@ -8,7 +8,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import wacc.ast.*
 
 class UnitTest extends AnyFlatSpec {
-    
     /* Tests for atomics */
     it should "parse an integer literal successfully" in {
         parser.expr.parse("37") match {
@@ -420,5 +419,4 @@ class UnitTest extends AnyFlatSpec {
             case _                               => fail()
         }
     }
-
 }

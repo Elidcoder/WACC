@@ -4,9 +4,8 @@ import wacc.ast.Pos
 
 import parsley.errors.ErrorBuilder
 
-
 /* A constant representing the number of lines of code either side of the erroring line shown. */
-private val LinesOfCodeRadius = 1
+private final val CODE_RADIUS_SIZE = 1
 
 /* Representation of an err on a line can be either:
  * VanillaError -> Contains info about what went wrong, where, why and the code in the area, or,
@@ -52,8 +51,8 @@ abstract class SyntaxErrBuilder extends ErrorBuilder[WaccErr] {
     override def lineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], lineNum: Int, errorPointsAt: Int, errorWidth: Int): LineInformation = 
         new LineInformation(line, linesBefore, linesAfter, errorPointsAt, errorWidth)
 
-    override val numLinesBefore: Int = LinesOfCodeRadius
-    override val numLinesAfter: Int = LinesOfCodeRadius
+    override val numLinesBefore: Int = CODE_RADIUS_SIZE
+    override val numLinesAfter: Int = CODE_RADIUS_SIZE
 
     type Item = ErrItem
     type Raw = ErrItem.Raw

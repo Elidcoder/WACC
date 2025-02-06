@@ -12,7 +12,7 @@ case class FuncT(returnT: SemType, paramTs: List[SemType])(val pos: Pos) extends
         val builder = new StringBuilder
         builder ++= "("
         builder ++= paramTs.headOption.getOrElse("").toString()
-        paramTs.drop(1).foreach((t: SemType) => builder ++= s", ${t.toString}")
+        paramTs.drop(1).foreach((semTy: SemType) => builder ++= s", ${semTy.toString}")
         builder ++= s") -> ${returnT.toString()}"
         builder.result()
 }

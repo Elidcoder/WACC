@@ -8,7 +8,6 @@ import parsley.token.{Lexer, Basic}
 import parsley.token.errors.{ErrorConfig, Label, LabelAndReason, LabelConfig, LabelWithExplainConfig}
 import parsley.token.descriptions.{LexicalDesc, NameDesc, SpaceDesc, TextDesc, SymbolDesc, EscapeDesc}
 
-
 object lexer {
     /* Error message taken from the WACC Reference Compiler. */
     val ESCAPE_ERR_MSG = "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"

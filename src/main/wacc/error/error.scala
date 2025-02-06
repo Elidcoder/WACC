@@ -2,6 +2,11 @@ package wacc.error
 
 import wacc.ast.Pos
 
+/* Color constants for error printing */
+private final val COLOR_ORANGE = "\u001b[31m"
+private final val COLOR_RED    = "\u001b[38;5;214m"
+private final val COLOR_WHITE  = "\u001b[0m"
+
 /* Enum representing data used in a WaccErr */
 enum ErrItem {
     case Raw(item: String)
@@ -28,7 +33,7 @@ type LineInformation = (String, Seq[String], Seq[String], Int, Int)
 def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
     /* Display the line before the line with the error. */
     if (!lineInfo._2.isEmpty) {
-        strBuilder ++= lineInfo._2(0)
+        strBuilder ++= lineInfo._2.head
         strBuilder ++= "\n>"
     }
 
@@ -43,7 +48,7 @@ def parseLineInfo(lineInfo: LineInformation, strBuilder: StringBuilder) = {
 
     /* Display the line after the line with the error. */
     if (!lineInfo._3.isEmpty) {
-        strBuilder ++= lineInfo._3(0)
+        strBuilder ++= lineInfo._3.head
         strBuilder ++= "\n"
     }
 }
@@ -63,10 +68,10 @@ case class WaccErr(
             val outputBuilder: StringBuilder = new StringBuilder()
             outputBuilder ++= (if (errType == "Syntax") {
                 /* Add the RED colour string to make syntax errors display in red. */
-                "\u001b[31m"
+                COLOR_RED
             } else {
                 /* Add the ORANGE colour string to make semantic errors display in orange. */
-                "\u001b[38;5;214m"
+                COLOR_ORANGE
             })
             
             /* Build title of the error message. */
@@ -130,7 +135,7 @@ case class WaccErr(
             }
             
             /* Reset colour at the end and return the resulting string. */
-            outputBuilder ++= "\u001b[0m"
+            outputBuilder ++= COLOR_WHITE
             outputBuilder.result()
     }
 }

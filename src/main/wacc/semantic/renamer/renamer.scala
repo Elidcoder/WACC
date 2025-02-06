@@ -16,7 +16,7 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
 def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope) = {
     funcs.foreach { func =>
         val newUID: Int = if (funcNameScope.contains(func.id.name)) 
-            then AlreadyDeclaredInScope
+            then UID_ALREADY_IN_SCOPE
             else env.add(func.id.name, FuncT(func.retType, func.params.map(p => p.paramType))(func.pos))
         funcNameScope.put(func.id.name, QualifiedName(func.id.name, newUID))
     }
@@ -28,7 +28,7 @@ def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutS
     given Typeless = Typeless()
     func.params.foreach { param => 
         val newUID: Int = if (funcScope.contains(param.paramId.name)) 
-            then AlreadyDeclaredInScope
+            then UID_ALREADY_IN_SCOPE
             else env.add(param.paramId.name, param.paramType)
         funcScope.put(param.paramId.name, QualifiedName(param.paramId.name, newUID)) 
     }
@@ -54,7 +54,7 @@ def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environm
         case Skip()                         => Skip()(stmt.pos)
         case NewAss(newType, id, rval)      => 
             val newUID: Int = if (curScope.contains(id.name)) 
-                then AlreadyDeclaredInScope
+                then UID_ALREADY_IN_SCOPE
                 else 
                     env.add(id.name, newType)
             val rR = rename(rval)
@@ -130,7 +130,7 @@ extension (curScope: MutScope)
         given Typeless = Typeless()
         build(Ident(curScope.get(id.name)
         .getOrElse(parentScope.get(id.name)
-        .getOrElse(QualifiedName(id.name, Undeclared)))))
+        .getOrElse(QualifiedName(id.name, UID_UNDECLARED)))))
 
 extension (funcNameScope: FuncScope) 
     def rebuildWithIdent[A](id: Ident[String, Typeless])
@@ -138,4 +138,4 @@ extension (funcNameScope: FuncScope)
     (using pos: Pos): A = 
         given Typeless = Typeless()
         build(Ident(funcNameScope.getOption(id.name)
-        .getOrElse(QualifiedName(id.name, Undeclared))))
+        .getOrElse(QualifiedName(id.name, UID_UNDECLARED))))

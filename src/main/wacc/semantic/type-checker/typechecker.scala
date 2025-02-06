@@ -9,14 +9,13 @@ import java.io.File
 
 object typechecker {
     enum Constraint {
-        case Is(refT: SemType)(using Pos)
+        case Is(refT: SemType)
         case IsStringLike
         case IsFreeable
         case IsReadable
         case IsComparable
     }
     object Constraint {
-        given Pos = Pos(0,0)
         val Unconstrained = Is(?)
         val IsArray = Is(ArrayT(?))
         val IsPair  = Is(PairT(?, ?))

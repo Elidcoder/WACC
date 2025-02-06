@@ -11,30 +11,34 @@ import parsley.errors.tokenextractors.SingleChar
 
 import java.io.File
 
+final val CODE_SUCCESS = 0
+final val CODE_SYNTAX_ERR = 100
+final val CODE_SEMATNIC_ERR = 200
+
 def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = new SyntaxErrBuilder with SingleChar
     parser.parse(file) match 
-        case Success(x) => 
+        case Success(syntaxTree) => 
             /* Successfully parsed, attempt rename. */
-            val (renamedTree, env) = rename(x)
+            val (renamedTree, env) = rename(syntaxTree)
 
             /* Attempt typecheck and match on result of both rename & typecheck. */
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
                     errs.foreach((err: WaccErr) => println(err.format()))
-                    200
+                    CODE_SEMATNIC_ERR
 
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     value.get 
                     /* Exit with error code 0 if the final tree exists. */
-                    0
+                    CODE_SUCCESS
                         
         /* Failed to parse, print error and exit with error code 100. */
-        case Failure(x) => 
-            println(x.format())
-            100
+        case Failure(errors) => 
+            println(errors.format())
+            CODE_SYNTAX_ERR
 }
 
 def main(args: Array[String]): Unit = {

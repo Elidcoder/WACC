@@ -81,7 +81,7 @@ object TypeErr {
                 Some(ErrItem.Named("return")),
                 Set(),
                 Set("Return in main body is not allowed"),
-                getLineInfo(ctx.file, 6)
+                getLineInfo(ctx.file, "return".length())
             ),
             Option(ctx.file.getName()),
             "Return Placement"
@@ -183,7 +183,7 @@ object TypeErr {
 
         /* Build the line information from the file contents. */
         val zeroIndexRow = pos.row - 1
-        val linesBefore  = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
-        val linesAfter   = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
+        val linesBefore  = lines.slice((0).max(zeroIndexRow - CODE_RADIUS_SIZE), zeroIndexRow)
+        val linesAfter   = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + CODE_RADIUS_SIZE + 1))
         new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col - 1, badTokWidth)
 }
