@@ -1,7 +1,9 @@
 package wacc.error
 
-import parsley.errors.ErrorBuilder
 import wacc.ast.Pos
+
+import parsley.errors.ErrorBuilder
+
 
 /* A constant representing the number of lines of code either side of the erroring line shown. */
 private val LinesOfCodeRadius = 1

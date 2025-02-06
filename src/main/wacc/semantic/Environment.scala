@@ -2,7 +2,7 @@ package wacc.semantic
 
 import scala.collection.mutable
 import scala.collection.mutable.Map.empty
-import wacc.ast.*
+import wacc.ast.Type
 
 class Environment() {
     private val map: mutable.Map[Int, Type] = mutable.Map.empty
@@ -26,3 +26,4 @@ type MutScope = mutable.Map[String, QualifiedName]
 type Scope = Map[String, QualifiedName]
 final val Undeclared = -1
 final val AlreadyDeclaredInScope = -2
+final val FuncAlreadyDeclaredInScope = -3

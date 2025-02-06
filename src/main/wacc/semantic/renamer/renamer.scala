@@ -1,8 +1,8 @@
 package wacc.semantic
 
-import scala.collection.mutable.Map.{empty, from}
+import wacc.ast._
 
-import wacc.ast.*
+import scala.collection.mutable.Map.{empty, from}
 
 class QualifiedName(val oldName: String, val uid: Int)
 

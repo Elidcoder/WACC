@@ -1,15 +1,15 @@
 package wacc
 
-import wacc.error.*
 import wacc.syntax.parser
 import wacc.semantic.rename
 import wacc.semantic.typecheck.typechecker
+import wacc.error.{SyntaxErrBuilder, WaccErr}
 
-import java.io.File
-
-import parsley.{Success, Failure}
+import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
+
+import java.io.File
 
 def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = new SyntaxErrBuilder with SingleChar
