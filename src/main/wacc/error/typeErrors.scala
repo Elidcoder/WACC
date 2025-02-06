@@ -73,7 +73,6 @@ object TypeErr {
             "Type"
         )
     }
-
     case object ReturnInMainBody {
         def apply()(using ctx: Context, pos: Pos) = WaccErr(
             pos,
@@ -81,7 +80,7 @@ object TypeErr {
                 Some(ErrItem.Named("return")),
                 Set(),
                 Set("Return in main body is not allowed"),
-                getLineInfo(ctx.file, 6)
+                getLineInfo(ctx.file, "return".length())
             ),
             Option(ctx.file.getName()),
             "Return Placement"
@@ -112,7 +111,6 @@ object TypeErr {
                 "Scope"
             )
     }
-
     case object FuncAlreadyDeclared {
         def apply(funcName: String)(using ctx: Context, pos: Pos) =
             WaccErr(
@@ -125,7 +123,6 @@ object TypeErr {
                 "Function redefinition"
             )
     }
-    
     case object UnknownPairTypes {
         def apply()(using ctx: Context,  pos: Pos) = WaccErr(
             pos,
@@ -140,7 +137,6 @@ object TypeErr {
             "Type"
         )
     }
-
     case object ReadUnknownType {
         def apply()(using ctx: Context,  pos: Pos) = WaccErr(
             pos,
@@ -155,8 +151,7 @@ object TypeErr {
             "Type"
         )
     }
-
-        case object WrongArgNums {
+    case object WrongArgNums {
         def apply(actNum: Int, expNum: Int, name: QualifiedName)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.SpecialisedError(
@@ -183,7 +178,7 @@ object TypeErr {
 
         /* Build the line information from the file contents. */
         val zeroIndexRow = pos.row - 1
-        val linesBefore  = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
-        val linesAfter   = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
+        val linesBefore  = lines.slice((0).max(zeroIndexRow - CODE_RADIUS_SIZE), zeroIndexRow)
+        val linesAfter   = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + CODE_RADIUS_SIZE + 1))
         new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col - 1, badTokWidth)
 }

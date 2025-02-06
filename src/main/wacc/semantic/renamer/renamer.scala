@@ -4,7 +4,9 @@ import wacc.ast._
 
 class QualifiedName(val oldName: String, val uid: Int)
 
-def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], Environment) = 
+def rename(
+    prog: Program[String, Typeless]
+): (Program[QualifiedName, Typeless], Environment) = 
     given env: Environment = new Environment()
     given MutScope = MutScope()
     given Scope = Scope()
@@ -13,22 +15,34 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
     val Ss = rename(prog.stmts)
     (Program(Fs, Ss)(prog.pos), env)
 
-def renameFuncs(funcs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope) = {
+def renameFuncs(
+    funcs: List[Func[String, Typeless]]
+)(using env: Environment, 
+    mainScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+) = {
     funcs.foreach { func =>
         val newUID: Int = if (funcNameScope.contains(func.id.name)) 
-            then AlreadyDeclaredInScope
+            then UID_ALREADY_IN_SCOPE
             else env.add(func.id.name, FuncT(func.retType, func.params.map(p => p.paramType))(func.pos))
         funcNameScope.put(func.id.name, QualifiedName(func.id.name, newUID))
     }
     funcs.map(rename(_))
 }
 
-def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): Func[QualifiedName, Typeless] = 
+def rename(
+    func: Func[String, Typeless]
+)(using env: Environment, 
+    mainScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): Func[QualifiedName, Typeless] = 
     given funcScope: MutScope = MutScope(mainScope)
     given Typeless = Typeless()
     func.params.foreach { param => 
         val newUID: Int = if (funcScope.contains(param.paramId.name)) 
-            then AlreadyDeclaredInScope
+            then UID_ALREADY_IN_SCOPE
             else env.add(param.paramId.name, param.paramType)
         funcScope.put(param.paramId.name, QualifiedName(param.paramId.name, newUID)) 
     }
@@ -41,20 +55,32 @@ def rename(func: Func[String, Typeless])(using env: Environment, mainScope: MutS
         ),
     rename(func.stmts))(func.pos)
 
-def rename(stmts: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
+def rename(
+    stmts: List[Stmt[String, Typeless]]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = Scope(parentScope ++ curScope)
     given MutScope = MutScope()
     stmts.map(rename(_))
 }
 
-def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope, funcNameScope: FuncScope): Stmt[QualifiedName, Typeless] = 
+def rename(
+    stmt: Stmt[String, Typeless]
+)(using curScope: MutScope, 
+    env: Environment, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): Stmt[QualifiedName, Typeless] = 
     given Pos = stmt.pos
     given Typeless = Typeless()
     stmt match {
         case Skip()                         => Skip()(stmt.pos)
         case NewAss(newType, id, rval)      => 
             val newUID: Int = if (curScope.contains(id.name)) 
-                then AlreadyDeclaredInScope
+                then UID_ALREADY_IN_SCOPE
                 else 
                     env.add(id.name, newType)
             val rR = rename(rval)
@@ -73,7 +99,9 @@ def rename(stmt: Stmt[String, Typeless])(using curScope: MutScope, env: Environm
         case Nest(stmts)                    => Nest(rename(stmts))
     }
 
-def rename(lval: LValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
+def rename(
+    lval: LValue[String, Typeless]
+)(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
     given Pos = lval.pos
     lval match {
     case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
@@ -82,7 +110,13 @@ def rename(lval: LValue[String, Typeless])(using env: Environment, curScope: Mut
     case Second(lval)                => Second(rename(lval))
 }
 
-def rename(rval: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope, funcNameScope: FuncScope): RValue[QualifiedName, Typeless] = 
+def rename(
+    rval: RValue[String, Typeless]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope, 
+    funcNameScope: FuncScope
+): RValue[QualifiedName, Typeless] = 
     given Pos = rval.pos
     rval match {
         case expr: Expr[String, Typeless] => rename(expr)
@@ -93,7 +127,12 @@ def rename(rval: RValue[String, Typeless])(using env: Environment, curScope: Mut
         case Second(lval)                 => Second(rename(lval))
     }
 
-def rename(expr: Expr[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): Expr[QualifiedName, Typeless] = 
+def rename(
+    expr: Expr[String, Typeless]
+)(using env: Environment, 
+    curScope: MutScope, 
+    parentScope: Scope
+): Expr[QualifiedName, Typeless] = 
     given Pos = expr.pos
     expr match {
         case Not(e)               => Not(rename(e))
@@ -130,7 +169,7 @@ extension (curScope: MutScope)
         given Typeless = Typeless()
         build(Ident(curScope.get(id.name)
         .getOrElse(parentScope.get(id.name)
-        .getOrElse(QualifiedName(id.name, Undeclared)))))
+        .getOrElse(QualifiedName(id.name, UID_UNDECLARED)))))
 
 extension (funcNameScope: FuncScope) 
     def rebuildWithIdent[A](id: Ident[String, Typeless])
@@ -138,4 +177,4 @@ extension (funcNameScope: FuncScope)
     (using pos: Pos): A = 
         given Typeless = Typeless()
         build(Ident(funcNameScope.getOption(id.name)
-        .getOrElse(QualifiedName(id.name, Undeclared))))
+        .getOrElse(QualifiedName(id.name, UID_UNDECLARED))))

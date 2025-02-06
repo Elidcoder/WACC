@@ -23,31 +23,6 @@ case class Call[N, T](id: Ident[N, T], exprs: List[Expr[N, T]])(using val pos: P
 case class First[N, T](value: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
 case class Second[N, T](value: LValue[N, T])(using val pos: Pos) extends PairElem[N, T]
 
-case object Ident extends IdentBridge {
-    override def labels: List[String] = List("identifier")
-}
-case object ArrayElem extends ParserBridgePos2[Ident, ListWrap[Expr], ArrayElem]{
-    override def labels: List[String] = List("array")
-}
-
-case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Expr]], ArrayOrIdent] {
-    override def apply[String, Typeless](id: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(using pos: Pos): ArrayOrIdent[String, Typeless] = 
-        exprs.fold(id)(ArrayElem(id, _))
-}
-
-case object ArrayLit extends ParserBridgePos1[ListWrap[Expr], ArrayLit] {
-    override def labels: List[String] = List("array literal")
-}
-case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair] {
-    override def labels: List[String] = List("pair literal")
-}
-case object Call extends ParserBridgePos2[Ident, ListWrap[Expr], Call] {
-    override def labels: List[String] = List("function call")
-}
-
-case object First extends ParserBridgePos1[LValue, PairElem] 
-case object Second extends ParserBridgePos1[LValue, PairElem]
-
 case class Not[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 case class Neg[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
 case class Len[N, T](lhsExpr: Expr[N, T])(using val pos: Pos) extends Expr[N, T]
@@ -74,6 +49,30 @@ case class CharLit[N, T](char: Char)(using val pos: Pos) extends Expr[N, T]
 case class StrLit[N, T](str: String)(using val pos: Pos) extends Expr[N, T]
 case class PairLit[N, T]()(val pos: Pos) extends Expr[N, T]
 
+case object Ident extends IdentBridge {
+    override def labels: List[String] = List("identifier")
+}
+case object ArrayElem extends ParserBridgePos2[Ident, ListWrap[Expr], ArrayElem]{
+    override def labels: List[String] = List("array")
+}
+
+case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Expr]], ArrayOrIdent] {
+    override def apply[String, Typeless](id: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(using pos: Pos): ArrayOrIdent[String, Typeless] = 
+        exprs.fold(id)(ArrayElem(id, _))
+}
+
+case object ArrayLit extends ParserBridgePos1[ListWrap[Expr], ArrayLit] {
+    override def labels: List[String] = List("array literal")
+}
+case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair] {
+    override def labels: List[String] = List("pair literal")
+}
+case object Call extends ParserBridgePos2[Ident, ListWrap[Expr], Call] {
+    override def labels: List[String] = List("function call")
+}
+
+case object First extends ParserBridgePos1[LValue, PairElem] 
+case object Second extends ParserBridgePos1[LValue, PairElem]
 
 case object Not extends UnaryOperator[Expr, Expr]
 case object Neg extends UnaryOperator[Expr, Expr]
@@ -86,8 +85,6 @@ case object Div extends Operator[Expr, Expr, Expr]
 case object Mod extends Operator[Expr, Expr, Expr]
 case object Add extends Operator[Expr, Expr, Expr]
 case object Sub extends Operator[Expr, Expr, Expr]
-case object And extends ComparisonOperator[Expr, Expr, Expr]
-case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
 case object Greater   extends ComparisonOperator[Expr, Expr, Expr]
 case object GreaterEq extends ComparisonOperator[Expr, Expr, Expr]
@@ -95,6 +92,8 @@ case object Less      extends ComparisonOperator[Expr, Expr, Expr]
 case object LessEq    extends ComparisonOperator[Expr, Expr, Expr]
 case object Eq        extends ComparisonOperator[Expr, Expr, Expr]
 case object NotEq     extends ComparisonOperator[Expr, Expr, Expr]
+case object And extends ComparisonOperator[Expr, Expr, Expr]
+case object Or  extends ComparisonOperator[Expr, Expr, Expr]
 
 case object IntLit extends ParserBridgePos1[Const[Int], IntLit] {
     override def labels = List("integer literal")

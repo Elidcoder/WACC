@@ -4,8 +4,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
 
 import wacc.pipeline
+import wacc.CODE_SUCCESS
 
-val VALID_FILES = List(
+private final val VALID_FILES = List(
     "basic",
     "array",
     "expressions",
@@ -29,7 +30,7 @@ class ValidTest extends AnyFlatSpec with ConditionalTest {
             val name = s"should compile without error in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
-                result shouldBe 0
+                result shouldBe CODE_SUCCESS
             }
         }
     }

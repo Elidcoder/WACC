@@ -8,7 +8,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import wacc.ast.*
 
 class UnitTest extends AnyFlatSpec {
-    
     /* Tests for atomics */
     it should "parse an integer literal successfully" in {
         parser.expr.parse("37") match {
@@ -54,8 +53,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse an array elem successfully" in {
         parser.expr.parse("freddie[0]") match {
-            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y).equals(("freddie", 0))
-            case _                 => fail()
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => 
+                (x, y).equals(("freddie", 0))
+            case _                                             => 
+                fail()
         }
     }
 
@@ -253,8 +254,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse functions successfully" in {
         parser.func.parse("int f() is return 1 end skip end") match {
-            case Success(Func(IntT(), Ident(x), List(), List(Return(IntLit(1))))) => x shouldBe "f"
-            case _                                                                => fail()
+            case Success(Func(IntT(), Ident(x), List(), List(Return(IntLit(1))))) => 
+                x shouldBe "f"
+            case _                                                                => 
+                fail()
         }
     }
     
@@ -267,8 +270,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse new assignment statements successfully" in {
         parser.stmt.parse("int buzz = 37") match {
-            case Success(NewAss(IntT(), Ident(x), IntLit(37))) => x shouldBe "buzz"
-            case _                                             => fail()
+            case Success(NewAss(IntT(), Ident(x), IntLit(37))) => 
+                x shouldBe "buzz"
+            case _                                             => 
+                fail()
         }
     }
 
@@ -323,8 +328,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse 'if' statements successfully" in {
         parser.stmt.parse("if 37 then skip else skip fi") match {
-            case Success(If(IntLit(x), List(Skip()), List(Skip()))) => x shouldBe 37
-            case _                                                  => fail()
+            case Success(If(IntLit(x), List(Skip()), List(Skip()))) => 
+                x shouldBe 37
+            case _                                                  => 
+                fail()
         }
     }
 
@@ -373,8 +380,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse array elem lvalues successfully" in {
         parser.lvalue.parse("serhii[0]") match {
-            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y) shouldBe ("serhii", 0)
-            case _                                             => fail()
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => 
+                (x, y) shouldBe ("serhii", 0)
+            case _                                             => 
+                fail()
         }
     }
 
@@ -402,8 +411,10 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse newpair rvalues successfully" in {
         parser.rvalue.parse("newpair(37,\"kevin\"))") match {
-            case Success(NewPair(IntLit(x), StrLit(y))) => (x, y) shouldBe (37, "kevin")
-            case _                                      => fail()
+            case Success(NewPair(IntLit(x), StrLit(y))) => 
+                (x, y) shouldBe (37, "kevin")
+            case _                                      => 
+                fail()
         }
     }
 
@@ -420,5 +431,4 @@ class UnitTest extends AnyFlatSpec {
             case _                               => fail()
         }
     }
-
 }

@@ -14,10 +14,12 @@ import lexer.implicits.implicitSymbol
 
 import java.io.File
 
+private final val ERR_FILE_NOT_FOUND = -1
+
 object parser {
     
     def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
-        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(-1)}
+        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
 
     private def isReturnStmt(stmts: List[Stmt[String, Typeless]]): Boolean = stmts.last match {
         case If(_, ifStmts, elseStmts) => isReturnStmt(ifStmts) && isReturnStmt(elseStmts)
@@ -59,7 +61,8 @@ object parser {
         | "if" ~> 
             If(
                 (expr), 
-                ("then".explain("the condition of an if statement must be closed with `then`") ~> stmts), 
+                ("then".explain(
+                    "the condition of an if statement must be closed with `then`") ~> stmts), 
                 ("else".explain("all if statements must have an else clause") ~> stmts)
             ) <~ "fi".explain("unclosed if statement")
         | "while" ~> While(expr, ("do" ~> stmts)) <~ "done"
@@ -71,7 +74,9 @@ object parser {
     private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt).label("statement")
 
     /* Error message taken from the WACC Reference Compiler. */
-    val EXPR_ERR_MSG = "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses in addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators";
+    val EXPR_ERR_MSG = 
+        """expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses.
+           In addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators."""
 
     // optional array index parser
     private lazy val arridx = 

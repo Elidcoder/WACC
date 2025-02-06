@@ -4,8 +4,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
 
 import wacc.pipeline
+import wacc.CODE_SEMATNIC_ERR
 
-val SEM_ERR_FILES = List(
+private final val SEM_ERR_FILES = List(
     "array",
     "exit",
     "expressions",
@@ -30,7 +31,7 @@ class SemanticTest extends AnyFlatSpec with ConditionalTest {
             val name = s"should fail with semantic error (200) in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
-                result shouldBe 200
+                result shouldBe CODE_SEMATNIC_ERR
             }
         }
     }
