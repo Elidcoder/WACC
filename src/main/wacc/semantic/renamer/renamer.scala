@@ -10,22 +10,23 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
     given env: Environment = new Environment()
     given MutScope = empty
     given Scope = Map.empty
+    given FuncScope = FuncScope()
     val Fs = renameFuncs(prog.funcs)
     val Ss = rename(prog.stmts)
     (Program(Fs, Ss)(prog.pos), env)
 
-def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope) = {
+def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope, fNameScope: FuncScope) = {
     fs.foreach { f =>
         given Pos = f.id.pos
-        val newUID: Int = if (mainScope.contains(f.id.v)) 
+        val newUID: Int = if (fNameScope.contains(f.id.v)) 
             then AlreadyDeclaredInScope
             else env.add(f.id.v, FuncT(rename(f.retType), f.params.map(p => rename(p.paramType)))(f.pos))
-        mainScope.put(f.id.v, QualifiedName(f.id.v, newUID))
+        fNameScope.put(f.id.v, QualifiedName(f.id.v, newUID))
     }
     fs.map(rename(_))
 }
 
-def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope): Func[QualifiedName, Typeless] = 
+def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope, fNameScope: FuncScope): Func[QualifiedName, Typeless] = 
     given funcScope: MutScope = from(mainScope)
     given Typeless = Typeless()
     f.params.foreach {param => 
@@ -38,19 +39,19 @@ def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScop
     given Pos = f.pos
     Func(
         rename(f.retType),
-        Ident[QualifiedName, Typeless](funcScope(f.id.v)),
+        Ident[QualifiedName, Typeless](fNameScope.get(f.id.v)),
         f.params.map(p => 
             Param(rename(p.paramType), Ident[QualifiedName, Typeless](funcScope(p.paramId.v)))(p.pos)
         ),
         rename(f.stmts))(f.pos)
 
-def rename(ss: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope): List[Stmt[QualifiedName, Typeless]] = {
+def rename(ss: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope, fNameScope: FuncScope): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = parentScope ++ curScope.toMap
     given MutScope = empty
     ss.map(rename(_))
 }
 
-def rename(s: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope): Stmt[QualifiedName, Typeless] = 
+def rename(s: Stmt[String, Typeless])(using curScope: MutScope, env: Environment, parentScope: Scope, fNameScope: FuncScope): Stmt[QualifiedName, Typeless] = 
     given Pos = s.pos
     given Typeless = Typeless()
     s match {
@@ -86,13 +87,13 @@ def rename(l: LValue[String, Typeless])(using env: Environment, curScope: MutSco
     case Second(l) => Second(rename(l))
 }
 
-def rename(r: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): RValue[QualifiedName, Typeless] = 
+def rename(r: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope, fNameScope: FuncScope): RValue[QualifiedName, Typeless] = 
     given Pos = r.pos
     r match {
         case e: Expr[String, Typeless] => rename(e)
         case ArrayLit(es) => ArrayLit(es.map(rename(_)))
         case NewPair(e1, e2) => NewPair(rename(e1), rename(e2))
-        case Call(i, es) => curScope.rebuildWithIdent(i)(Call(_, es.map(rename(_))))
+        case Call(i, es) => fNameScope.rebuildWithIdent(i)(Call(_, es.map(rename(_))))
         case First(l) => First(rename(l))
         case Second(l) => Second(rename(l))
     }
@@ -135,6 +136,14 @@ extension (curScope: MutScope)
         build(Ident(curScope.get(id.v)
         .getOrElse(parentScope.get(id.v)
         .getOrElse(QualifiedName(id.v, Undeclared)))))
+
+extension (fNameScope: FuncScope) 
+    def rebuildWithIdent[A](id: Ident[String, Typeless])
+    (build: Ident[QualifiedName, Typeless] => A)
+    (using pos: Pos): A = 
+        given Typeless = Typeless()
+        build(Ident(fNameScope.getOption(id.v)
+        .getOrElse(QualifiedName(id.v, Undeclared))))
 
 def rename(t: Type)(using pos: Pos): Type = t match {
     case PairT(t1, t2) => PairT(rename(t1), rename(t2))
