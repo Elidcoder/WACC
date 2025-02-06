@@ -59,10 +59,16 @@ case class WaccErr(
     def format():String = fileName match {
         case None => "Bad filename, no error message could be built"
         case Some(fName) => 
-            /* Create string builder and set colour to red*/
+            /* Create string builder and set the colour of the error. */
             val outputBuilder: StringBuilder = new StringBuilder()
-            outputBuilder ++= "\u001b[31m"
-
+            outputBuilder ++= (if (errType == "Syntax") {
+                /* Add the RED colour string to make syntax errors display in red. */
+                "\u001b[31m"
+            } else {
+                /* Add the ORANGE colour string to make semantic errors display in orange. */
+                "\u001b[38;5;214m"
+            })
+            
             /* Build title of the error message. */
             outputBuilder ++= errType
             outputBuilder ++= " error in file '"

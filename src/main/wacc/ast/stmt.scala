@@ -8,17 +8,17 @@ sealed trait Stmt[N, T] {
 }
 
 case class Skip[N, T]()(val pos: Pos) extends Stmt[N, T]
-case class NewAss[N, T](t: Type, v: Ident[N, T], r: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class Assign[N, T](l: LValue[N, T], r: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class Read[N, T](l: LValue[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class Free[N, T](e: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class Return[N, T](e: Expr[N, T])(using val pos: Pos, val t: T) extends Stmt[N, T]
-case class Exit[N, T](e: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class Print[N, T](e: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class PrintLn[N, T](e: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
-case class If[N, T](e: Expr[N, T], s1: List[Stmt[N, T]], s2: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
-case class While[N, T](e: Expr[N, T], s: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
-case class Nest[N, T](s: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
+case class NewAss[N, T](assType: Type, id: Ident[N, T], rVal: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class Assign[N, T](lVal: LValue[N, T], rVal: RValue[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class Read[N, T](lVal: LValue[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class Free[N, T](expr: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class Return[N, T](expr: Expr[N, T])(using val pos: Pos, val t: T) extends Stmt[N, T]
+case class Exit[N, T](expr: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class Print[N, T](expr: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class PrintLn[N, T](expr: Expr[N, T])(using val pos: Pos) extends Stmt[N, T]
+case class If[N, T](expr: Expr[N, T], ifStmts: List[Stmt[N, T]], elseStmts: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
+case class While[N, T](expr: Expr[N, T], stmts: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
+case class Nest[N, T](stmts: List[Stmt[N, T]])(using val pos: Pos) extends Stmt[N, T]
 
 case object Skip {
     def apply(): Parsley[Skip[String, Typeless]] = pos.map((x: (Int, Int)) => Skip[String, Typeless]()(Pos(x)))

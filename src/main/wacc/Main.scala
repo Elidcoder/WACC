@@ -12,32 +12,24 @@ import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
 
 def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
+    given ErrorBuilder[WaccErr] = new SyntaxErrBuilder with SingleChar
     parser.parse(file) match 
         case Success(x) => 
             /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(x)
 
             /* Attempt rename and match on result of both rename & typecheck. */
-            /* TEMPORARY: disabled typechecking, replaced with a temp value, DELETE temp match when finished */
             typechecker.check(renamedTree, env, file) match
-            //TEMP MATCH (BELOW)
-            // Right(Some(0)): Either[List[WaccErr], Option[Int]] match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
                     // errs.foreach((err: WaccErr) => println(err.format()))
                     200
 
                 /* Renamer & typechecker ran successfully. */
-                case Right(value) => value match
+                case Right(value) => 
+                    value.get 
                     /* Exit with error code 0 if the final tree exists. */
-                    case Some(finalTree) => 
-                        0
-
-                    /* Exit with error code 200 if the final tree doesn't exist. SHOULD NEVER OCCUR. */
-                    case None => 
-                        println("Tree should not be None")
-                        200
+                    0
                         
         /* Failed to parse, print error and exit with error code 100. */
         case Failure(x) => 
