@@ -85,15 +85,15 @@ case object Div extends Operator[Expr, Expr, Expr]
 case object Mod extends Operator[Expr, Expr, Expr]
 case object Add extends Operator[Expr, Expr, Expr]
 case object Sub extends Operator[Expr, Expr, Expr]
+case object And extends Operator[Expr, Expr, Expr]
+case object Or  extends Operator[Expr, Expr, Expr]
 
-case object Greater   extends ComparisonOperator[Expr, Expr, Expr]
-case object GreaterEq extends ComparisonOperator[Expr, Expr, Expr]
-case object Less      extends ComparisonOperator[Expr, Expr, Expr]
-case object LessEq    extends ComparisonOperator[Expr, Expr, Expr]
-case object Eq        extends ComparisonOperator[Expr, Expr, Expr]
-case object NotEq     extends ComparisonOperator[Expr, Expr, Expr]
-case object And extends ComparisonOperator[Expr, Expr, Expr]
-case object Or  extends ComparisonOperator[Expr, Expr, Expr]
+case object Greater   extends Operator[Expr, Expr, Expr]
+case object GreaterEq extends Operator[Expr, Expr, Expr]
+case object Less      extends Operator[Expr, Expr, Expr]
+case object LessEq    extends Operator[Expr, Expr, Expr]
+case object Eq        extends Operator[Expr, Expr, Expr]
+case object NotEq     extends Operator[Expr, Expr, Expr]
 
 case object IntLit extends ParserBridgePos1[Const[Int], IntLit] {
     override def labels = List("integer literal")

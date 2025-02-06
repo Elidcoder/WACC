@@ -18,9 +18,11 @@ private final val ERR_FILE_NOT_FOUND = -1
 
 object parser {
     
-    def parse[Err: ErrorBuilder](input: File): Result[Err, Program[String, Typeless]] = 
-        parser.parseFile(input).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
+    /* Function to read a given file and return it's parsing or a failure code. */
+    def parse[Err: ErrorBuilder](file: File): Result[Err, Program[String, Typeless]] = 
+        parser.parseFile(file).getOrElse {println("Error: File not found"); sys.exit(ERR_FILE_NOT_FOUND)}
 
+    /* Checks if a given group of statements end in a return or exit. */
     private def isReturnStmt(stmts: List[Stmt[String, Typeless]]): Boolean = stmts.last match {
         case If(_, ifStmts, elseStmts) => isReturnStmt(ifStmts) && isReturnStmt(elseStmts)
         case While(_, wStmts)          => isReturnStmt(wStmts)
@@ -30,28 +32,26 @@ object parser {
         case _                         => false
     }
     
-    // TODO(Shld output ""all program body and function declarations must be within `begin` and `end`"" if fully fails)
+    /* Ensure the whole input is consumed. */
     private val parser: Parsley[Program[String, Typeless]] = fully(program)
     
-    // Program parser
+    /* Extract the main body of the program. */
     protected [syntax] lazy val program: Parsley[Program[String, Typeless]] = 
         "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ "end"
 
-    // Function parser
+    /* Parse functions (but not calls).  */
     protected [syntax] lazy val func: Parsley[Func[String, Typeless]] = 
-        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ "end")
+        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> stmts.filter(isReturnStmt) <~ "end")
 
-    // Statements parser for function body
-    private lazy val funcStmts: Parsley[List[Stmt[String, Typeless]]] = 
-        semiSep1(stmt).filter(isReturnStmt)
+    /* Parse a block of statements. */
+    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt)
 
-    // TODO(unexpected identifier should somehow pass the name/ character through so that it is clear) '| unexpected("identifier")'
-    private lazy val asgnmt = 
-        ("=" ~> rvalue).label("assignment")
+    /* Parse an assignment. */
+    private lazy val asgnmt = ("=" ~> rvalue).label("assignment")
 
-    // Statement parser
+    /* Parse a statment. */
     protected [syntax] lazy val stmt: Parsley[Stmt[String, Typeless]] = 
-        ("skip" ~> Skip())
+        (("skip" ~> Skip())
         | ("read" ~> Read(lvalue))
         | ("free" ~> Free(expr))
         | ("return" ~> Return(expr))
@@ -59,8 +59,7 @@ object parser {
         | ("println" ~> PrintLn(expr))
         | ("print" ~> Print(expr))
         | "if" ~> 
-            If(
-                (expr), 
+            If((expr), 
                 ("then".explain(
                     "the condition of an if statement must be closed with `then`") ~> stmts), 
                 ("else".explain("all if statements must have an else clause") ~> stmts)
@@ -68,70 +67,65 @@ object parser {
         | "while" ~> While(expr, ("do" ~> stmts)) <~ "done"
         | "begin" ~> Nest(stmts) <~ "end"
         | NewAss(ptype, ident, asgnmt)
-        | Assign(lvalue, asgnmt)
-
-    // Statements parser
-    private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt).label("statement")
+        | Assign(lvalue, asgnmt)).label("statement")
 
     /* Error message taken from the WACC Reference Compiler. */
     val EXPR_ERR_MSG = 
         """expressions may start with an integer, string, character or boolean literals, identifiers, unary operators, null, or parentheses.
   in addition, expressions may contain array indexing operations and comparison, logical, or arithmetic operators."""
 
-    // optional array index parser
-    private lazy val arridx = 
-        option(some(brackets(expr))).label("array index")
+    /* Parse an array index (making use of an option). */
+    private lazy val arridx = option(some(brackets(expr))).label("array index")
 
-    // Expression parser
-    protected [syntax] lazy val expr: Parsley[Expr[String, Typeless]] = 
-        precedence(
-            ("null" ~> PairLit()),
-            BoolLit(("true" as true) | ("false" as false)),
-            IntLit(integer),
-            CharLit(asciiChar),
-            StrLit(asciiString),
-            ArrayOrIdent(ident, arridx),
-            parens(expr))(
-            Ops(Prefix)(
-                (Not <# "!"),
-                (notFollowedBy(integer) ~> (Neg <# "-")),
-                (Len <# "len"),
-                (Ord <# "ord"),
-                (Chr <# "chr"),
-            ),
-            Ops(InfixL)(
-                (Mul <# "*"),
-                (Div <# "/"),
-                (Mod <# "%"),
-            ),
-            Ops(InfixL)(
-                (Add <# "+"),
-                (Sub <# "-"),
-            ),
-            Ops(InfixN)(
-                (GreaterEq <# ">="),
-                (LessEq <# "<="),
-                (Greater <# ">"),
-                (Less <# "<"),
-            ),
-            Ops(InfixN)(
-                (Eq <# "=="),
-                (NotEq <# "!="),
-            ),
-            Ops(InfixR)(
-                (And <# "&&"),
-            ),
-            Ops(InfixR)(
-                (Or <# "||"),
-            ),
-        ).label("expression").explain(EXPR_ERR_MSG)
+    /* Parse an expression, makesuse of the precedence function. */
+    protected [syntax] lazy val expr: Parsley[Expr[String, Typeless]] = precedence(
+        ("null" ~> PairLit()),
+        BoolLit(("true" as true) | ("false" as false)),
+        IntLit(integer),
+        CharLit(asciiChar),
+        StrLit(asciiString),
+        ArrayOrIdent(ident, arridx),
+        parens(expr))(
+        Ops(Prefix)(
+            (Not <# "!"),
+            (notFollowedBy(integer) ~> (Neg <# "-")),
+            (Len <# "len"),
+            (Ord <# "ord"),
+            (Chr <# "chr"),
+        ),
+        Ops(InfixL)(
+            (Mul <# "*"),
+            (Div <# "/"),
+            (Mod <# "%"),
+        ),
+        Ops(InfixL)(
+            (Add <# "+"),
+            (Sub <# "-"),
+        ),
+        Ops(InfixN)(
+            (GreaterEq <# ">="),
+            (LessEq <# "<="),
+            (Greater <# ">"),
+            (Less <# "<"),
+        ),
+        Ops(InfixN)(
+            (Eq <# "=="),
+            (NotEq <# "!="),
+        ),
+        Ops(InfixR)(
+            (And <# "&&"),
+        ),
+        Ops(InfixR)(
+            (Or <# "||"),
+        ),
+    ).label("expression").explain(EXPR_ERR_MSG)
 
-    // lvalue parser
+    /* LValue parser. */
     protected [syntax] lazy val lvalue: Parsley[LValue[String, Typeless]] = 
         pairElem
         | ArrayOrIdent(ident, arridx)
 
-    // rvalue parser
+    /* RValue parser. */
     protected [syntax] lazy val rvalue: Parsley[RValue[String, Typeless]] = 
         pairElem
         | "newpair" ~> parens(NewPair(expr, ("," ~> expr)))
@@ -139,31 +133,28 @@ object parser {
         | ArrayLit(brackets(commaSep(expr)))
         | expr
     
-    // pairElem parser
+    /* Pair of elements parser. */
     protected [syntax] lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
         ("fst" ~> First(lvalue))
         | ("snd" ~> Second(lvalue))
+
+    /* Pair of elements type parser. */
+    private lazy val pairElemType: Parsley[SemType] = 
+        nestPairCheck ~> postfix(baseType | ("pair" as PairT(?, ?)))(ArrayT <# "[]")
     
-    // PairType parser
+    /* Pair element type parser. */
     private lazy val pairType: Parsley[KnownType] = 
         ("pair" ~> PairT(("(" ~> pairElemType), ("," ~> pairElemType <~ ")")))
 
-    // Type parser
+    /* Pair type parser. */
     protected [syntax] lazy val ptype: Parsley[KnownType] = 
         postfix(pairType | baseType)(ArrayT <# "[]")
-    
-    // PairElemType parser
-    private lazy val pairElemType: Parsley[SemType] = 
-        nestPairCheck ~> postfix(baseType | reducedPairType)(ArrayT <# "[]")
 
+    /* Parses checking for pair nesting, if a nested pair is found the relevent error message is output. */
     private lazy val nestPairCheck =
         notFollowedBy(atomic(pairType)) | fail("pair nesting not allowed in WACC")
-
-    // Reduced Pair Type parser
-    private lazy val reducedPairType: Parsley[SemType] = 
-        "pair" as PairT(?, ?)
-
-    // Base Type parser
+        
+    /* General type parser. */
     private lazy val baseType: Parsley[KnownType] = 
         ("int" as IntT()) |
         ("bool" as BoolT()) |
