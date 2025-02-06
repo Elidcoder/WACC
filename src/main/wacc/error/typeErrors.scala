@@ -14,7 +14,7 @@ object TypeErr {
                 Some(ErrItem.Named(readType.toString)),
                 Set(ErrItem.Named(expectedType.toString)),
                 Set(),
-                getLineInfo(ctx.file, pos, 1)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
@@ -27,7 +27,7 @@ object TypeErr {
                 Some(ErrItem.Named(readType.toString)),
                 Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
                 Set("Must be of String like type"),
-                getLineInfo(ctx.file, pos, 1)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
@@ -40,7 +40,7 @@ object TypeErr {
                 Some(ErrItem.Named(givenType.toString)),
                 Set(ErrItem.Raw("pair"), ErrItem.Raw("array")),
                 Set("Tried to free an unfreeable type"),
-                getLineInfo(ctx.file, pos, 1)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
@@ -53,7 +53,7 @@ object TypeErr {
                 Some(ErrItem.Named(givenType.toString)),
                 Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
                 Set("Must be a readable type"),
-                getLineInfo(ctx.file, pos, 1)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
@@ -160,16 +160,16 @@ object TypeErr {
     }
 
     /* Takes in a file as well as a position within a file
-    * Returns a lineInformation created using the information in the file */
+     * Returns a lineInformation created using the information in the file */
     private def getLineInfo(file: File, pos: R2, badTokWidth: Int = 1): LineInformation = 
         /* Read the lines from the file. */
         val source = scala.io.Source.fromFile(file)
-        val lines = source.getLines().toList
+        val lines  = source.getLines().toList
         source.close()
 
         /* Build the line information from the file contents. */
         val zeroIndexRow = pos.row - 1
-        val linesBefore = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
-        val linesAfter = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
+        val linesBefore  = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
+        val linesAfter   = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
         new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col - 1, badTokWidth)
 }

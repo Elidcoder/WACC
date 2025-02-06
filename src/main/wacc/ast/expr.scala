@@ -31,12 +31,8 @@ case object ArrayElem extends ParserBridgePos2[Ident, ListWrap[Expr], ArrayElem]
 }
 
 case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Expr]], ArrayOrIdent] {
-    override def apply[String, Typeless](id: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(pos: Pos): ArrayOrIdent[String, Typeless] = 
-        given Pos = pos
-        exprs match {
-        case Some(es)   => ArrayElem(id, es)
-        case None       => id
-    } 
+    override def apply[String, Typeless](id: Ident[String, Typeless], exprs: Option[List[Expr[String, Typeless]]])(using pos: Pos): ArrayOrIdent[String, Typeless] = 
+        exprs.fold(id)(ArrayElem(id, _))
 }
 
 case object ArrayLit extends ParserBridgePos1[ListWrap[Expr], ArrayLit] {
@@ -117,5 +113,5 @@ case object StrLit extends ParserBridgePos1[Const[String], StrLit] {
     override def labels = List("string literal")
 }
 case object PairLit {
-    def apply(): Parsley[PairLit[String, Typeless]] = pos.map((x: (Int, Int)) => PairLit[String, Typeless]()(Pos(x)))
+    def apply(): Parsley[PairLit[String, Typeless]] = pos.map((position: (Int, Int)) => PairLit[String, Typeless]()(Pos(position)))
 }
