@@ -83,7 +83,7 @@ case class WaccErr(
             errStyle match {
                 case ErrLines.SpecialisedError(msgs, errStyle) =>
                     /* Join the given messages. */
-                    outputBuilder ++= msgs.mkString(",\n  ") 
+                    outputBuilder ++= msgs.mkString("\n  ") 
 
                     /* Display code near the error. */
                     outputBuilder ++= "\n\n>"

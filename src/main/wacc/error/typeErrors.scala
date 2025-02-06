@@ -1,70 +1,63 @@
 package wacc.error
 
 import wacc.semantic.typecheck.Context
+import wacc.semantic.QualifiedName
 import wacc.ast.{Type, Pos}
 import java.io.File
 
 /* The possible type errors that can occur during type checking. */
 object TypeErr {
     case object TypeMismatch {
-        def apply(readType: Type, expectedType: Type)(using ctx: Context, pos: Pos) = 
-            val badToken = readType.toString()
-            WaccErr(
-                pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
-                    Set(ErrItem.Named(expectedType.toString)),
-                    Set("Types must match"),
-                    getLineInfo(ctx.file, pos, badToken.size)
-                ),
-                Option(ctx.file.getName()),
-                "Type"
-            )
+        def apply(readType: Type, expectedType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(readType.toString)),
+                Set(ErrItem.Named(expectedType.toString)),
+                Set(),
+                getLineInfo(ctx.file, pos, 1)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
     }
     case object IsNotString {
-        def apply(readType: Type)(using ctx: Context, pos: Pos) =
-                val badToken = readType.toString()
-                WaccErr(
-                pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
-                    Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
-                    Set("Must be of String like type"),
-                    getLineInfo(ctx.file, pos, badToken.size)
-                ),
-                Option(ctx.file.getName()),
-                "Type"
-            )
+        def apply(readType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(readType.toString)),
+                Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
+                Set("Must be of String like type"),
+                getLineInfo(ctx.file, pos, 1)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
     }
     case object IsNotFreeable {
-        def apply(givenType: Type)(using ctx: Context, pos: Pos) = 
-            val badToken = givenType.toString()
-            WaccErr(
-                pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
-                    Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
-                    Set("Tried to free an unfreeable type"),
-                    getLineInfo(ctx.file, pos, badToken.size)
-                ),
-                Option(ctx.file.getName()),
-                "Type"
-            )
+        def apply(givenType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(givenType.toString)),
+                Set(ErrItem.Raw("pair"), ErrItem.Raw("array")),
+                Set("Tried to free an unfreeable type"),
+                getLineInfo(ctx.file, pos, 1)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
     }
     case object IsNotReadable {
-        def apply(givenType: Type)(using ctx: Context, pos: Pos) = 
-            val badToken = givenType.toString()
-            WaccErr(
-                pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(badToken)),
-                    Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
-                    Set("Must be a readable type"),
-                    getLineInfo(ctx.file, pos, badToken.size)
-                ),
-                Option(ctx.file.getName()),
-                "Type"
-            )
+        def apply(givenType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(givenType.toString)),
+                Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
+                Set("Must be a readable type"),
+                getLineInfo(ctx.file, pos, 1)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
     }
     case object IsNotComparable {
         def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
@@ -81,7 +74,7 @@ object TypeErr {
     }
 
     case object ReturnInMainBody {
-        def apply(pos: R2)(using ctx: Context) = WaccErr(
+        def apply()(using ctx: Context, pos: Pos) = WaccErr(
             pos,
             ErrLines.VanillaError(
                 Some(ErrItem.Named("return")),
@@ -97,10 +90,8 @@ object TypeErr {
         def apply(varName: String, pos: R2)(using ctx: Context) =
             WaccErr(
                 pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(varName)),
-                    Set(),
-                    Set("Variable used before declaration"),
+                ErrLines.SpecialisedError(
+                    Set(s"variable $varName has not been declared in this scope"),
                     getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
@@ -112,10 +103,8 @@ object TypeErr {
         def apply(varName: String, pos: R2)(using ctx: Context) =
             WaccErr(
                 pos,
-                ErrLines.VanillaError(
-                    Some(ErrItem.Named(varName)),
-                    Set(),
-                    Set("This variable has already been declared"),
+                ErrLines.SpecialisedError(
+                    Set(s"illegal redeclaration of variable $varName"),
                     getLineInfo(ctx.file, pos, varName.size)
                 ),
                 Option(ctx.file.getName()),
@@ -150,6 +139,23 @@ object TypeErr {
             ),
             Option(ctx.file.getName()),
             "Type"
+        )
+    }
+
+        case object WrongArgNums {
+        def apply(actNum: Int, expNum: Int, name: QualifiedName)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.SpecialisedError(
+                Set(
+                    s"wrong number of arguments provided to function ${name.oldName}",
+                    s"unexpected $actNum arguments",
+                    s"expected $expNum arguments",
+                    s"(function ${name.oldName} has type ${ctx.getType(name).toString()})"
+                ),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Function call"
         )
     }
 

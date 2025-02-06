@@ -57,7 +57,6 @@ object typechecker {
             }
 
         def satisfies(c: Constraint)(using ctx: Context, pos: Pos): Option[Type] = 
-            given Pos = pos
             given Typeless = Typeless()
             (t,c) match {
                 case (StringT(), Is(ArrayT(CharT()))) => 
@@ -140,7 +139,7 @@ object typechecker {
                 if ot == Some(?) then ctx.error(ReadUnknownType())
                 for { t <- ot; tE <- otE; given Type = t} yield Read(tE)
             case Return(e) => ctx.body match {
-                case Body.Main => ctx.error(ReturnInMainBody(Pos(1,1)))
+                case Body.Main => ctx.error(ReturnInMainBody())
                 case Body.Function(returnType) => 
                     given Type = returnType
                     for { te <- check(e, Is(returnType))._2 } yield Return(te)
@@ -230,8 +229,7 @@ object typechecker {
             Param(param.paramType, Ident[QualifiedName, Type](param.paramId.v))(param.pos)
         )
 
-    private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
-        given Pos = i.pos
+    private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
         val ot = ctx.getType(i.v).satisfies(c)
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)

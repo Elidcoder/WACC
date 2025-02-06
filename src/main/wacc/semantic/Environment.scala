@@ -14,7 +14,7 @@ class Environment() {
     def get(uid: Int): Type = map(uid)
     override def toString(): String = map.toString()
 }
-type MutScope = mutable.Map[String, Ident[QualifiedName, Typeless]]
-type Scope = Map[String, Ident[QualifiedName, Typeless]]
+type MutScope = mutable.Map[String, QualifiedName]
+type Scope = Map[String, QualifiedName]
 final val Undeclared = -1
 final val AlreadyDeclaredInScope = -2
