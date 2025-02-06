@@ -1,17 +1,17 @@
 package wacc.semantic 
 
 import scala.collection.mutable
-import wacc.ast.Type
+import wacc.ast.SemType
 
 class Environment() {
-    private val map: mutable.Map[Int, Type] = mutable.Map.empty
+    private val map: mutable.Map[Int, SemType] = mutable.Map.empty
     private var nextUID: Int = 0
     def uid(): Int = nextUID
-    def add(v: String, t: Type): Int = 
+    def add(v: String, t: SemType): Int = 
         map.put(nextUID, t)
         nextUID += 1
         nextUID - 1
-    def get(uid: Int): Type = map(uid)
+    def get(uid: Int): SemType = map(uid)
     override def toString(): String = map.toString()
 }
 class FuncScope() {
