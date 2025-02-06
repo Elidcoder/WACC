@@ -22,7 +22,7 @@ def pipeline(file: File): Int = {
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
-                    errs.foreach((err: WaccErr) => println(err.format()))
+                    // errs.foreach((err: WaccErr) => println(err.format()))
                     200
 
                 /* Renamer & typechecker ran successfully. */

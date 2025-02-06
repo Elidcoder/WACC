@@ -18,7 +18,10 @@ def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainSc
     fs.foreach { f =>
         given Pos = f.v.pos
         given Typeless = Typeless()
-        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos)))))
+        val newUID: Int = if (mainScope.contains(f.v.v)) 
+            then AlreadyDeclaredInScope
+            else env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos))
+        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, newUID)))
     }
     fs.map(rename(_))
 }
@@ -28,7 +31,10 @@ def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScop
     given Typeless = Typeless()
     f.l.foreach {param => 
         given Pos = param.v.pos
-        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, env.add(param.v.v, rename(param.t)))))  
+        val newUID: Int = if (funcScope.contains(param.v.v)) 
+            then AlreadyDeclaredInScope
+            else env.add(param.v.v, rename(param.t))
+        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, newUID)))  
     }
     given Pos = f.pos
     Func(
@@ -78,7 +84,7 @@ def rename(l: LValue[String, Typeless])(using env: Environment, curScope: MutSco
     case i: Ident[String, Typeless] => curScope.rebuildWithIdent(i)(identity(_))
     case ArrayElem(i, x) => curScope.rebuildWithIdent(i)(ArrayElem(_, x.map(rename(_))))
     case First(l) => First(rename(l))
-    case Second(l) => First(rename(l))
+    case Second(l) => Second(rename(l))
 }
 
 def rename(r: RValue[String, Typeless])(using env: Environment, curScope: MutScope, parentScope: Scope): RValue[QualifiedName, Typeless] = 
