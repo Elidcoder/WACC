@@ -16,12 +16,12 @@ class Context(var body: Body, val env: Environment, val file: File) {
         given Context = this
         uid match
         case -1 => 
-            // TODO(Scope error: Undeclared)
-            error(OutOfScope(new R2(0, 0)))
+            // TODO(Add the ID parameter to the OutOfScope Error when it can be extracted from uid)
+            //error(OutOfScope(new R2(0, 0)))
             ?
         case -2 => 
-            // TODO(Scope error: Already declared)
-            error(AlreadyDeclared(new R2(0,0)))
+            // TODO(Add the ID parameter to the AlreadyDeclared Error when it can be extracted from uid)
+            //error(AlreadyDeclared(new R2(0,0)))
             ?
         case n => env.get(n)
     private val errors = List.newBuilder[WaccErr]

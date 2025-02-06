@@ -71,41 +71,45 @@ object TypeErr {
         def apply(pos: R2)(using ctx: Context) = WaccErr(
             pos,
             ErrLines.VanillaError(
-                None,
+                Some(ErrItem.Named("return")),
                 Set(),
                 Set("Return in main body is not allowed"),
-                getLineInfo(ctx.file, pos)
+                getLineInfo(ctx.file, pos, 6)
             ),
             Option(ctx.file.getName()),
             "Type"
         )
     }
     case object OutOfScope {
-        def apply(pos: R2)(using ctx: Context) = WaccErr(
-            pos,
-            ErrLines.VanillaError(
-                None,
-                Set(),
-                Set("Variable used before decleration"),
-                getLineInfo(ctx.file, pos)
-            ),
-            Option(ctx.file.getName()),
-            "Type"
-        )
+        def apply(id: Ident[QualifiedName, Typeless], pos: R2)(using ctx: Context) = 
+            val badToken = id.v.oldName
+            WaccErr(
+                pos,
+                ErrLines.VanillaError(
+                    Some(ErrItem.Named(badToken)),
+                    Set(),
+                    Set("Variable used before decleration"),
+                    getLineInfo(ctx.file, pos, badToken.size)
+                ),
+                Option(ctx.file.getName()),
+                "Type"
+            )
     }
 
     case object AlreadyDeclared {
-        def apply(pos: R2)(using ctx: Context) = WaccErr(
-            pos,
-            ErrLines.VanillaError(
-                None,
-                Set(),
-                Set("This variable has already been declared"),
-                getLineInfo(ctx.file, pos)
-            ),
-            Option(ctx.file.getName()),
-            "Type"
-        )
+        def apply(id: Ident[QualifiedName, Typeless], pos: R2)(using ctx: Context) = 
+            val badToken = id.v.oldName
+            WaccErr(
+                pos,
+                ErrLines.VanillaError(
+                    Some(ErrItem.Named(badToken)),
+                    Set(),
+                    Set("This variable has already been declared"),
+                    getLineInfo(ctx.file, pos, badToken.size)
+                ),
+                Option(ctx.file.getName()),
+                "Type"
+            )
     }
 
     /* Takes in a file as well as a position within a file
