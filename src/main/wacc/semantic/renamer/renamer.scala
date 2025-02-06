@@ -18,7 +18,10 @@ def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainSc
     fs.foreach { f =>
         given Pos = f.v.pos
         given Typeless = Typeless()
-        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos)))))
+        val newUID: Int = if (mainScope.contains(f.v.v)) 
+            then AlreadyDeclaredInScope
+            else env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos))
+        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, newUID)))
     }
     fs.map(rename(_))
 }
