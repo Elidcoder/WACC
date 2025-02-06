@@ -100,7 +100,7 @@ object typechecker {
         given Type = func.retType
         ctx.body = Body.Function(func.retType)
         for { tF <- check(func.stmts) } 
-        yield Func(func.retType, Ident[QualifiedName, Type](func.id.v), checkParams(func.params), tF)(func.pos)
+        yield Func(func.retType, Ident[QualifiedName, Type](func.id.name), checkParams(func.params), tF)(func.pos)
 
     private def check(ss: List[Stmt[QualifiedName, Typeless]])(using ctx: Context): Option[List[Stmt[QualifiedName, Type]]] = 
         ss.foldLeft(Some(List.empty)) {
@@ -182,7 +182,7 @@ object typechecker {
     }
 
     private def checkArrayElem(i: Ident[QualifiedName, Typeless], es: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[ArrayElem[QualifiedName, Type]]) = 
-        val it: Type = ctx.getType(i.v)
+        val it: Type = ctx.getType(i.name)
         val (ot, otes) = es.foldRight((Some(it), Some(List.empty))) {
             (e: Expr[QualifiedName, Typeless], x: (Option[Type], Option[List[Expr[QualifiedName, Type]]])) =>
                 val (ot, otes) = x
@@ -192,7 +192,7 @@ object typechecker {
                 (newOt, finalTes)
             }
         given Type = it
-        val oElem = for { tes <- otes } yield ArrayElem(Ident[QualifiedName, Type](i.v), tes)
+        val oElem = for { tes <- otes } yield ArrayElem(Ident[QualifiedName, Type](i.name), tes)
         ((for {t <- ot; ft <- t.satisfies(c)} yield ft) , oElem)
 
     private def checkBinOp( 
@@ -226,12 +226,12 @@ object typechecker {
         params.map(param => 
             given Pos = param.paramId.pos
             given Type = param.paramType
-            Param(param.paramType, Ident[QualifiedName, Type](param.paramId.v))(param.pos)
+            Param(param.paramType, Ident[QualifiedName, Type](param.paramId.name))(param.pos)
         )
 
     private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
-        val ot = ctx.getType(i.v).satisfies(c)
-        val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
+        val ot = ctx.getType(i.name).satisfies(c)
+        val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.name)
         (ot, tI)
     
     private def check(e: LValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[LValue[QualifiedName, Type]]) =
@@ -284,7 +284,7 @@ object typechecker {
         val (ofunct, otid) = check(call.id, Unconstrained)
         val tup = for {
             case FuncT(t, ts) <- ofunct
-            if checkArgSize(ts, call.exprs, call.id.v)
+            if checkArgSize(ts, call.exprs, call.id.name)
             ft <- t.satisfies(c)
             exprs <- (call.exprs zip ts).foldRight(Some(List.empty[Expr[QualifiedName, Type]])){ 
                 (v: (Expr[QualifiedName, Typeless], Type), optTrees: Option[List[Expr[QualifiedName, Type]]]) =>
