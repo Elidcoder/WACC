@@ -110,6 +110,6 @@ def getLineInfo(file: File, pos: R2): LineInformation =
 
     /* Build the line information from the file contents. */
     val zeroIndexRow = pos.row - 1
-    val linesBefore = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
-    val linesAfter = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
+    val linesBefore = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
+    val linesAfter = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
     new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col, 1)
