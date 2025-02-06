@@ -283,17 +283,27 @@ object typechecker {
         (for {defArrayType <- arrayType; checkedArrayType <- defArrayType.satisfies(c)} yield checkedArrayType , arrayTree)
 
     private def check(call: Call[QualifiedName, Typeless], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
-        val (optTypes, optExprs) = call.exprs.foldRight((Some(List.empty[Type]), Some(List.empty[Expr[QualifiedName, Type]]))){ 
-            (e: Expr[QualifiedName, Typeless], acc: (Option[List[Type]], Option[List[Expr[QualifiedName, Type]]])) =>
-                val (optTypes, optTrees) = acc
-                val (optType, optTree) = check(e, Unconstrained)
-                (for { t <- optType; ts <- optTypes } yield t :: ts, for { e <- optTree; es <- optTrees } yield e :: es)
-        }
-        val (ot, oti) = optTypes match {
-            case Some(value) => check(call.id, Is(FuncT(?, value)(pos)))
-            case None => (None, None)
-        }
-        (for {case FuncT(t, _) <- ot; ft <- t.satisfies(c)} yield ft, for {ti <- oti; exprs <- optExprs} yield Call(ti, exprs))
+        val (ofunct, otid) = check(call.id, Unconstrained)
+        val tup = for {
+            case FuncT(t, ts) <- ofunct
+            if checkArgSize(ts, call.exprs, call.id.v)
+            ft <- t.satisfies(c)
+            exprs <- (call.exprs zip ts).foldRight(Some(List.empty[Expr[QualifiedName, Type]])){ 
+                (v: (Expr[QualifiedName, Typeless], Type), optTrees: Option[List[Expr[QualifiedName, Type]]]) =>
+                    val (e, t) = v
+                    val (optType, optTree) = check(e, Is(t))
+                    for { e <- optTree; es <- optTrees } yield e :: es
+            }
+        } yield (ft, exprs)
+
+        (for {(ft,_) <- tup} yield ft, for {tid <- otid; (_,exprs) <- tup} yield Call(tid, exprs))
+    
+    private def checkArgSize(ts: List[Type], exprs: List[Expr[QualifiedName, Typeless]], func: QualifiedName)(using ctx: Context, pos: Pos): Boolean =
+        if ts.size == exprs.size then
+            true
+        else
+            ctx.error(WrongArgNums(exprs.size, ts.size, func))
+            false
         
 
     private def check(rVal: RValue[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[RValue[QualifiedName, Type]]) = 
