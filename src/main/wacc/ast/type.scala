@@ -15,18 +15,15 @@ case class FuncT(returnT: Type, paramTs: List[Type])(val pos: Pos) extends Type 
         builder.result()
 }
 
-case class ArrayT[N, T](t: Type)(using val pos: Pos) extends Type {
+case class ArrayT[N, T](t: Type) extends Type {
     override def toString(): String = t match
         case ? => "Array Type"
         case x => s"$x[]"
 }
-case class PairT[N, T](x: Type, y: Type)(using val pos: Pos) extends Type {
+case class PairT[N, T](x: Type, y: Type) extends Type {
     override def toString(): String = (x, y) match
         case (?, ?) => "pair"
         case (left, right) => s"pair($left, $right)"
-}
-case class RedPairT() extends Type {
-    override def toString(): String = "pair"
 }
 
 case class IntT() extends Type {
@@ -42,9 +39,9 @@ case class StringT() extends Type {
     override def toString(): String = "string"
 }
 
-case object ArrayT extends ParserBridgePos1[Const[Type], Const[Type]]{
+case object ArrayT extends ParserBridge1[Const[Type], Const[Type]]{
     override def labels: List[String] = List("array type")
 }
-case object PairT extends ParserBridgePos2[Const[Type], Const[Type], Const[Type]]{
+case object PairT extends ParserBridge2[Const[Type], Const[Type], Const[Type]]{
     override def labels: List[String] = List("pair type")
 }

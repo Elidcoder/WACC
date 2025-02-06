@@ -2,7 +2,9 @@ package wacc.ast
 
 import parsley.Parsley
 import parsley.position.pos
+import parsley.syntax.zipped._
 import parsley.generic.ErrorBridge
+import parsley.generic.ParserSingletonBridge
 import parsley.ap.{ap1,ap2, ap3, ap4}
 
 type Const[T] = [_, _] =>> T
@@ -39,6 +41,20 @@ trait FuncBridge extends ParserSingletonBridgePos[(Type, Ident[String, Typeless]
         error(ap3(pos.map(con), x, y, z))
     override final def con(pos: (Int, Int)): (Type, Ident[String, Typeless], List[Param[String, Typeless]]) => (List[Stmt[String, Typeless]]) => Func[String, Typeless] = 
         (x: Type, y: Ident[String, Typeless], z: List[Param[String, Typeless]]) => this.apply(x, y, z, _)(Pos(pos))
+}
+
+trait ParserBridge1[-A[String, Typeless], +B[String, Typeless]] extends ParserSingletonBridge[A[String, Typeless] => B[String, Typeless]] {
+    def apply[String, Typeless](x: A[String, Typeless]): B[String, Typeless]
+    def apply(x: Parsley[A[String, Typeless]]): Parsley[B[String, Typeless]] = error(x.map(con))
+
+    override protected def con: A[String, Typeless] => B[String, Typeless] = this.apply
+}
+
+trait ParserBridge2[-A[String, Typeless], -B[String, Typeless], +C[String, Typeless]] extends ParserSingletonBridge[(A[String, Typeless], B[String, Typeless]) => C[String, Typeless]] {
+    def apply[String, Typeless](x: A[String, Typeless], y: B[String, Typeless]): C[String, Typeless]
+    def apply(x: Parsley[A[String, Typeless]], y: =>Parsley[B[String, Typeless]]): Parsley[C[String, Typeless]] = error((x, y).zipped(con))
+
+    override protected def con: (A[String, Typeless], B[String, Typeless]) => C[String, Typeless] = this.apply
 }
 
 trait ParserBridgePos1[-A[String, Typeless], +B[String, Typeless]] extends ParserSingletonBridgePos[A[String, Typeless] => B[String, Typeless]] {
