@@ -120,11 +120,11 @@ object typechecker {
                 given Typeless = Typeless()
                 check(Assign(id, rval))
             case Assign(lval, rval) => 
-                val (lvalTypeOpt, typedLval) = check(lval, Unconstrained)
-                val (rvalType, typedRval) = check(rval, Is(lvalTypeOpt.getOrElse(?)))
-                if rvalType == Some(?) then ctx.error(UnknownPairTypes())
-                for {lval <- typedLval; rval <- typedRval; lvalType <- lvalTypeOpt;
-                     knownTy <- isKnown(lvalType); given KnownType = knownTy} yield Assign(lval, rval)
+                val (lvalTypeOpt, typedLvalOpt) = check(lval, Unconstrained)
+                val (rvalTypeOpt, typedRvalOpt) = check(rval, Is(lvalTypeOpt.getOrElse(?)))
+                if rvalTypeOpt == Some(?) then ctx.error(UnknownPairTypes())
+                for {lval <- typedLvalOpt; rval <- typedRvalOpt; rvalType <- rvalTypeOpt;
+                     knownTy <- isKnown(rvalType); given KnownType = knownTy} yield Assign(lval, rval)
             case Exit(expr) => 
                 for {typeExpr <- check(expr, Is(IntT()))._2} yield Exit(typeExpr)
             case Free(expr) =>
