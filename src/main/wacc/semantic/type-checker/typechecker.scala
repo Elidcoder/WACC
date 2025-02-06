@@ -129,6 +129,7 @@ object typechecker {
                 for { t <- ot; tE <- otE; given Type = t} yield PrintLn(tE)
             case Read(l) => 
                 val (ot, otE) = check(l, IsReadable)
+                if ot == Some(?) then ctx.error(ReadUnknownType(s.pos))
                 for { t <- ot; tE <- otE; given Type = t} yield Read(tE)
             case Return(e) => ctx.body match {
                 case Body.Main => ctx.error(ReturnInMainBody(Pos(1,1)))

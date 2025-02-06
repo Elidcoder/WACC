@@ -113,6 +113,21 @@ object SemanticWaccErr {
             "Type"
         )
     }
+
+    case object ReadUnknownType {
+        def apply(pos: R2)(using ctx: Context) = WaccErr(
+            pos,
+            ErrLines.SpecialisedError(
+                Set(
+                    "attempting to read from unknown type",
+                    "reading from a nested pair extraction is not legal due to pair erasure"
+                ),
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
 }
 
 /* Takes in a file as well as a position within a file
