@@ -75,8 +75,8 @@ object parser {
 
     /* Error message taken from the WACC Reference Compiler. */
     val EXPR_ERR_MSG = 
-        """expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses.
-           In addition, expressions may contain array indexing operations; and comparison, logical, and arithmetic operators."""
+        """expressions may start with an integer, string, character or boolean literals, identifiers, unary operators, null, or parentheses.
+  in addition, expressions may contain array indexing operations and comparison, logical, or arithmetic operators."""
 
     // optional array index parser
     private lazy val arridx = 
