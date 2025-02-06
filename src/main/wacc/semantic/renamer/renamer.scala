@@ -16,12 +16,12 @@ def rename(prog: Program[String, Typeless]): (Program[QualifiedName, Typeless], 
 
 def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainScope: MutScope, parentScope: Scope) = {
     fs.foreach { f =>
-        given Pos = f.v.pos
+        given Pos = f.id.pos
         given Typeless = Typeless()
-        val newUID: Int = if (mainScope.contains(f.v.v)) 
+        val newUID: Int = if (mainScope.contains(f.id.v)) 
             then AlreadyDeclaredInScope
-            else env.add(f.v.v, FuncT(rename(f.t), f.l.map(p => rename(p.t)))(f.pos))
-        mainScope.put(f.v.v, Ident[QualifiedName, Typeless](QualifiedName(f.v.v, newUID)))
+            else env.add(f.id.v, FuncT(rename(f.retType), f.params.map(p => rename(p.paramType)))(f.pos))
+        mainScope.put(f.id.v, Ident[QualifiedName, Typeless](QualifiedName(f.id.v, newUID)))
     }
     fs.map(rename(_))
 }
@@ -29,21 +29,21 @@ def renameFuncs(fs: List[Func[String, Typeless]])(using env: Environment, mainSc
 def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScope, parentScope: Scope): Func[QualifiedName, Typeless] = 
     given funcScope: MutScope = from(mainScope)
     given Typeless = Typeless()
-    f.l.foreach {param => 
-        given Pos = param.v.pos
-        val newUID: Int = if (funcScope.contains(param.v.v)) 
+    f.params.foreach {param => 
+        given Pos = param.paramId.pos
+        val newUID: Int = if (funcScope.contains(param.paramId.v)) 
             then AlreadyDeclaredInScope
-            else env.add(param.v.v, rename(param.t))
-        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, newUID)))  
+            else env.add(param.paramId.v, rename(param.paramType))
+        funcScope.put(param.paramId.v, Ident(QualifiedName(param.paramId.v, newUID)))  
     }
     given Pos = f.pos
     Func(
-        rename(f.t),
-        funcScope(f.v.v),
-        f.l.map(p => 
-            Param(rename(p.t), funcScope(p.v.v))(p.pos)
+        rename(f.retType),
+        funcScope(f.id.v),
+        f.params.map(p => 
+            Param(rename(p.paramType), funcScope(p.paramId.v))(p.pos)
         ),
-        rename(f.s))(f.pos)
+        rename(f.stmts))(f.pos)
 
 def rename(ss: List[Stmt[String, Typeless]])(using env: Environment, curScope: MutScope, parentScope: Scope): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = parentScope ++ curScope.toMap
