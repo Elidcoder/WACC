@@ -1,7 +1,7 @@
 package wacc
 
-import wacc.syntax.parser
 import wacc.error.WaccErr
+import wacc.syntax.parser
 import wacc.semantic.rename
 import wacc.syntax.lexer.lexErrBuilder
 import wacc.semantic.typecheck.typechecker
@@ -10,7 +10,6 @@ import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
 
 import java.io.File
-import wacc.syntax.lexer.lexErrBuilder
 
 final val CODE_SUCCESS      = 0
 final val CODE_SYNTAX_ERR   = 100
