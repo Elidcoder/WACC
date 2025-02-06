@@ -31,7 +31,10 @@ def rename(f: Func[String, Typeless])(using env: Environment, mainScope: MutScop
     given Typeless = Typeless()
     f.l.foreach {param => 
         given Pos = param.v.pos
-        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, env.add(param.v.v, rename(param.t)))))  
+        val newUID: Int = if (funcScope.contains(param.v.v)) 
+            then AlreadyDeclaredInScope
+            else env.add(param.v.v, rename(param.t))
+        funcScope.put(param.v.v, Ident(QualifiedName(param.v.v, newUID)))  
     }
     given Pos = f.pos
     Func(
