@@ -6,14 +6,6 @@ import parsley.Success
 
 import wacc.ast.*
 
-val UNIT_TEST_CATS = List(
-    "expr",
-    "func",
-    "prog",
-    "stmt",
-    "type",
-)
-
 class UnitTest extends AnyFlatSpec {
     
     /* Tests for atomics */
@@ -61,7 +53,7 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse an array elem successfully" in {
         parser.expr.parse("freddie[0]") match {
-            case Success(ArrayElem(Ident(x), y)) => (x, y).equals(("freddie", "0"))
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y).equals(("freddie", 0))
             case _                 => fail()
         }
     }
@@ -193,8 +185,239 @@ class UnitTest extends AnyFlatSpec {
         }
     }
 
-    /* Test for LValues */
-
     /* Test for types */
+    it should "parse base type 'int' successfully" in {
+        parser.ptype.parse("int") match {
+            case Success(IntT()) => succeed
+            case _               => fail()
+        }
+    }
+
+    it should "parse base type 'bool' successfully" in {
+        parser.ptype.parse("bool") match {
+            case Success(BoolT()) => succeed
+            case _                => fail()
+        }
+    }
+
+    it should "parse base type 'char' successfully" in {
+        parser.ptype.parse("char") match {
+            case Success(CharT()) => succeed
+            case _                => fail()
+        }
+    }
+
+    it should "parse base type 'string' successfully" in {
+        parser.ptype.parse("string") match {
+            case Success(StringT()) => succeed
+            case _                  => fail()
+        }
+    }
+
+    it should "parse array type successfully" in {
+        parser.ptype.parse("int[]") match {
+            case Success(ArrayT(int)) => succeed
+            case _                    => fail()
+        }
+    }
+
+    it should "parse nested array types successfully" in {
+        parser.ptype.parse("int[][]") match {
+            case Success(ArrayT(ArrayT(int))) => succeed
+            case _                            => fail()
+        }
+    }
+
+    it should "parse pair type successfully" in {
+        parser.ptype.parse("pair(int,string)") match {
+            case Success(PairT(IntT(), StringT())) => succeed
+            case _                                 => fail()
+        }
+    }
+
+    it should "parse nested pair types successfully" in {
+        parser.ptype.parse("pair(pair,pair)") match {
+            case Success(PairT(_, _)) => succeed
+            case _                    => fail()
+        }
+    }
+
+    /* Test for Statements */
+    it should "parse programs successfully" in {
+        parser.program.parse("begin skip end") match {
+            case Success(Program(_, List(Skip()))) => succeed
+            case _                                 => fail()
+        }
+    }
+
+    it should "parse functions successfully" in {
+        parser.func.parse("int f() is return 1 end skip end") match {
+            case Success(Func(IntT(), Ident(x), List(), List(Return(IntLit(1))))) => x shouldBe "f"
+            case _                                                                => fail()
+        }
+    }
+    
+    it should "parse 'skip' statements successfully" in {
+        parser.stmt.parse("skip") match {
+            case Success(Skip()) => succeed
+            case _               => fail()
+        }
+    }
+
+    it should "parse new assignment statements successfully" in {
+        parser.stmt.parse("int buzz = 37") match {
+            case Success(NewAss(IntT(), Ident(x), IntLit(37))) => x shouldBe "buzz"
+            case _                                             => fail()
+        }
+    }
+
+    it should "parse non-new assignment statements successfully" in {
+        parser.stmt.parse("buzz = 37") match {
+            case Success(Assign(Ident(x), IntLit(37))) => x shouldBe "buzz"
+            case _                                     => fail()
+        }
+    }
+
+    it should "parse 'read' statements successfully" in {
+        parser.stmt.parse("read serhii") match {
+            case Success(Read(Ident(x))) => x shouldBe "serhii"
+            case _                       => fail()
+        }
+    }
+
+    it should "parse 'free' statements successfully" in {
+        parser.stmt.parse("free 37") match {
+            case Success(Free(IntLit(x))) => x shouldBe 37
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'return' statements successfully" in {
+        parser.stmt.parse("return 37") match {
+            case Success(Return(IntLit(x))) => x shouldBe 37
+            case _                          => fail()
+        }
+    }
+
+    it should "parse 'exit' statements successfully" in {
+        parser.stmt.parse("exit 37") match {
+            case Success(Exit(IntLit(x))) => x shouldBe 37
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'print' statements successfully" in {
+        parser.stmt.parse("print 37") match {
+            case Success(Print(IntLit(x))) => x shouldBe 37
+            case _                         => fail()
+        }
+    }
+
+    it should "parse 'println' statements successfully" in {
+        parser.stmt.parse("println 37") match {
+            case Success(PrintLn(IntLit(x))) => x shouldBe 37
+            case _                           => fail()
+        }
+    }
+
+    it should "parse 'if' statements successfully" in {
+        parser.stmt.parse("if 37 then skip else skip fi") match {
+            case Success(If(IntLit(x), List(Skip()), List(Skip()))) => x shouldBe 37
+            case _                                                  => fail()
+        }
+    }
+
+    it should "parse 'while' statements successfully" in {
+        parser.stmt.parse("while 37 do skip done") match {
+            case Success(While(IntLit(x), List(Skip()))) => x shouldBe 37
+            case _                                       => fail()
+        }
+    }
+    
+    it should "parse nested statements successfully" in {
+        parser.stmt.parse("begin skip end") match {
+            case Success(Nest(List(Skip()))) => succeed
+            case _                           => fail()
+        }
+    }
+
+    it should "parse consecutive statements successfully" in {
+        parser.stmt.parse("skip;skip") match {
+            case Success(Skip()) => succeed
+            case _               => fail()
+        }
+    }
+
+    it should "parse 'fst' pair elems successfully" in {
+        parser.pairElem.parse("fst serhii") match {
+            case Success(First(Ident(x))) => x shouldBe "serhii"
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'snd' pair elems successfully" in {
+        parser.pairElem.parse("snd eli") match {
+            case Success(Second(Ident(x))) => x shouldBe "eli"
+            case _                         => fail()
+        }
+    }
+
+    /* Tests for LValues */
+    it should "parse identifier lvalues successfully" in {
+        parser.lvalue.parse("serhii") match {
+            case Success(Ident(x)) => x shouldBe "serhii"
+            case _                 => fail()
+        }
+    }
+
+    it should "parse array elem lvalues successfully" in {
+        parser.lvalue.parse("serhii[0]") match {
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y) shouldBe ("serhii", 0)
+            case _                                             => fail()
+        }
+    }
+
+    it should "parse pair elem lvalues successfully" in {
+        parser.lvalue.parse("fst serhii") match {
+            case Success(First(Ident(x))) => x shouldBe "serhii"
+            case _                        => fail()
+        }
+    }
+
+    /* Tests for RValues */
+    it should "parse expression rvalues successfully" in {
+        parser.rvalue.parse("37") match {
+            case Success(IntLit(x)) => x shouldBe 37
+            case _                  => fail()
+        }
+    }
+    
+    it should "parse array literal rvalues successfully" in {
+        parser.rvalue.parse("[(37)]") match {
+            case Success(ArrayLit(List(IntLit(x)))) => x shouldBe 37
+            case _                                  => fail()
+        }
+    }
+
+    it should "parse newpair rvalues successfully" in {
+        parser.rvalue.parse("newpair(37,\"kevin\"))") match {
+            case Success(NewPair(IntLit(x), StrLit(y))) => (x, y) shouldBe (37, "kevin")
+            case _                                      => fail()
+        }
+    }
+
+    it should "parse pair elem rvalues successfully" in {
+        parser.rvalue.parse("snd eli") match {
+            case Success(Second(Ident(x))) => x shouldBe "eli"
+            case _                        => fail()
+        }
+    }
+
+    it should "parse call rvalues successfully" in {
+        parser.rvalue.parse("call eli()") match {
+            case Success(Call(Ident(x), List())) => x shouldBe "eli"
+            case _                               => fail()
+        }
+    }
 
 }

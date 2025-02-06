@@ -39,11 +39,11 @@ object parser {
         "end".explain("a scope, function or the main body is unclosed")
     
     // Program parser
-    private lazy val program: Parsley[Program[String, Typeless]] = 
+    protected [syntax] lazy val program: Parsley[Program[String, Typeless]] = 
         "begin" ~> Program(many(func), stmts.explain("missing main program body")) <~ end
 
     // Function parser
-    private lazy val func: Parsley[Func[String, Typeless]] = 
+    protected [syntax] lazy val func: Parsley[Func[String, Typeless]] = 
         atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> funcStmts <~ end)
 
     // Statements parser for function body
@@ -55,7 +55,7 @@ object parser {
         ("=" ~> rvalue).label("assignment")
 
     // Statement parser
-    private lazy val stmt: Parsley[Stmt[String, Typeless]] = 
+    protected [syntax] lazy val stmt: Parsley[Stmt[String, Typeless]] = 
         ("skip" ~> Skip())
         | ("read" ~> Read(lvalue))
         | ("free" ~> Free(expr))
@@ -130,12 +130,12 @@ object parser {
         ).label("expression").explain(EXPR_ERR_MSG)
 
     // lvalue parser
-    private lazy val lvalue: Parsley[LValue[String, Typeless]] = 
+    protected [syntax] lazy val lvalue: Parsley[LValue[String, Typeless]] = 
         pairElem
         | ArrayOrIdent(ident, arridx)
 
     // rvalue parser
-    private lazy val rvalue: Parsley[RValue[String, Typeless]] = 
+    protected [syntax] lazy val rvalue: Parsley[RValue[String, Typeless]] = 
         pairElem
         | "newpair" ~> parens(NewPair(expr, ("," ~> expr)))
         | "call" ~> Call(ident, parens(commaSep(expr)))
@@ -143,7 +143,7 @@ object parser {
         | expr
     
     // pairElem parser
-    private lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
+    protected [syntax] lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
         ("fst" ~> First(lvalue))
         | ("snd" ~> Second(lvalue))
     
@@ -152,7 +152,7 @@ object parser {
         ("pair" ~> PairT(("(" ~> pairElemType), ("," ~> pairElemType <~ ")")))
 
     // Type parser
-    private lazy val ptype: Parsley[Type] = 
+    protected [syntax] lazy val ptype: Parsley[Type] = 
         postfix(pairType | baseType)(ArrayT <# "[]")
     
     // PairElemType parser

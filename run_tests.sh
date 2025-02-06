@@ -20,6 +20,10 @@ case "$CATEGORY" in
         echo "Running all tests..."
         scala test .
         ;;
+    unit)
+        echo "Running unit tests..."
+        scala test . --test-only "*UnitTest*"
+        ;;
     valid)
         echo "Running valid tests..."
         scala test . --test-only "*ValidTest*"
@@ -37,4 +41,4 @@ case "$CATEGORY" in
         ;;
 esac
 
-echo "Tests complete."
+echo "Testing complete!"
