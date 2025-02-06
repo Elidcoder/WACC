@@ -5,13 +5,25 @@ sealed trait SemType
 class Typeless() extends Type
 
 case object ? extends Type
-case class FuncT(returnT: Type, paramTs: List[Type])(val pos: Pos) extends Type
+case class FuncT(returnT: Type, paramTs: List[Type])(val pos: Pos) extends Type {
+    override def toString(): String = 
+        val builder = new StringBuilder
+        builder ++= "("
+        builder ++= paramTs.headOption.getOrElse("").toString()
+        paramTs.drop(1).foreach((t: Type) => builder ++= s", ${t.toString}")
+        builder ++= s") -> ${returnT.toString()}"
+        builder.result()
+}
 
 case class ArrayT[N, T](t: Type)(using val pos: Pos) extends Type {
-    override def toString(): String = t.toString() + "[]"
+    override def toString(): String = t match
+        case ? => "Array Type"
+        case x => s"$x[]"
 }
 case class PairT[N, T](x: Type, y: Type)(using val pos: Pos) extends Type {
-    override def toString(): String = "pair(" + x.toString() + ", " + y.toString() + ")"
+    override def toString(): String = (x, y) match
+        case (?, ?) => "pair"
+        case (left, right) => s"pair($left, $right)"
 }
 case class RedPairT() extends Type {
     override def toString(): String = "pair"
