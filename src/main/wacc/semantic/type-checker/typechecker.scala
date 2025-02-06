@@ -12,6 +12,7 @@ object typechecker {
         case IsStringLike
         case IsFreeable
         case IsReadable
+        case IsComparable
     }
     object Constraint {
         given Pos = Pos(0,0)
@@ -60,17 +61,19 @@ object typechecker {
             given Typeless = Typeless()
             (t,c) match {
                 case (StringT(), Is(ArrayT(CharT()))) => 
-                    ctx.error(TypeMismatch(Ident[QualifiedName, Typeless](QualifiedName("blah", -1)), ArrayT(CharT())))
+                    ctx.error(TypeMismatch(StringT(), ArrayT(CharT())))
                 case (t, Is(refT)) => (t ~ refT).orElse {
-                    ctx.error(TypeMismatch(Ident[QualifiedName, Typeless](QualifiedName("blah", -1)), refT))
+                    ctx.error(TypeMismatch(t, refT))
                 }
                 case (?, _) => Some(?)
                 case (ArrayT(CharT()) | StringT(), IsStringLike) => Some(t)
-                case (kt, IsStringLike) => ctx.error(IsNotString(Ident(QualifiedName("blah", -1))))
+                case (kt, IsStringLike) => ctx.error(IsNotString(kt))
                 case (ArrayT(_) | PairT(_,_), IsFreeable) => Some(t)
-                case (kt, IsFreeable) => ctx.error(IsNotFreeable(Ident(QualifiedName("blah", -1))))
+                case (kt, IsFreeable) => ctx.error(IsNotFreeable(kt))
                 case (IntT() | CharT(), IsReadable) => Some(t)
-                case (kt, IsReadable) => ctx.error(IsNotFreeable(Ident(QualifiedName("blah", -1))))
+                case (kt, IsReadable) => ctx.error(IsNotReadable(kt))
+                case (IntT() | CharT(), IsComparable) => Some(t)
+                case (kt, IsComparable) => ctx.error(IsNotComparable(kt))
     }
 
 
@@ -164,10 +167,10 @@ object typechecker {
             case Mod(x, y) => checkBinOp(x, y, c, IntT(), Is(IntT()), Mod.apply)
             case And(x, y) => checkBinOp(x, y, c, BoolT(), Is(BoolT()), And.apply)
             case Or(x, y) => checkBinOp(x, y, c, BoolT(), Is(BoolT()), Or.apply)
-            case Greater(x, y) => checkBinOp(x, y, c, BoolT(), IsReadable, Greater.apply)
-            case GreaterEq(x, y) => checkBinOp(x, y, c, BoolT(), IsReadable, GreaterEq.apply)
-            case Less(x, y) => checkBinOp(x, y, c, BoolT(), IsReadable, Less.apply)
-            case LessEq(x, y) => checkBinOp(x, y, c, BoolT(), IsReadable, LessEq.apply)
+            case Greater(x, y) => checkBinOp(x, y, c, BoolT(), IsComparable, Greater.apply)
+            case GreaterEq(x, y) => checkBinOp(x, y, c, BoolT(), IsComparable, GreaterEq.apply)
+            case Less(x, y) => checkBinOp(x, y, c, BoolT(), IsComparable, Less.apply)
+            case LessEq(x, y) => checkBinOp(x, y, c, BoolT(), IsComparable, LessEq.apply)
             case Eq(x, y) => checkBinOp(x, y, c, BoolT(), Unconstrained, Eq.apply)
             case NotEq(x, y) => checkBinOp(x, y, c, BoolT(), Unconstrained, NotEq.apply)
             case ArrayElem(i, x) => checkArrayElem(i, x, c)

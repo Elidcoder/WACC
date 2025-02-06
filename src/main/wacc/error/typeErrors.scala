@@ -1,58 +1,70 @@
 package wacc.error
 
 import wacc.semantic.typecheck.Context
-import wacc.ast.{Type, Ident, Typeless}
-import wacc.semantic.QualifiedName
+import wacc.ast.{Type, Pos}
 import java.io.File
 
 object SemanticWaccErr {
     case object TypeMismatch {
-        def apply(id: Ident[QualifiedName, Typeless], expectedType: Type)(using ctx: Context) = WaccErr(
-            id.pos,
+        def apply(actualType: Type, expectedType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.v.oldName)),
+                Some(ErrItem.Named(actualType.toString)),
                 Set(ErrItem.Named(expectedType.toString)),
-                Set("Types must match"),
-                getLineInfo(ctx.file, id.pos)
+                Set(),
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
         )
     }
     case object IsNotString {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
-            id.pos,
+        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.v.oldName)),
+                Some(ErrItem.Named(actualType.toString)),
                 Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
                 Set("Must be of string like type"),
-                getLineInfo(ctx.file, id.pos)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
         )
     }
     case object IsNotFreeable {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
-            id.pos,
+        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.v.oldName)),
+                Some(ErrItem.Named(actualType.toString)),
                 Set(ErrItem.Raw("Pair(_,_)"), ErrItem.Raw("Char[]")),
                 Set("Must be of a freeable type"),
-                getLineInfo(ctx.file, id.pos)
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
         )
     }
     case object IsNotReadable {
-        def apply(id: Ident[QualifiedName, Typeless])(using ctx: Context) = WaccErr(
-            id.pos,
+        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
             ErrLines.VanillaError(
-                Some(ErrItem.Named(id.v.oldName)),
+                Some(ErrItem.Named(actualType.toString)),
                 Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
                 Set("Must be a readable type"),
-                getLineInfo(ctx.file, id.pos)
+                getLineInfo(ctx.file, pos)
+            ),
+            Option(ctx.file.getName()),
+            "Type"
+        )
+    }
+    case object IsNotComparable {
+        def apply(actualType: Type)(using ctx: Context, pos: Pos) = WaccErr(
+            pos,
+            ErrLines.VanillaError(
+                Some(ErrItem.Named(actualType.toString)),
+                Set(ErrItem.Raw("Int"), ErrItem.Raw("Char")),
+                Set("Must be a comparable type"),
+                getLineInfo(ctx.file, pos)
             ),
             Option(ctx.file.getName()),
             "Type"
@@ -142,4 +154,4 @@ def getLineInfo(file: File, pos: R2): LineInformation =
     val zeroIndexRow = pos.row - 1
     val linesBefore = lines.slice((0).max(zeroIndexRow - LinesOfCodeRadius), zeroIndexRow)
     val linesAfter = lines.slice(zeroIndexRow + 1, (lines.size).min(zeroIndexRow + LinesOfCodeRadius + 1))
-    new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col, 1)
+    new LineInformation(lines(zeroIndexRow), linesBefore, linesAfter, pos.col - 1, 1)
