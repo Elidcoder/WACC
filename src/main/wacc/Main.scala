@@ -12,7 +12,7 @@ import parsley.errors.ErrorBuilder
 import parsley.errors.tokenextractors.SingleChar
 
 def pipeline(file: File): Int = {
-    given ErrorBuilder[WaccErr] = new WaccErrorBuilder with SingleChar
+    given ErrorBuilder[WaccErr] = new SyntaxErrBuilder with SingleChar
     parser.parse(file) match 
         case Success(x) => 
             /* Successfully parsed, attempt rename. */

@@ -1,8 +1,8 @@
 package wacc.semantic.typecheck
 
 import wacc.ast.{Type, ?, Pos}
-import wacc.semantic.Environment
-import wacc.error.SemanticWaccErr.{OutOfScope, AlreadyDeclared}
+import wacc.semantic.{Environment, QualifiedName}
+import wacc.error.TypeErr.{OutOfScope, AlreadyDeclared}
 import wacc.error.WaccErr
 import java.io.File
 
@@ -12,16 +12,14 @@ enum Body {
 }
 
 class Context(var body: Body, val env: Environment, val file: File) {
-    def getType(uid: Int)(using pos: Pos): Type = 
+    def getType(n: QualifiedName)(using pos: Pos): Type = 
         given Context = this
-        uid match
+        n.uid match
         case -1 => 
-            // TODO(Scope error: Undeclared)
-            error(OutOfScope(pos))
+            error(OutOfScope(n.oldName, pos))
             ?
         case -2 => 
-            // TODO(Scope error: Already declared)
-            error(AlreadyDeclared(pos))
+            error(AlreadyDeclared(n.oldName, pos))
             ?
         case n => env.get(n)
     private val errors = List.newBuilder[WaccErr]

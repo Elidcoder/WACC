@@ -1,7 +1,7 @@
 package wacc.semantic.typecheck
 
 import wacc.error.WaccErr
-import wacc.error.SemanticWaccErr.*
+import wacc.error.TypeErr.*
 import wacc.ast.*
 import wacc.semantic.{QualifiedName, Environment}
 import java.io.File
@@ -116,7 +116,7 @@ object typechecker {
             case Assign(l, r) => 
                 val (lvalType, typedLval) = check(l, Unconstrained)
                 val (rvalType, typedRval) = check(r, Is(lvalType.getOrElse(?)))
-                if rvalType == Some(?) then ctx.error(UnknownPairTypes(s.pos))
+                if rvalType == Some(?) then ctx.error(UnknownPairTypes())
                 for {l <- typedLval; r <- typedRval} yield Assign(l, r)
             case Exit(e) => 
                 for {tE <- check(e, Is(IntT()))._2} yield Exit(tE)
@@ -137,7 +137,7 @@ object typechecker {
                 for { t <- ot; tE <- otE; given Type = t} yield PrintLn(tE)
             case Read(l) => 
                 val (ot, otE) = check(l, IsReadable)
-                if ot == Some(?) then ctx.error(ReadUnknownType(s.pos))
+                if ot == Some(?) then ctx.error(ReadUnknownType())
                 for { t <- ot; tE <- otE; given Type = t} yield Read(tE)
             case Return(e) => ctx.body match {
                 case Body.Main => ctx.error(ReturnInMainBody(Pos(1,1)))
@@ -183,7 +183,7 @@ object typechecker {
     }
 
     private def checkArrayElem(i: Ident[QualifiedName, Typeless], es: List[Expr[QualifiedName, Typeless]], c: Constraint)(using ctx: Context, pos: Pos): (Option[Type], Option[ArrayElem[QualifiedName, Type]]) = 
-        val it: Type = ctx.getType(i.v.uid)
+        val it: Type = ctx.getType(i.v)
         val (ot, otes) = es.foldRight((Some(it), Some(List.empty))) {
             (e: Expr[QualifiedName, Typeless], x: (Option[Type], Option[List[Expr[QualifiedName, Type]]])) =>
                 val (ot, otes) = x
@@ -232,7 +232,7 @@ object typechecker {
 
     private def check(i: Ident[QualifiedName, Typeless], c: Constraint)(using ctx: Context): (Option[Type], Option[Ident[QualifiedName, Type]]) = 
         given Pos = i.pos
-        val ot = ctx.getType(i.v.uid).satisfies(c)
+        val ot = ctx.getType(i.v).satisfies(c)
         val tI = for { t <- ot; given Type = t } yield Ident[QualifiedName, Type](i.v)
         (ot, tI)
     
