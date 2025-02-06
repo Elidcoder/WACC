@@ -41,4 +41,4 @@ case "$CATEGORY" in
         ;;
 esac
 
-echo "Tests complete."
+echo "Testing complete!"

@@ -6,14 +6,6 @@ import parsley.Success
 
 import wacc.ast.*
 
-val UNIT_TEST_CATS = List(
-    "expr",
-    "func",
-    "prog",
-    "stmt",
-    "type",
-)
-
 class UnitTest extends AnyFlatSpec {
     
     /* Tests for atomics */
@@ -61,7 +53,7 @@ class UnitTest extends AnyFlatSpec {
 
     it should "parse an array elem successfully" in {
         parser.expr.parse("freddie[0]") match {
-            case Success(ArrayElem(Ident(x), y)) => (x, y).equals(("freddie", "0"))
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y).equals(("freddie", 0))
             case _                 => fail()
         }
     }
@@ -356,6 +348,76 @@ class UnitTest extends AnyFlatSpec {
         }
     }
 
+    it should "parse 'fst' pair elems successfully" in {
+        parser.pairElem.parse("fst serhii") match {
+            case Success(First(Ident(x))) => x shouldBe "serhii"
+            case _                        => fail()
+        }
+    }
+
+    it should "parse 'snd' pair elems successfully" in {
+        parser.pairElem.parse("snd eli") match {
+            case Success(Second(Ident(x))) => x shouldBe "eli"
+            case _                         => fail()
+        }
+    }
+
     /* Tests for LValues */
+    it should "parse identifier lvalues successfully" in {
+        parser.lvalue.parse("serhii") match {
+            case Success(Ident(x)) => x shouldBe "serhii"
+            case _                 => fail()
+        }
+    }
+
+    it should "parse array elem lvalues successfully" in {
+        parser.lvalue.parse("serhii[0]") match {
+            case Success(ArrayElem(Ident(x), List(IntLit(y)))) => (x, y) shouldBe ("serhii", 0)
+            case _                                             => fail()
+        }
+    }
+
+    it should "parse pair elem lvalues successfully" in {
+        parser.lvalue.parse("fst serhii") match {
+            case Success(First(Ident(x))) => x shouldBe "serhii"
+            case _                        => fail()
+        }
+    }
+
+    /* Tests for RValues */
+    it should "parse expression rvalues successfully" in {
+        parser.rvalue.parse("37") match {
+            case Success(IntLit(x)) => x shouldBe 37
+            case _                  => fail()
+        }
+    }
+    
+    it should "parse array literal rvalues successfully" in {
+        parser.rvalue.parse("[(37)]") match {
+            case Success(ArrayLit(List(IntLit(x)))) => x shouldBe 37
+            case _                                  => fail()
+        }
+    }
+
+    it should "parse newpair rvalues successfully" in {
+        parser.rvalue.parse("newpair(37,\"kevin\"))") match {
+            case Success(NewPair(IntLit(x), StrLit(y))) => (x, y) shouldBe (37, "kevin")
+            case _                                      => fail()
+        }
+    }
+
+    it should "parse pair elem rvalues successfully" in {
+        parser.rvalue.parse("snd eli") match {
+            case Success(Second(Ident(x))) => x shouldBe "eli"
+            case _                        => fail()
+        }
+    }
+
+    it should "parse call rvalues successfully" in {
+        parser.rvalue.parse("call eli()") match {
+            case Success(Call(Ident(x), List())) => x shouldBe "eli"
+            case _                               => fail()
+        }
+    }
 
 }

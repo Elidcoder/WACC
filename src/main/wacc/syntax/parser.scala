@@ -143,7 +143,7 @@ object parser {
         | expr
     
     // pairElem parser
-    private lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
+    protected [syntax] lazy val pairElem: Parsley[PairElem[String, Typeless]] = 
         ("fst" ~> First(lvalue))
         | ("snd" ~> Second(lvalue))
     
