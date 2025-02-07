@@ -6,6 +6,11 @@ class QualifiedName(val oldName: String, val uid: Int) {
     override def toString(): String = oldName
 }
 
+/*  Function "rename" traverses the ast produced by the syntax parser and reconstructs it with
+    QualifiedName inside Identifiers. At declaration statements, each variable and function is
+    assigned a unique id and their type is stored in the Environment, which is returned for 
+    the typechecker to use. During the process, Scope is tracked to inform the typecheker of
+    scope errors via the bad QualifiedNames. Renamed ast and Environment are returned. */
 def rename(
     prog: Program[String, Typeless]
 ): (Program[QualifiedName, Typeless], Environment) = 
