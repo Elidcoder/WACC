@@ -23,13 +23,21 @@ object typechecker {
     import Constraint.*
 
     extension (ty: SemType) 
+        /*  
+            Equivalence checker for semantic types.
+            Outputs the equivalent type if there is a match. 
+        */
         private def ~(refT: SemType)(using pos: Pos): Option[SemType] =
             given Typeless = Typeless()
             (ty, refT) match 
                 case (StringT(), ArrayT(CharT())) => Some(StringT())
                 case (ArrayT(CharT()), StringT()) => Some(StringT())
                 case (t, refT) => t ~~ refT
-                
+            
+        /* 
+            Performs an equivalence check for inner types. 
+            Outputs the equivalent inner type if there is a match.
+        */
         private def ~~(refT: SemType)(using pos: Pos): Option[SemType] =
             given Typeless = Typeless()
             (ty, refT) match {
@@ -56,7 +64,12 @@ object typechecker {
                 case (ty, refType) if ty == refType => Some(ty)
                 case _                              => None
             }
-
+        
+        /* 
+            Checks if a semantic type meets a given constraint.
+            Returns the original type if the constraint is met.
+            Otherwise, a corresponding error gets added to the context.
+        */
         def satisfies(constr: Constraint)(using ctx: Context, pos: Pos): Option[SemType] = 
             given Typeless = Typeless()
             (ty, constr) match {
@@ -76,11 +89,20 @@ object typechecker {
                 case (knownT, IsComparable)                      => ctx.error(IsNotComparable(knownT))
     }
 
+    /* 
+        Attempts to classify a semantic type as a known type. 
+        Returns an optional known type.
+    */
     private def isKnown(semTy: SemType): Option[KnownType] = semTy match {
         case knownTy: KnownType => Some(knownTy)
         case ?                  => None
     }
 
+    /* 
+        Main typechecking function for a WACC program.
+        Returns a list of the program's errors if it is semantically incorrect.
+        Otherwise, it will return the correctly typed program.
+    */
     def check(
         prog: Program[QualifiedName, Typeless], 
         env: Environment, file: File
@@ -98,6 +120,10 @@ object typechecker {
             else Left(errors)
     }
 
+    /* 
+        Checks the types of a list of functions.
+        Returns an option of the correctly typed list if successful.
+    */
     private def checkFuncs(
         funcs: List[Func[QualifiedName, Typeless]]
     )(using ctx: Context): Option[List[Func[QualifiedName, KnownType]]] = 
@@ -107,6 +133,10 @@ object typechecker {
                 for { funcAcc <- optFuncAcc; defFunc <- check(curFunc) } yield defFunc :: funcAcc
             }
 
+    /*
+        Checks a single function's type.
+        Returns an option of the correctly typed function if successful.
+    */
     private def check(
         func: Func[QualifiedName, Typeless]
     )(using ctx: Context): Option[Func[QualifiedName, KnownType]] = 

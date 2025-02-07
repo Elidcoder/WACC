@@ -18,9 +18,7 @@ def getTests(folder_path: String): List[File] = {
     getTests(directory)
 }
 
-/* 
-    Recursively trawls the nested folders and returns all files as a list
- */
+/* Recursively crawls the nested folders and returns all files as a list. */
 def getTests(folder: File): List[File] = {
     if (folder.isDirectory())
         folder.listFiles().flatMap(getTests(_)).toList
@@ -28,6 +26,7 @@ def getTests(folder: File): List[File] = {
         List(folder)
 }
 
+/* Fetches flags from the customizable test properties. */
 def getProperties(): Map[String, String] = {
     val source = Source.fromFile(CONFIG_PATH)
     try {
