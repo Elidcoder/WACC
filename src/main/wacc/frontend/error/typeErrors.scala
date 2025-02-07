@@ -21,19 +21,6 @@ object TypeErr {
             "Type"
         )
     }
-    case object IsNotString {
-        def apply(readType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
-            pos,
-            ErrLines.VanillaError(
-                Some(ErrItem.Named(readType.toString)),
-                Set(ErrItem.Raw("String"), ErrItem.Raw("Char[]")),
-                Set("Must be of String like type"),
-                getLineInfo(ctx.file)
-            ),
-            Option(ctx.file.getName()),
-            "Type"
-        )
-    }
     case object IsNotFreeable {
         def apply(givenType: SemType)(using ctx: Context, pos: Pos) = WaccErr(
             pos,
