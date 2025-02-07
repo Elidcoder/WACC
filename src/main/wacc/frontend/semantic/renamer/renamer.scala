@@ -6,6 +6,11 @@ class QualifiedName(val oldName: String, val uid: Int) {
     override def toString(): String = oldName
 }
 
+/*  Function "rename" traverses the ast produced by the syntax parser and reconstructs it with
+    QualifiedName inside Identifiers. At declaration statements, each variable and function is
+    assigned a unique id and their type is stored in the Environment, which is returned for 
+    the typechecker to use. During the process, Scope is tracked to inform the typecheker of
+    scope errors via the bad QualifiedNames. Renamed ast and Environment are returned. */
 def rename(
     prog: Program[String, Typeless]
 ): (Program[QualifiedName, Typeless], Environment) = 
@@ -164,6 +169,9 @@ def rename(
         case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
     }
 
+/* Handles renaming an identifier at sites other than declaration,
+   if the name exists in scope its QualifiedName Identifier is returned,
+   otherwise a bad name is returned to signify an out of scope error */
 extension (curScope: MutScope) 
     def rebuildWithIdent[A](id: Ident[String, Typeless])
     (build: Ident[QualifiedName, Typeless] => A)
