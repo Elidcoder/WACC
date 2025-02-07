@@ -4,14 +4,17 @@ in this repository regularly committing and pushing your work back to GitLab.
 # Provided files/directories
 
 ## src/main
-
-The src/main directory is where you code for your compiler should go, and just
-contains a stub hello world file with a simple calculator inside.
+The src/main directory is where out code for the compiler is with the Main file exposed directly. 
+The frontend part of the copiler's code is in the 'frontend' subfolder.
 
 ## src/test
-The src/test directory is where you should put the code for your tests, which
-can be ran via `scala-cli test .`. The suggested framework is `scalatest`, the dependency
-for which has already been included.
+The src/test directory is where testing code is, which
+can be ran via `scala-cli test .`. We make use of `scalatest`, the dependency
+for which is included.
+
+There are unit tests for the frontend within the frontend subfolder, as well as a folder full of 
+code files that can be used to test both parts of the compiler although only scripts to test
+frontend on them exist as yet (within the frontend subfolder).
 
 ## project.scala
 The `project.scala` is the definition of your project's build requirements. By default,
