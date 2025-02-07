@@ -2,7 +2,9 @@ package wacc.semantic
 
 import wacc.ast._
 
-class QualifiedName(val oldName: String, val uid: Int)
+class QualifiedName(val oldName: String, val uid: Int) {
+    override def toString(): String = oldName
+}
 
 def rename(
     prog: Program[String, Typeless]
