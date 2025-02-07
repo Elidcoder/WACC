@@ -10,7 +10,6 @@ import java.io.File
 object typechecker {
     enum Constraint {
         case Is(refT: SemType)
-        case IsStringLike
         case IsFreeable
         case IsReadable
         case IsComparable
@@ -79,8 +78,6 @@ object typechecker {
                     ctx.error(TypeMismatch(ty, refT))
                 }
                 case (?, _)                                      => Some(?)
-                case (ArrayT(CharT()) | StringT(), IsStringLike) => Some(ty)
-                case (knownT, IsStringLike)                      => ctx.error(IsNotString(knownT))
                 case (ArrayT(_) | PairT(_,_), IsFreeable)        => Some(ty)
                 case (knownT, IsFreeable)                        => ctx.error(IsNotFreeable(knownT))
                 case (IntT() | CharT(), IsReadable)              => Some(ty)
