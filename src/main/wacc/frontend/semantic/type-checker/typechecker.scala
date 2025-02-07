@@ -122,9 +122,9 @@ object typechecker {
     private def check(
         stmts: List[Stmt[QualifiedName, Typeless]]
     )(using ctx: Context): Option[List[Stmt[QualifiedName, KnownType]]] = 
-        stmts.foldLeft(Some(List.empty)) {
-            (optAcc: Option[List[Stmt[QualifiedName, KnownType]]], 
-             opt: Stmt[QualifiedName, Typeless]) =>
+        stmts.foldRight(Some(List.empty)) {
+            (opt: Stmt[QualifiedName, Typeless],
+             optAcc: Option[List[Stmt[QualifiedName, KnownType]]]) =>
                 for { stmts <- optAcc; stmt <- check(opt) } yield stmt :: stmts
             }
 
