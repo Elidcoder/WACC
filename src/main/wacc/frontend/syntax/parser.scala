@@ -41,7 +41,14 @@ object parser {
 
     /* Parse functions (but not calls).  */
     protected [syntax] lazy val func: Parsley[Func[String, Typeless]] = 
-        atomic(Func(ptype, ident, parens(commaSep(Param(ptype, ident))))) <*> ("is" ~> stmts.filter(isReturnStmt) <~ "end")
+        untypedFuncCheck 
+        | atomic(Func(ptype, ident, funcParameters)) <*> ("is" ~> stmts.filter(isReturnStmt).label("function is missing a return on all exit paths") <~ "end")
+
+    /* Parse for function definitions missing a type, output the relevent err if one is found. */
+    protected [syntax] lazy val untypedFuncCheck = atomic(ident <~> funcParameters) ~> fail("function declaration missing type")
+
+    /* Parse function parameters. */
+    protected [syntax] lazy val funcParameters = parens(commaSep(Param(ptype, ident)))
 
     /* Parse a block of statements. */
     private lazy val stmts: Parsley[List[Stmt[String, Typeless]]] = semiSep1(stmt)
