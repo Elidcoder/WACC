@@ -102,6 +102,12 @@ object typechecker {
         Main typechecking function for a WACC program.
         Returns a list of the program's errors if it is semantically incorrect.
         Otherwise, it will return the correctly typed program.
+
+        The typechecker traverses the entire list of functions and list of statements
+        that the program is composed of and attempts to correctly type every expression
+        with the environment provided by the renamer inside the context. If a check is 
+        unsuccessful, a corresponding semantic error message for will be added to the 
+        context; all messages will be output at the end.
     */
     def check(
         prog: Program[QualifiedName, Typeless], 
@@ -120,10 +126,6 @@ object typechecker {
             else Left(errors)
     }
 
-    /* 
-        Checks the types of a list of functions.
-        Returns an option of the correctly typed list if successful.
-    */
     private def checkFuncs(
         funcs: List[Func[QualifiedName, Typeless]]
     )(using ctx: Context): Option[List[Func[QualifiedName, KnownType]]] = 
@@ -133,10 +135,6 @@ object typechecker {
                 for { funcAcc <- optFuncAcc; defFunc <- check(curFunc) } yield defFunc :: funcAcc
             }
 
-    /*
-        Checks a single function's type.
-        Returns an option of the correctly typed function if successful.
-    */
     private def check(
         func: Func[QualifiedName, Typeless]
     )(using ctx: Context): Option[Func[QualifiedName, KnownType]] = 
