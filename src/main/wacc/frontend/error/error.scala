@@ -98,7 +98,7 @@ case class WaccErr(
                     /* Unexpected ... line of the error message. */
                     unexpected match {
                         case None => 
-                            outputBuilder ++= "No 'unexpected item' found"
+                            outputBuilder ++= ""
                         case Some(unexpectd) => 
                             outputBuilder ++= "unexpected "
                             unexpectd match {
@@ -106,16 +106,17 @@ case class WaccErr(
                                     outputBuilder ++= "end of input"
                                 case ErrItem.Named(item) =>
                                     outputBuilder ++= item
+                                    outputBuilder ++= "\n"
                                 case ErrItem.Raw(item) =>
                                     outputBuilder ++= "\""
                                     outputBuilder ++= item
-                                    outputBuilder ++= "\""
+                                    outputBuilder ++= "\"\n"
                             }
                     }
 
                     /* Expected ... line of the error message. */
                     if (!expecteds.isEmpty) {
-                        outputBuilder ++= "\n  expected "
+                        outputBuilder ++= "  expected "
                         outputBuilder ++= expecteds.dropRight(1).map(readErrItem).mkString(", ")
                         if (expecteds.size > 1) {
                             outputBuilder ++= " or "
