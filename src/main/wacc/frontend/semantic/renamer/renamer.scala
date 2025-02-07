@@ -169,6 +169,9 @@ def rename(
         case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
     }
 
+/* Handles renaming an identifier at sites other than declaration,
+   if the name exists in scope its QualifiedName Identifier is returned,
+   otherwise a bad name is returned to signify an out of scope error */
 extension (curScope: MutScope) 
     def rebuildWithIdent[A](id: Ident[String, Typeless])
     (build: Ident[QualifiedName, Typeless] => A)
