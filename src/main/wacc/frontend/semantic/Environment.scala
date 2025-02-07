@@ -3,12 +3,17 @@ package wacc.semantic
 import scala.collection.mutable
 import wacc.ast.SemType
 
+/* Constants for uid generation */
 private final val UID_STARTING  = 0
 private final val UID_INCREMENT = 1
+
+/* Bad QualifiedName uids */
 protected [semantic] final val UID_UNDECLARED            = -1
 protected [semantic] final val UID_ALREADY_IN_SCOPE      = -2
 protected [semantic] final val UID_FUNC_ALREADY_IN_SCOPE = -3
 
+/* Used to store type information of variables
+   and to generate unique ids for QualifiedNames */
 class Environment() {
     private val map: mutable.Map[Int, SemType] = mutable.Map.empty
     private var nextUID: Int = UID_STARTING
@@ -21,6 +26,7 @@ class Environment() {
     override def toString(): String = map.toString()
 }
 
+/* Types to keep track of variables within scope */
 class FuncScope() {
     private val map: mutable.Map[String, QualifiedName] = mutable.Map.empty
     def get = map(_)
