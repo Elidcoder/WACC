@@ -48,18 +48,6 @@ object typechecker {
                 case (ArrayT(ty), ArrayT(refT)) =>
                     for { commonT <- ty ~~ refT }
                     yield ArrayT(commonT)
-                case (FuncT(ty, types), FuncT(refType, refTypes)) =>
-                    if types.size != refTypes.size then return None
-                    val typesOpt = (types zip refTypes).foldRight(
-                        Some(List.empty)
-                        )( (curElem: (SemType, SemType), optAcc: Option[List[SemType]]) =>
-                            for {
-                                ty <- curElem._1 ~ curElem._2
-                                acc <- optAcc
-                            } yield ty :: acc
-                    )
-                    for {funcTypes <- typesOpt; funcType <- ty ~ refType}
-                    yield FuncT(funcType, funcTypes)(pos)
                 case (ty, refType) if ty == refType => Some(ty)
                 case _                              => None
             }
@@ -111,15 +99,15 @@ object typechecker {
         env: Environment, file: File
     ): Either[List[WaccErr], Option[Program[QualifiedName, KnownType]]] = {
         given ctx: Context = new Context(Body.Main, env, file)
-        val typedFuncs: Option[List[Func[QualifiedName, KnownType]]] = checkFuncs(prog.funcs)
-        val typedStmts: Option[List[Stmt[QualifiedName, KnownType]]] = {
+        val typedFuncs = checkFuncs(prog.funcs)
+        val typedStmts = {
             ctx.body = Body.Main 
             check(prog.stmts)
         }
         val errors = ctx.result
         if errors.isEmpty 
             then Right(for { funcs <- typedFuncs; stmts <- typedStmts } 
-                       yield Program[QualifiedName, KnownType](funcs, stmts)(prog.pos))
+                       yield Program(funcs, stmts)(prog.pos))
             else Left(errors)
     }
 

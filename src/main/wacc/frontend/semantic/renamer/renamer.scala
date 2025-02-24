@@ -35,7 +35,7 @@ def renameFuncs(
             else env.add(func.id.name, FuncT(func.retType, func.params.map(p => p.paramType))(func.pos))
         funcNameScope.put(func.id.name, QualifiedName(func.id.name, newUID))
     }
-    funcs.map(rename(_))
+    funcs.map(rename)
 }
 
 def rename(
@@ -53,14 +53,16 @@ def rename(
             else env.add(param.paramId.name, param.paramType)
         funcScope.put(param.paramId.name, QualifiedName(param.paramId.name, newUID)) 
     }
-    given Pos = func.pos
+    given Pos = func.id.pos
     Func(
         func.retType,
         Ident[QualifiedName, Typeless](funcNameScope.get(func.id.name)),
         func.params.map(p => 
+            given Pos = p.paramId.pos
             Param(p.paramType, Ident[QualifiedName, Typeless](funcScope(p.paramId.name)))(p.pos)
         ),
-    rename(func.stmts))(func.pos)
+        rename(func.stmts),
+    )(func.pos)
 
 def rename(
     stmts: List[Stmt[String, Typeless]]
@@ -71,7 +73,7 @@ def rename(
 ): List[Stmt[QualifiedName, Typeless]] = {
     given Scope    = Scope(parentScope ++ curScope)
     given MutScope = MutScope()
-    stmts.map(rename(_))
+    stmts.map(rename)
 }
 
 def rename(
@@ -111,8 +113,8 @@ def rename(
 )(using env: Environment, curScope: MutScope, parentScope: Scope): LValue[QualifiedName, Typeless] = 
     given Pos = lval.pos
     lval match {
-    case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
-    case ArrayElem(id, exprs)        => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename(_))))
+    case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity)
+    case ArrayElem(id, exprs)        => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename)))
     case First(lval)                 => First(rename(lval))
     case Second(lval)                => Second(rename(lval))
 }
@@ -127,9 +129,9 @@ def rename(
     given Pos = rval.pos
     rval match {
         case expr: Expr[String, Typeless] => rename(expr)
-        case ArrayLit(exprs)              => ArrayLit(exprs.map(rename(_)))
+        case ArrayLit(exprs)              => ArrayLit(exprs.map(rename))
         case NewPair(lexpr, rexpr)        => NewPair(rename(lexpr), rename(rexpr))
-        case Call(id, exprs)              => funcNameScope.rebuildWithIdent(id)(Call(_, exprs.map(rename(_))))
+        case Call(id, exprs)              => funcNameScope.rebuildWithIdent(id)(Call(_, exprs.map(rename)))
         case First(lval)                  => First(rename(lval))
         case Second(lval)                 => Second(rename(lval))
     }
@@ -165,8 +167,8 @@ def rename(
         case CharLit(c: Char)     => CharLit(c)
         case StrLit(s: String)    => StrLit(s)
         case PairLit()            => PairLit()(expr.pos)
-        case ArrayElem(id, exprs) => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename(_))))
-        case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity(_))
+        case ArrayElem(id, exprs) => curScope.rebuildWithIdent(id)(ArrayElem(_, exprs.map(rename)))
+        case id: Ident[String, Typeless] => curScope.rebuildWithIdent(id)(identity)
     }
 
 /* Handles renaming an identifier at sites other than declaration,
