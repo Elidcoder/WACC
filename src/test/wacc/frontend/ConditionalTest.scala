@@ -7,9 +7,11 @@ trait ConditionalTest extends AnyFlatSpec {
         flags: Map[String, String], 
         name: String, key: String
     )(testBlock: => Any): Unit = {
-        if (flags.get(key).exists(_.toBoolean))
-            registerTest(name)(testBlock)
-        else
-            registerIgnoredTest(name)(testBlock)
+        it should name in {
+            if (flags.get(key).exists(_.toBoolean))
+                testBlock
+            else
+                pending
+        }
     }
 }
