@@ -5,6 +5,10 @@ import wacc.syntax.parser
 import wacc.semantic.rename
 import wacc.syntax.lexer.lexErrBuilder
 import wacc.semantic.typecheck.typechecker
+import wacc.backend.generator.generator
+import wacc.backend.referencer.referencer
+import wacc.backend.formatter.formatBlocks
+import wacc.backend.Context
 
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
@@ -35,7 +39,12 @@ def pipeline(file: File): Int = {
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     println("Success")
-                    value.get 
+                    val finalTree = value.get
+                    given Context = new Context()
+                    println("Starting code generation...")
+                    referencer.reference(finalTree)
+                    formatBlocks(generator.generate(finalTree))
+                    println("Success")
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS
                         
