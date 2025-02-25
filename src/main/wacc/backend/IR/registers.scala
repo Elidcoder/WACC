@@ -26,6 +26,6 @@ case object r13 extends Register
 case object r14 extends Register
 case object r15 extends Register
 
-enum RegisterSize {
+enum DataSize {
     case BYTE, WORD, DWORD, QWORD
 }

@@ -4,7 +4,11 @@ sealed trait Operand
 
 sealed trait Instr
 
-case class Reg(reg: Register, size: RegisterSize) extends Operand
+sealed trait Reference
+
+case class Stack(offset: Int) extends Reference
+case class Heap(pointer: Int) extends Reference
+case class Reg(reg: Register, size: DataSize) extends Operand with Reference
 
 case class Push(source: Operand) extends Instr
 case class Pop(dest: Operand) extends Instr
