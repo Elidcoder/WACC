@@ -1,9 +1,8 @@
 package wacc.backend.formatter
 
-import wacc.backend.ir.Block
-import wacc.backend.ir.RoData
-import wacc.backend.ir.Instr
+import wacc.backend.ir.{Block, RoData, Instr}
 
+// TODO(USE IO STREAM INSTEAD)
 def formatBlocks(blocks: List[Block]):String = {
     given  sb: StringBuilder = new StringBuilder()
 

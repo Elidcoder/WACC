@@ -1,9 +1,7 @@
 package wacc.backend.ir
 
 sealed trait Operand
-
 sealed trait Instr
-
 sealed trait Reference
 
 case class Stack(offset: Int) extends Reference
@@ -29,7 +27,7 @@ case class Mov(source: Operand, dest: Operand) extends Instr
 case class Lea(dest: Operand, target: Operand) extends Instr
 
 enum JumpCond {
-    case UnCond, Eq, NotEq, Gr, GrE, Le, LeE  
+    case UnCond, Eq, NotEq, Gr, GrEq, Le, LeEq 
 }
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
