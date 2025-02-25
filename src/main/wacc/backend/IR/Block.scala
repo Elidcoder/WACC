@@ -1,6 +1,5 @@
 package wacc.backend.ir
 
-class Block(val funcName: String, val instrs: List[Instr]) { 
-    // TODO()
-    def format():String = ""
-}
+class RoData(val size: Int, val str: String, val label: Label) 
+
+class Block(val name: Label, val roData: Option[List[RoData]], val instrs: List[Instr]) 
