@@ -38,6 +38,8 @@ enum JumpCond {
 }
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
+case class ISet[+S <: DataSize] private (dest: Operand[S], cond: JumpCond)     extends Instr
+
 
 case object IAdd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAdd[S] = new IAdd(dest, opR)
@@ -76,4 +78,7 @@ case object ILea {
 case object IPop {    
     def apply[S <: DataSize](source: Reg[S]): IPush[S] = new IPush(source)
     def apply[S <: DataSize](source: Mem[S]): IPush[S] = new IPush(source)
+}
+case object ISet {
+    def apply(dest: Reg[BYTE], cond: JumpCond) = new ISet(dest, cond)
 }
