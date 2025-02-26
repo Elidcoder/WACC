@@ -49,7 +49,9 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit = instr match
         writeLine("cdq")
         writeIndentedLine(s"idiv ${format(dest)}")
     case ICmp(dest, opR) => writeIndentedLine(s"cmp ${format(dest)}, ${format(opR)}")
-    case IMov(dest, source) => writeIndentedLine(s"mov ${format(dest)}, ${format(source)}")
+    case IMov(dest, source, cond) => cond match
+        case JumpCond.UnCond => writeIndentedLine(s"mov ${format(dest)}, ${format(source)}")
+        case _ => writeIndentedLine(s"cmov${cond.toString.toLowerCase} ${format(dest)}, ${format(source)}")
     case ILea(dest, target) => writeIndentedLine(s"lea ${format(dest)}, ${format(target)}")
     case Jmp(label, cond) => 
         if cond == JumpCond.UnCond then
@@ -57,6 +59,14 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit = instr match
         else
             writeIndentedLine(s"j${cond.toString.toLowerCase} ${label.name}")
     case IAnd(dest, source) => writeIndentedLine(s"and ${format(dest)}, ${format(source)}")
+    case wacc.backend.ir.INeg(dest) => writeIndentedLine(s"neg ${format(dest)}")
+    case wacc.backend.ir.ITest(dest, source) => writeIndentedLine(s"test ${format(dest)}, ${format(source)}")
+    case wacc.backend.ir.IMovzx(dest, source) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)}")
+    case wacc.backend.ir.ISet(dest, cond) => 
+        if cond == JumpCond.UnCond then
+            writeIndentedLine(s"set ${format(dest)}")
+        else
+            writeIndentedLine(s"set${cond.toString.toLowerCase} ${format(dest)}")
 
 private def format(label: Label)(using wr: BufferedWriter): Unit = {
     writeLine(s"${label.name}:")
