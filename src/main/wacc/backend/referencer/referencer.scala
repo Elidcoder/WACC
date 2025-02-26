@@ -1,18 +1,19 @@
 package wacc.backend.referencer
 
-import wacc.ast._
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
+
+import wacc.ast._
 import wacc.backend.ir._
 
 sealed trait Prebuilt 
 
-case class PbMalloc() extends Prebuilt
-case class PbExit() extends Prebuilt
+case class PbMalloc()      extends Prebuilt
+case class PbExit()        extends Prebuilt
 case class PbErrOverflow() extends Prebuilt
 case class PbPrint(varType: KnownType) extends Prebuilt
-case class PbFree(varType: KnownType) extends Prebuilt
-case class PbRead(varType: KnownType) extends Prebuilt
+case class PbFree( varType: KnownType) extends Prebuilt
+case class PbRead( varType: KnownType) extends Prebuilt
 
 object referencer {
     private val parameterRegisters: List[Register] = List(rdi, rsi, rdx, rcx, r8, r9) 
@@ -39,7 +40,13 @@ object referencer {
         case _               => ???
     }
 
-    def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Unit = {
+    /* Creates a stack reference for a new variable and increases the function offset */
+    private def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
+        ctx.addVar(id.name, Stack(ctx.getFuncOff(funcName)))
+        ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
+    }
+
+    def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Program[QualifiedName, KnownType] = {
         given funcName:QualifiedName = QualifiedName("main", -1)
 
         /* Reference each function defined at the top. */
@@ -47,6 +54,9 @@ object referencer {
         
         /* Reference the main function. */
         reference(prog.stmts)
+
+        /* Return the given program to allow chaining in main. */
+        prog
     }
     
     private def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
@@ -60,10 +70,7 @@ object referencer {
 
         /* Paramters exceeding numb registers */
         func.params.reverse.drop(parameterRegisters.size).foreach(
-            (param) => {
-                ctx.addVar(param.paramId.name, Stack(ctx.getFuncOff(funcName)))
-                ctx.incFuncOff(funcName, getTypeSize(param.paramType).bytes)
-            }
+            (param) => addVarToContext(param.paramId)
         )
         
         /* Handle statements*/
@@ -74,16 +81,13 @@ object referencer {
         = funcStmts.foreach(reference)
 
     private def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
-        case NewAss(_, id, _) => {
-            ctx.addVar(id.name, Stack(ctx.getFuncOff(funcName)))
-            ctx.incFuncOff(funcName,  getTypeSize(id.t).bytes)
-        }
-        case If(cond, ifStmts, elseStmts) => {
-            reference(ifStmts)
-            reference(elseStmts)
-        }
+        case NewAss(_, id, _) => addVarToContext(id)
+
+        /* Check nested statements. */
+        case If(cond, ifStmts, elseStmts) => {reference(ifStmts); reference(elseStmts)}
         case While(cond, subStmts) => reference(subStmts)
         case Nest(stmts) => reference(stmts)
+
         case _ => {}
     }
 }
