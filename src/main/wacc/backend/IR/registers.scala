@@ -31,22 +31,14 @@ sealed trait DataSize {
 }
 
 case class BYTE() extends DataSize {
-    val bytes = 1
+    override val bytes = 1
 }
 case class WORD() extends DataSize{
-    val bytes = 2
+    override val bytes = 2
 }
 case class DWORD() extends DataSize{
-    val bytes = 4
+    override val bytes = 4
 }
 case class QWORD() extends DataSize{
-    val bytes = 8
+    override val bytes = 8
 }
-
-var nonOutputRegisters:List[Register] = List(
-    rbx, 
-    rcx, rdx, rsi, rdi,
-    rsp, rbp,
-    r8, r9, r10, r11,
-    r12, r13, r14, r15
-)

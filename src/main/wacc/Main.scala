@@ -39,12 +39,12 @@ def pipeline(file: File): Int = {
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     println("Success")
-                    // val finalTree = value.get
-                    // given Context = new Context()
-                    //println("Starting code generation...")
-                    //referencer.reference(finalTree)
-                    //formatBlocks(generator.generate(finalTree))
-                    //println("Success")
+                    val finalTree = value.get
+                    given Context = new Context()
+                    println("Starting code generation...")
+                    referencer.reference(finalTree)
+                    formatBlocks(generator.generate(finalTree))
+                    println("Success")
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS
                         
