@@ -30,14 +30,16 @@ case class IMul[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) exten
 case class IDiv[S <: DataSize] private (dest: Operand[S])                  extends Instr
 case class ICmp[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 
-case class IMov[S <: DataSize] private (source: Operand[S], dest: Operand[S]) extends Instr
+case class IMov[S <: DataSize] private (dest: Operand[S], source: Operand[S]) extends Instr
 case class ILea[S <: DataSize] private (dest: Operand[S], target: Operand[S]) extends Instr
 
 enum JumpCond {
-    case UnCond, Eq, NotEq, Gr, GrEq, Le, LeEq 
+    case UnCond, E, NE, G, GE, L, LE 
 }
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
+case class ISet[+S <: DataSize] private (dest: Operand[S], cond: JumpCond)     extends Instr
+
 
 case object IAnd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAnd[S] = new IAnd(dest, opR)
@@ -76,4 +78,7 @@ case object ILea {
 case object IPop {    
     def apply[S <: DataSize](source: Reg[S]): IPush[S] = new IPush(source)
     def apply[S <: DataSize](source: Mem[S]): IPush[S] = new IPush(source)
+}
+case object ISet {
+    def apply(dest: Reg[BYTE], cond: JumpCond) = new ISet(dest, cond)
 }
