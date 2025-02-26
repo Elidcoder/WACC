@@ -108,16 +108,7 @@ object generator {
             += IPop (Reg[QWORD] (TEMP_REG))
             += IPop (Reg[QWORD] (RETURN_REG))
             += ICmp (Reg[QWORD] (RETURN_REG), Reg[QWORD] (TEMP_REG))
-            += (cond match {
-                    case JumpCond.E  => ???
-                    case JumpCond.NE => ???
-                    case JumpCond.G  => ???
-                    case JumpCond.GE => ???
-                    case JumpCond.L  => ???
-                    case JumpCond.LE => ???
-                    case JumpCond.UnCond => ???
-                }
-            )
+            += ISet (Reg[BYTE] (RETURN_REG), cond)
     }
 
     def generate(
@@ -125,6 +116,10 @@ object generator {
         builder: Builder[Instr, List[Instr]]
     )(using ctx: Context): Unit = {
         expr match {
+            case Not(expr) => 
+                generate(expr, builder)
+                builder += 
+                    ISet (Reg[BYTE] (RETURN_REG), JumpCond.NE) 
             case Ident(_)  => ??? // TODO
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply, builder)
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply, builder)
@@ -145,6 +140,24 @@ object generator {
                 generateBinCond(left, right, JumpCond.L, builder)
             case LessEq(left, right) =>
                 generateBinCond(left, right, JumpCond.LE, builder) 
+            case And(left, right) => 
+                val afterLabel = ctx.nextLabel()
+                generate(left, builder)
+                builder 
+                    += Jmp (afterLabel, JumpCond.NE)
+                generate(right, builder)
+                builder 
+                    += afterLabel
+                    += ISet (Reg[BYTE] (RETURN_REG), JumpCond.E)
+            case Or(left, right) =>
+                val afterLabel = ctx.nextLabel()
+                generate(left, builder)
+                builder 
+                    += Jmp (afterLabel, JumpCond.E)
+                generate(right, builder)
+                builder 
+                    += afterLabel
+                    += ISet (Reg[BYTE] (RETURN_REG), JumpCond.E)
             case BoolLit(bool) =>
                 builder += 
                     IMov (Reg[BYTE] (RETURN_REG), (Imm (if (bool) 1 else 0)))
