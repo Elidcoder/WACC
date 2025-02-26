@@ -1,7 +1,7 @@
 package wacc.backend.ir
 
-sealed trait Operand[S <: DataSize]
-sealed trait Mem[S <: DataSize] extends Operand[S]
+sealed trait Operand[+S <: DataSize]
+sealed trait Mem[+S <: DataSize] extends Operand[S]
 
 sealed trait Instr
 sealed trait Reference
@@ -9,15 +9,15 @@ sealed trait Reference
 case class Stack(offset: Int) extends Reference
 case class Heap(pointer: Int) extends Reference
 
-case class Reg[S <: DataSize](reg: Register) extends Reference, Operand[S]
+case class Reg[+S <: DataSize](reg: Register) extends Reference, Operand[S]
 
-case class Rip[S <: DataSize](label: Label)                   extends Mem[S]
-case class MemInd[S <: DataSize](reg: Register)               extends Mem[S]
-case class Imm[S <: DataSize](value: Int)                     extends Operand[S]
-case class MemOff[S <: DataSize](reg: Register, offset: Int)  extends Mem[S]
+case class Rip[+S <: DataSize](label: Label)                   extends Mem[S]
+case class MemInd[+S <: DataSize](reg: Register)               extends Mem[S]
+case class Imm[+S <: DataSize](value: Int)                     extends Operand[S]
+case class MemOff[+S <: DataSize](reg: Register, offset: Int)  extends Mem[S]
 
-case class IPush[S <: DataSize](source: Operand[S])  extends Instr
-case class IPop[S <: DataSize] private (dest: Operand[S])     extends Instr
+case class IPush[+S <: DataSize](source: Operand[S])  extends Instr
+case class IPop[+S <: DataSize] private (dest: Operand[S])     extends Instr
 case class Label(name: String)                      extends Instr
 case class ICall(funcName: String)                   extends Instr
 

@@ -95,7 +95,7 @@ def rename(
             val rR = rename(rval)
             given Pos = id.pos
             curScope.put(id.name, QualifiedName(id.name, newUID))
-            Assign(Ident[QualifiedName, Typeless](curScope(id.name)), rR)
+            NewAss(newType, Ident[QualifiedName, Typeless](curScope(id.name)), rR)
         case Assign(lval, rval)             => Assign(rename(lval), rename(rval))
         case Read(lval)                     => Read(rename(lval))
         case Free(expr)                     => Free(rename(expr))

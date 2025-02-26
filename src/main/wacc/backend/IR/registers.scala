@@ -26,8 +26,19 @@ case object r13 extends Register
 case object r14 extends Register
 case object r15 extends Register
 
-sealed trait DataSize
-case class BYTE() extends DataSize
-case class WORD() extends DataSize
-case class DWORD() extends DataSize
-case class QWORD() extends DataSize
+sealed trait DataSize {
+    val bytes: Int
+}
+
+case class BYTE() extends DataSize {
+    override val bytes = 1
+}
+case class WORD() extends DataSize {
+    override val bytes = 2
+}
+case class DWORD() extends DataSize {
+    override val bytes = 4
+}
+case class QWORD() extends DataSize {
+    override val bytes = 8
+}
