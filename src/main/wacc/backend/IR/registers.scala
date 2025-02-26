@@ -42,3 +42,22 @@ case class DWORD() extends DataSize {
 case class QWORD() extends DataSize {
     override val bytes = 8
 }
+
+sealed trait DataSizeExtractor[S <: DataSize] {
+    def size: DataSize
+}
+implicit val byteExtractor: DataSizeExtractor[BYTE] = new DataSizeExtractor[BYTE] {
+    def size: DataSize = BYTE()
+}
+implicit val wordExtractor: DataSizeExtractor[WORD] = new DataSizeExtractor[WORD] {
+    def size: DataSize = WORD()
+}
+implicit val dwordExtractor: DataSizeExtractor[DWORD] = new DataSizeExtractor[DWORD] {
+    def size: DataSize = DWORD()
+}
+implicit val qwordExtractor: DataSizeExtractor[QWORD] = new DataSizeExtractor[QWORD] {
+    def size: DataSize = QWORD()
+}
+def extractDataSize[S <: DataSize](op: Operand[S])(implicit extractor: DataSizeExtractor[S]): DataSize = {
+    extractor.size
+}
