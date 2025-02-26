@@ -26,6 +26,8 @@ case object r13 extends Register
 case object r14 extends Register
 case object r15 extends Register
 
-enum DataSize {
-    case BYTE, WORD, DWORD, QWORD
-}
+sealed trait DataSize
+case class BYTE() extends DataSize
+case class WORD() extends DataSize
+case class DWORD() extends DataSize
+case class QWORD() extends DataSize
