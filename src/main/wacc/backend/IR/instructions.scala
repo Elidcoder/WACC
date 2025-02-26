@@ -1,7 +1,7 @@
 package wacc.backend.ir
 
-sealed trait Operand[S <: DataSize]
-sealed trait Mem[S <: DataSize] extends Operand[S]
+sealed trait Operand[+S <: DataSize]
+sealed trait Mem[+S <: DataSize] extends Operand[S]
 
 sealed trait Instr
 sealed trait Reference
@@ -9,20 +9,22 @@ sealed trait Reference
 case class Stack(offset: Int) extends Reference
 case class Heap(pointer: Int) extends Reference
 
-case class Reg[S <: DataSize](reg: Register) extends Reference, Operand[S]
+case class Reg[+S <: DataSize](reg: Register) extends Reference, Operand[S]
 
-case class Rip[S <: DataSize](label: Label)                   extends Mem[S]
-case class MemInd[S <: DataSize](reg: Register)               extends Mem[S]
-case class Imm[S <: DataSize](value: Int)                     extends Operand[S]
-case class MemOff[S <: DataSize](reg: Register, offset: Int)  extends Mem[S]
+case class Rip[+S <: DataSize](label: Label)                   extends Mem[S]
+case class MemInd[+S <: DataSize](reg: Register)               extends Mem[S]
+case class Imm[+S <: DataSize](value: Int)                     extends Operand[S]
+case class MemOff[+S <: DataSize](reg: Register, offset: Int)  extends Mem[S]
 
-case class IPush[S <: DataSize](source: Operand[S])  extends Instr
-case class IPop[S <: DataSize] private (dest: Operand[S])     extends Instr
+case class IPush[+S <: DataSize](source: Operand[S])  extends Instr
+case class IPop[+S <: DataSize] private (dest: Operand[S])     extends Instr
 case class Label(name: String)                      extends Instr
 case class ICall(funcName: String)                   extends Instr
 
 case class IAdd[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 case class ISub[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
+case class IMul[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
+case class IDiv[S <: DataSize] private (dest: Operand[S])                  extends Instr
 case class ICmp[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 
 case class IMov[S <: DataSize] private (source: Operand[S], dest: Operand[S]) extends Instr
@@ -34,10 +36,6 @@ enum JumpCond {
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
 
-case object Reg {
-    def apply[S <: DataSize](reg: Register) = new Reg(reg)
-}
-
 case object IAdd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAdd[S] = new IAdd(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAdd[S] = new IAdd(dest, opR)
@@ -47,6 +45,12 @@ case object ISub {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): ISub[S] = new ISub(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): ISub[S] = new ISub(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): ISub[S] = new ISub(dest, opR)
+}
+case object IMul {    
+    def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IMul[S] = new IMul(dest, opR)
+}
+case object IDiv {    
+    def apply[S <: DataSize](dest: Reg[S]): IDiv[S] = new IDiv(dest)
 }
 case object ICmp {    
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): ICmp[S] = new ICmp(dest, opR)
