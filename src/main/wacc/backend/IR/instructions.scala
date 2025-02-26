@@ -21,6 +21,8 @@ case class IPop[+S <: DataSize] private (dest: Operand[S])     extends Instr
 case class Label(name: String)                      extends Instr
 case class ICall(funcName: String)                   extends Instr
 
+case class IAnd[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
+
 case class IAdd[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 case class ISub[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 case class IMul[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
