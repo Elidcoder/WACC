@@ -3,7 +3,7 @@ package wacc.backend.referencer
 import wacc.ast._
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
-import wacc.backend.ir.{DataSize, Reg, nonOutputRegisters}
+import wacc.backend.ir.{DataSize, Reg, Stack, nonOutputRegisters}
 
 sealed trait Prebuilt 
 
@@ -24,26 +24,13 @@ object referencer {
         case StringT() => DataSize.BYTE //*n
         case PairT(a, b) => DataSize.QWORD //+ getTypeSize(a) + getTypeSize(b)
         case ArrayT(t) => DataSize.DWORD //+ getTypeSize(t)//*n
+        case _ => ???
     }
 
-
-    /*private def getExprType(expr: Expr[QualifiedName, KnownType]): KnownType = expr match {
-        case And(_, _) | Eq(_, _)| Greater(_, _) | GreaterEq(_, _) 
-            | NotEq(_, _) | BoolLit(_) | Or(_, _) | Not(_) => BoolT()
-        case CharLit(_) |  Chr(_) => CharT()
-        case StrLit(str) => StringT()
-        case id@Ident(_) => id.t
-
-        case ArrayElem(id, exprs) => {
-            val arrElemType = if (exprs.isEmpty) IntT() else getExprType(exprs.head)
-            ArrayT(arrElemType)
-        }
-        case _: ArrayOrIdent[?, ?] => ???
-        case PairLit() => ???
-
-        // may not always be int cos of add strings
-        case _ => IntT()
-    }*/
+    private def getTypeSizeBytes(usedType: KnownType): Int = {
+        getTypeSize(usedType)// convert to int
+        return 10
+    }
 
     def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Unit = {
         prog.funcs.foreach(reference)
@@ -51,12 +38,8 @@ object referencer {
         // go through the statements as main prog.stmts
     }
     
-    def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
-        /* Initialise offset. */
-        ctx.addFunc(func.id.name, 0)
-        
-        // Calculate initial offset through register usage of inputs
-        // Tag the inputs correctly
+    private def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
+        given funcName:QualifiedName = func.id.name
 
         /* Parameter made into registers */
         func.params.zip(nonOutputRegisters).foreach(
@@ -65,76 +48,32 @@ object referencer {
         )
 
         /* Paramters exceeding numb registers */
-        func.params.drop(nonOutputRegisters.size).foreach(
-            //make stack ref
-            (param) => ???
+        func.params.reverse.drop(nonOutputRegisters.size).foreach(
+            (param) => {
+                ctx.addVar(param.paramId.name, Stack(ctx.getFuncOff(funcName)))
+                ctx.incFuncOff(funcName, getTypeSizeBytes(param.paramType))
+            }
         )
         
         /* Handle statements*/
-        reference(func.stmts, func.id.name)
+        reference(func.stmts)
     }
 
-    def reference(funcStmts: List[Stmt[QualifiedName, KnownType]], funcName: QualifiedName)(using ctx: Context): Unit  = {
-        funcStmts.foreach((stmt) => reference(stmt, funcName))
-    }
+    private def reference(funcStmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, funcName: QualifiedName): Unit
+        = funcStmts.foreach(reference)
 
-    def reference(stmt: Stmt[QualifiedName, KnownType], funcName: QualifiedName)(using ctx: Context): Unit  = {
-        stmt match {
-            case NewAss(assType, id, rVal) => {
-                //getTypeSize(assType)
-            }
-            case If(cond, ifStmts, elseStmts) => {
-                reference(ifStmts, funcName)
-                reference(elseStmts, funcName)
-            }
-            case While(cond, subStmts) => reference(subStmts, funcName)
-            case Nest(stmts) => reference(stmts, funcName)  
-            case Return(expr) => ???
-            
-
-            /* Add prebuilts */
-            /*
-            case Print(expr) => {
-                ctx.addPrebuilt(PbPrint(getExprType(expr)))
-            }
-            case PrintLn(expr) => {
-                ctx.addPrebuilt(PbPrint(getExprType(expr)))
-            }
-            case Read  (expr) => ctx.addPrebuilt(PbRead(getExprType(expr)))
-            case Exit  (_) => ctx.addPrebuilt(PbExit())
-            case Free  (expr) => ctx.addPrebuilt(PbFree(getExprType(expr)))*/
-            case _ => {}
+    private def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
+        case NewAss(_, id, _) => {
+            ctx.addVar(id.name, Stack(ctx.getFuncOff(funcName)))
+            ctx.incFuncOff(funcName, getTypeSizeBytes(id.t))
         }
+        case If(cond, ifStmts, elseStmts) => {
+            reference(ifStmts)
+            reference(elseStmts)
+        }
+        case While(cond, subStmts) => reference(subStmts)
+        case Nest(stmts) => reference(stmts)
+        case Return(expr) => ???
+        case _ => {}
     }
 }
-
-/*
-RoData
-labelling + Reference
-
-Variables
-into references
-
-Prebuilt Widgets
-set flags to add prebuilt functions
-
-refencer
-
-program
-
-func:
-    args = 0
-    varoffset = 0
-    referencer - list stmt
-    store varoffset
-
-args++
-argsoffset
-offset -- ++size
-
-
-map - QName to reference
-map - string to roData
-map - func Qname to offset
-list of flags for widgets
-*/
