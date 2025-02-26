@@ -26,8 +26,21 @@ case object r13 extends Register
 case object r14 extends Register
 case object r15 extends Register
 
-enum DataSize {
-    case BYTE, WORD, DWORD, QWORD
+sealed trait DataSize {
+    val bytes: Int
+}
+
+case class BYTE() extends DataSize {
+    val bytes = 1
+}
+case class WORD() extends DataSize{
+    val bytes = 2
+}
+case class DWORD() extends DataSize{
+    val bytes = 4
+}
+case class QWORD() extends DataSize{
+    val bytes = 8
 }
 
 var nonOutputRegisters:List[Register] = List(

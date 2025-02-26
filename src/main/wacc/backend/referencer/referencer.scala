@@ -3,7 +3,7 @@ package wacc.backend.referencer
 import wacc.ast._
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
-import wacc.backend.ir.{DataSize, Reg, Stack, nonOutputRegisters}
+import wacc.backend.ir._
 
 sealed trait Prebuilt 
 
@@ -16,20 +16,23 @@ case class PbRead(varType: KnownType) extends Prebuilt
 
 object referencer {
     private def getTypeSize(usedType: KnownType): DataSize = usedType match {
-        case IntT() => DataSize.DWORD
-        case CharT() => DataSize.BYTE
-        case BoolT() => DataSize.BYTE
-
-        // TOOD(Figure out better)
-        case StringT() => DataSize.BYTE //*n
-        case PairT(a, b) => DataSize.QWORD //+ getTypeSize(a) + getTypeSize(b)
-        case ArrayT(t) => DataSize.DWORD //+ getTypeSize(t)//*n
+        case IntT() => DWORD()
+        case CharT() => BYTE()
+        case BoolT() => BYTE()
+        case StringT() => QWORD()
+        case PairT(a, b) => QWORD()
+        case ArrayT(t) => QWORD()
         case _ => ???
     }
 
-    private def getTypeSizeBytes(usedType: KnownType): Int = {
-        getTypeSize(usedType)// convert to int
-        return 10
+    private def buildReg(reg: Register, ty: Type): Reg[DataSize] = ty match {
+        case IntT() => Reg[DWORD](reg)
+        case CharT() => Reg[BYTE](reg)
+        case BoolT() => Reg[BYTE](reg)
+        case StringT() => Reg[QWORD](reg)
+        case PairT(a, b) => Reg[QWORD](reg)
+        case ArrayT(t) => Reg[QWORD](reg)
+        case _ => ???
     }
 
     def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Unit = {
@@ -44,14 +47,14 @@ object referencer {
         /* Parameter made into registers */
         func.params.zip(nonOutputRegisters).foreach(
             (param, reg) => 
-                ctx.addVar(param.paramId.name, Reg(reg, getTypeSize(param.paramType)))
+                ctx.addVar(param.paramId.name, buildReg(reg, param.paramType))
         )
 
         /* Paramters exceeding numb registers */
         func.params.reverse.drop(nonOutputRegisters.size).foreach(
             (param) => {
                 ctx.addVar(param.paramId.name, Stack(ctx.getFuncOff(funcName)))
-                ctx.incFuncOff(funcName, getTypeSizeBytes(param.paramType))
+                ctx.incFuncOff(funcName, getTypeSize(param.paramType).bytes)
             }
         )
         
@@ -65,7 +68,7 @@ object referencer {
     private def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
         case NewAss(_, id, _) => {
             ctx.addVar(id.name, Stack(ctx.getFuncOff(funcName)))
-            ctx.incFuncOff(funcName, getTypeSizeBytes(id.t))
+            ctx.incFuncOff(funcName,  getTypeSize(id.t).bytes)
         }
         case If(cond, ifStmts, elseStmts) => {
             reference(ifStmts)
