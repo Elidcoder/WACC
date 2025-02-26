@@ -20,6 +20,7 @@ case class IPush[+S <: DataSize](source: Operand[S])  extends Instr
 case class IPop[+S <: DataSize] private (dest: Operand[S])     extends Instr
 case class Label(name: String)                      extends Instr
 case class ICall(funcName: String)                   extends Instr
+case object IRet                                     extends Instr
 
 case class IAnd[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 
@@ -38,6 +39,11 @@ enum JumpCond {
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
 
+case object IAnd {
+    def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAnd[S] = new IAnd(dest, opR)
+    def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAnd[S] = new IAnd(dest, opR)
+    def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): IAnd[S] = new IAnd(dest, opR)
+}
 case object IAdd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAdd[S] = new IAdd(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAdd[S] = new IAdd(dest, opR)
