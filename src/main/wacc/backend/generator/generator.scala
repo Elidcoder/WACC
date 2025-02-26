@@ -111,6 +111,12 @@ object generator {
             += ISet (Reg[BYTE] (RETURN_REG), cond)
     }
 
+    def opFromRef[S <: DataSize](ref: Reference): Operand[S] = ref match {
+        case Stack(offset) => MemOff[S](BASE_PTR_REG, offset)
+        case Heap(pointer) => ??? // TODO
+        case Reg(reg) => Reg[S](reg)
+    }
+
     def generate(
         expr: Expr[QualifiedName, KnownType],
         builder: Builder[Instr, List[Instr]]
@@ -118,16 +124,14 @@ object generator {
         expr match {
             case Not(expr) => 
                 generate(expr, builder)
-                builder += 
-                    ISet (Reg[BYTE] (RETURN_REG), JumpCond.NE) 
-            case Ident(_)  => ??? // TODO
+                builder += ISet (Reg[BYTE] (RETURN_REG), JumpCond.NE) 
+            case Ident(name) => IMov (Reg[QWORD] (RETURN_REG), opFromRef(ctx.getVarRef(name)))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply, builder)
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply, builder)
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply, builder)
             case Div(x, y) => generateDivMod(x, y, builder)
             case Mod(x, y) => generateDivMod(x, y, builder)
-                builder
-                    += IMov (Reg[QWORD] (RETURN_REG), Reg[QWORD] (TEMP_REG))
+                builder += IMov (Reg[QWORD] (RETURN_REG), Reg[QWORD] (TEMP_REG))
             case Eq(left, right) => 
                 generateBinCond(left, right, JumpCond.E, builder)
             case NotEq(left, right) => 
