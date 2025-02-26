@@ -41,6 +41,11 @@ case class Jmp(label: Label, cond: JumpCond) extends Instr
 case class ISet[+S <: DataSize] private (dest: Operand[S], cond: JumpCond)     extends Instr
 
 
+case object IAnd {
+    def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAnd[S] = new IAnd(dest, opR)
+    def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAnd[S] = new IAnd(dest, opR)
+    def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): IAnd[S] = new IAnd(dest, opR)
+}
 case object IAdd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAdd[S] = new IAdd(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAdd[S] = new IAdd(dest, opR)
@@ -66,11 +71,6 @@ case object IMov {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IMov[S] = new IMov(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IMov[S] = new IMov(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): IMov[S] = new IMov(dest, opR)
-}
-case object IAnd {    
-    def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAnd[S] = new IAnd(dest, opR)
-    def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAnd[S] = new IAnd(dest, opR)
-    def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): IAnd[S] = new IAnd(dest, opR)
 }
 case object ILea {    
     def apply[S <: DataSize](dest: Reg[S], opR: Mem[S]): ILea[S] = new ILea(dest, opR)
