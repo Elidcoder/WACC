@@ -4,10 +4,7 @@ import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
 import wacc.backend.ir.{Reference, RoData, Label}
 import wacc.semantic.QualifiedName
-
-enum Prebuilt {
-    case PrintInt, PrintStr, PrintChar, PrintBool, PrintPair, PrintArr, Exit, Malloc, Free, 
-}
+import wacc.backend.referencer.Prebuilt
 
 class Context() {
     private var stringUID: Int = 0
