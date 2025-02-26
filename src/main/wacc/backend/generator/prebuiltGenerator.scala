@@ -23,7 +23,7 @@ object prebuiltGenerator {
             IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
             IMov(Reg[QWORD](rdx), Reg[QWORD](rdi)),
             IMov(Reg[DWORD](rsi), MemOff[DWORD](rdi, -4)),
-            ILea(Reg[QWORD](rdi), Rip[QWORD](".L._prints_str0")),
+            ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._prints_str0"))),
             IMov(Reg[BYTE](rax), Imm[BYTE](0)),
             ICall("printf@plt"),
             IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
@@ -33,13 +33,13 @@ object prebuiltGenerator {
         )
     )
     val printlnBlock = Block (
-        Label("_println:"),
-        Some(List(RoData(0, ".L._println_str0", ""))),
+        Label("_println"),
+        Some(List(RoData(0, "%.*s", Label(".L._println_str0")))),
         List (
             IPush(Reg[QWORD](rbp)),
             IMov(Reg[QWORD](rbp), Reg[QWORD](rsp)),
             IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
-            ILea(Reg[QWORD](rdi), Rip[QWORD](".L._println_str0")),
+            ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._println_str0"))),
             ICall("puts@plt"),
             IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
             ICall("fflush@plt"),

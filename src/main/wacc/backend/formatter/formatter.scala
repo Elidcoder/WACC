@@ -37,7 +37,7 @@ private def format(instrs: List[Instr])(using wr: BufferedWriter): Unit = {
 }
 
 private def format(instr: Instr)(using wr: BufferedWriter): Unit = instr match
-    case IPush(source) => writeIndentedLine(s"push $source")
+    case IPush(source) => writeIndentedLine(s"push ${format(source)}")
     case IRet => writeIndentedLine("ret")
     case IPop(dest) => writeIndentedLine(s"pop $dest")
     case Label(name) => format(instr)
@@ -49,28 +49,30 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit = instr match
         writeLine("cdq")
         writeIndentedLine(s"idiv ${format(dest)}")
     case ICmp(dest, opR) => writeIndentedLine(s"cmp ${format(dest)}, ${format(opR)}")
-    case IMov(source, dest) => writeIndentedLine(s"mov ${format(source)}, ${format(dest)}")
+    case IMov(dest, source) => writeIndentedLine(s"mov ${format(dest)}, ${format(source)}")
     case ILea(dest, target) => writeIndentedLine(s"lea ${format(dest)}, ${format(target)}")
     case Jmp(label, cond) => 
         if cond == JumpCond.UnCond then
             writeIndentedLine(s"jmp ${label.name}")
         else
             writeIndentedLine(s"j${cond.toString.toLowerCase} ${label.name}")
+    case IAnd(dest, source) => writeIndentedLine(s"and ${format(dest)}, ${format(source)}")
 
 private def format(label: Label)(using wr: BufferedWriter): Unit = {
     writeLine(s"${label.name}:")
 }
 
-private def format[S <: DataSize](op: Operand[S])(using wr: BufferedWriter): Unit = op match
-    case Reg(reg) => wr.write(reg.toString)
-    case Rip(label) => wr.write(s"[rip + ${label.name}]")
-    case MemInd(reg) => wr.write(s"[$reg]")
-    case Imm(value) => wr.write(value.toString)
-    case MemOff(reg, offset) => 
-        if offset < 0 then
-            wr.write(s"[$reg - ${-offset}]")
-        else
-            wr.write(s"[$reg + $offset]")
+private def format[S <: DataSize](op: Operand[S])(using wr: BufferedWriter): String = 
+    op match
+        case Reg(reg) => reg.toString
+        case Rip(label) => s"[rip + ${label.name}]"
+        case MemInd(reg) => s"[$reg]"
+        case Imm(value) => value.toString
+        case MemOff(reg, offset) => 
+            if offset < 0 then
+                s"[$reg - ${-offset}]"
+            else
+                s"[$reg + $offset]"
 
 
 
@@ -80,7 +82,7 @@ private def writeLine(line: String)(using wr: BufferedWriter): Unit = {
 }
 
 private def writeIndentedLine(line: String)(using wr: BufferedWriter): Unit = {
-    wr.write("\t")
+    wr.write("  ")
     wr.write(line)
     wr.newLine()
 }
