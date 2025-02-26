@@ -14,6 +14,8 @@ import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
 
 import java.io.File
+import java.io.Writer
+import java.io.FileWriter
 
 final val CODE_SUCCESS      = 0
 final val CODE_SYNTAX_ERR   = 100
@@ -38,8 +40,12 @@ def pipeline(file: File): Int = {
                 case Right(value) => 
                     val finalTree = value.get
                     given Context = new Context()
+                    val writer: Writer =
+                        val file = new File("output.s")
+                        file.createNewFile()
+                        new FileWriter(file)
                     referencer.reference(finalTree)
-                    formatBlocks(generator.generate(finalTree))
+                    formatBlocks(generator.generate(finalTree), writer)
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS
                         
