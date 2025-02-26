@@ -23,6 +23,8 @@ case class ICall(funcName: String)                   extends Instr
 
 case class IAdd[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 case class ISub[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
+case class IMul[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
+case class IDiv[S <: DataSize] private (dest: Operand[S])                  extends Instr
 case class ICmp[S <: DataSize] private (dest: Operand[S], opR: Operand[S]) extends Instr
 
 case class IMov[S <: DataSize] private (source: Operand[S], dest: Operand[S]) extends Instr
@@ -43,6 +45,12 @@ case object ISub {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): ISub[S] = new ISub(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): ISub[S] = new ISub(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Imm[S]): ISub[S] = new ISub(dest, opR)
+}
+case object IMul {    
+    def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IMul[S] = new IMul(dest, opR)
+}
+case object IDiv {    
+    def apply[S <: DataSize](dest: Reg[S]): IDiv[S] = new IDiv(dest)
 }
 case object ICmp {    
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): ICmp[S] = new ICmp(dest, opR)
