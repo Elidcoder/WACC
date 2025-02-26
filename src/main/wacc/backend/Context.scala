@@ -7,6 +7,7 @@ import wacc.semantic.QualifiedName
 import wacc.backend.referencer.Prebuilt
 
 class Context() {
+    private val INITIAL_FUNC_OFF = 16
     private var stringUID: Int = 0
     def nextStringLabel(): Label = {
         stringUID += 1
@@ -26,10 +27,12 @@ class Context() {
     private val funcOffsets: Map[QualifiedName, Int] = Map.empty
     def addFunc(name: QualifiedName, offset: Int) = funcOffsets.put(name, offset)
     def incFuncOff(name: QualifiedName, offsetInc: Int) = funcOffsets.updateWith(name)(
-        _.fold(Some(16 + offsetInc)){curOff => Some(curOff + offsetInc)} 
+        _.fold(Some(INITIAL_FUNC_OFF + offsetInc)){curOff => Some(curOff + offsetInc)} 
     )
-    def getFuncOff(name: QualifiedName): Int = funcOffsets(name)
-
+    def getFuncOff(name: QualifiedName): Int = funcOffsets.getOrElse(name,
+        (() => {funcOffsets.put(name, INITIAL_FUNC_OFF); INITIAL_FUNC_OFF})()
+    )
+    
     private val strRoData: Map[String, RoData] = Map.empty
     def addRoData(name: String, ro: RoData) = strRoData.put(name, ro)
     def getRoData(name: String): RoData = strRoData(name)
