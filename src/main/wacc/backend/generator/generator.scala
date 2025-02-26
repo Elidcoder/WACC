@@ -120,9 +120,19 @@ object generator {
         expr: Expr[QualifiedName, KnownType]
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         expr match {
-            case Not(expr) => 
-                generate(expr)
-                builder += ISet (Reg[BYTE] (RETURN_REG), JumpCond.NE) 
+            case Not(expr) => generate(expr)
+                builder += ISet (Reg[BYTE] (RETURN_REG), JumpCond.NE)
+            case Neg(expr) => generate(expr)
+                builder += INeg (Reg[DWORD] (RETURN_REG))
+            case Len(expr) => generate(expr)
+                builder += IMov (Reg[DWORD] (RETURN_REG), MemOff[DWORD] (RETURN_REG, -4))
+            case Ord(expr) => generate(expr)
+                builder += IMovzx (Reg[DWORD] (RETURN_REG), Reg[BYTE] (RETURN_REG))
+            case Chr(expr) => generate(expr)
+                builder
+                    += ITest (Reg[DWORD] (RETURN_REG), Imm[DWORD] (-128))
+                    += IMov (Reg[DWORD] (SECOND_PARAM_REG), Reg[DWORD] (RETURN_REG), JumpCond.NE)
+                    += Jmp (Label ("_errBadChar"), JumpCond.NE)
             case Ident(name) => IMov (Reg[QWORD] (RETURN_REG), opFromRef(ctx.getVarRef(name)))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply)
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply)
@@ -162,8 +172,8 @@ object generator {
                     += ISet (Reg[BYTE] (RETURN_REG), JumpCond.E)
             case BoolLit(bool) =>
                 builder += 
-                    IMov (Reg[BYTE] (RETURN_REG), (Imm (if (bool) 1 else 0)))
-                    ICmp (Reg[BYTE] (RETURN_REG), Imm (1))
+                    IMov (Reg[BYTE] (RETURN_REG), (Imm[DWORD] (if (bool) 1 else 0)))
+                    ICmp (Reg[BYTE] (RETURN_REG), Imm[DWORD] (1))
             case _         => ??? // TODO
         }
         builder.result()
