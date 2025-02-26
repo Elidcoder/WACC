@@ -146,9 +146,13 @@ object typechecker {
     )(using ctx: Context): Option[Stmt[QualifiedName, KnownType]] =  
         given Pos = stmt.pos
         stmt match {
-            case NewAss(newType, id, rval) => 
-                given Typeless = Typeless()
-                check(Assign(id, rval))
+            case NewAss(newType, lval, rval) => 
+                val (lvalTypeOpt, typedLvalOpt) = check(lval, Unconstrained)
+                val (rvalTypeOpt, typedRvalOpt) = check(rval, Is(lvalTypeOpt.getOrElse(?)))
+                if rvalTypeOpt == Some(?) then ctx.error(UnknownPairTypes())
+                for { lval <- typedLvalOpt; rval <- typedRvalOpt; rvalType <- rvalTypeOpt;
+                      knownTy <- isKnown(rvalType); given KnownType = knownTy } 
+                yield NewAss(newType, lval, rval)
             case Assign(lval, rval) => 
                 val (lvalTypeOpt, typedLvalOpt) = check(lval, Unconstrained)
                 val (rvalTypeOpt, typedRvalOpt) = check(rval, Is(lvalTypeOpt.getOrElse(?)))

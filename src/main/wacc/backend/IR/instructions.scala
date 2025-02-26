@@ -34,6 +34,10 @@ enum JumpCond {
 
 case class Jmp(label: Label, cond: JumpCond) extends Instr
 
+case object Reg {
+    def apply[S <: DataSize](reg: Register) = new Reg(reg)
+}
+
 case object IAdd {
     def apply[S <: DataSize](dest: Reg[S], opR: Operand[S]): IAdd[S] = new IAdd(dest, opR)
     def apply[S <: DataSize](dest: Mem[S], opR: Reg[S]): IAdd[S] = new IAdd(dest, opR)

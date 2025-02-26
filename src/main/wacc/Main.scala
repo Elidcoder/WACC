@@ -24,11 +24,11 @@ def pipeline(file: File): Int = {
     println("Starting parsing...")
     parser.parse(file) match 
         case Success(syntaxTree) => 
-            println("Success!\nStarting renaming...")
+            //println("Success!\nStarting renaming...")
             /* Successfully parsed, attempt rename. */
             val (renamedTree, env) = rename(syntaxTree)
 
-            println("Success!\nStarting typechecking...")
+            //println("Success!\nStarting typechecking...")
             /* Attempt typecheck and match on result of both rename & typecheck. */
             typechecker.check(renamedTree, env, file) match
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
@@ -39,12 +39,12 @@ def pipeline(file: File): Int = {
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     println("Success")
-                    val finalTree = value.get
-                    given Context = new Context()
-                    println("Starting code generation...")
-                    referencer.reference(finalTree)
-                    formatBlocks(generator.generate(finalTree))
-                    println("Success")
+                    // val finalTree = value.get
+                    // given Context = new Context()
+                    //println("Starting code generation...")
+                    //referencer.reference(finalTree)
+                    //formatBlocks(generator.generate(finalTree))
+                    //println("Success")
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS
                         

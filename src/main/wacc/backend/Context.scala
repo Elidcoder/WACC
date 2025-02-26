@@ -4,10 +4,7 @@ import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
 import wacc.backend.ir.{Reference, RoData, Label}
 import wacc.semantic.QualifiedName
-
-enum Prebuilt {
-    case PrintInt, PrintStr, PrintChar, PrintBool, PrintPair, PrintArr, Exit, Malloc, Free, 
-}
+import wacc.backend.referencer.Prebuilt
 
 class Context() {
     private var stringUID: Int = 0
@@ -28,6 +25,9 @@ class Context() {
 
     private val funcOffsets: Map[QualifiedName, Int] = Map.empty
     def addFunc(name: QualifiedName, offset: Int) = funcOffsets.put(name, offset)
+    def incFuncOff(name: QualifiedName, offsetInc: Int) = funcOffsets.updateWith(name)(
+        _.fold(Some(16 + offsetInc)){curOff => Some(curOff + offsetInc)} 
+    )
     def getFuncOff(name: QualifiedName): Int = funcOffsets(name)
 
     private val strRoData: Map[String, RoData] = Map.empty
