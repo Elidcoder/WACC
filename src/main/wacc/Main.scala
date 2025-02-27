@@ -19,11 +19,10 @@ import java.io.FileWriter
 
 final val CODE_SUCCESS      = 0
 final val CODE_SYNTAX_ERR   = 100
-final val CODE_SEMATNIC_ERR = 200
+final val CODE_SEMANTIC_ERR = 200
 
 def pipeline(file: File): Int = {
     given ErrorBuilder[WaccErr] = lexErrBuilder
-    println("Starting parsing...")
     parser.parse(file) match 
         case Success(syntaxTree) => 
             /* Successfully parsed, attempt rename. */
@@ -34,18 +33,29 @@ def pipeline(file: File): Int = {
                 /* Failure in one or both of typechecker & renamer, exit with error code 200. */
                 case Left(errs) => 
                     errs.foreach((err: WaccErr) => println(err.format()))
-                    CODE_SEMATNIC_ERR
+                    CODE_SEMANTIC_ERR
 
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     val finalTree = value.get
                     given Context = new Context()
-                    val writer: Writer =
-                        val file = new File("output.s")
-                        file.createNewFile()
-                        new FileWriter(file)
+
+                    val assFile = new File(getAssFileName(file.getName()))
+                    assFile.createNewFile()
+                    val writer: Writer = new FileWriter(assFile)
+
                     referencer.reference(finalTree)
-                    formatBlocks(generator.generate(finalTree), writer)
+                    try {
+                        formatBlocks(generator.generate(finalTree), writer)
+                    } catch {
+                        case e: NotImplementedError => 
+                            println("Error: Not implemented")
+                            writer.close()
+                            assFile.delete()
+                            return -1
+                    }
+                    // assFile.delete()
+                    writer.close()
                     /* Exit with error code 0 if the final tree exists. */
                     CODE_SUCCESS
                         
@@ -53,6 +63,14 @@ def pipeline(file: File): Int = {
         case Failure(errors) => 
             println(errors.format())
             CODE_SYNTAX_ERR
+}
+
+private def getAssFileName(filePath: String): String = {
+    val lastDotIndex = filePath.lastIndexOf(".")
+    if (lastDotIndex != -1)
+        filePath.substring(0, lastDotIndex) + ".s"
+    else
+        filePath + ".s"
 }
 
 def main(args: Array[String]): Unit = {
