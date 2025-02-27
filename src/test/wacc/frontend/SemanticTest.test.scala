@@ -28,7 +28,7 @@ class SemanticIntegrationTest extends AnyFlatSpec with ConditionalTest {
         val key = s"tests.semantic.${dir.toLowerCase}"
         val tests = getTests(s"invalid/semanticErr/$dir")
         tests.foreach { file =>
-            val name = s"should fail with semantic error (200) in [${dir}/${file.getName()}]"
+            val name = s"fail with semantic error (200) in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
                 result shouldBe CODE_SEMANTIC_ERR
