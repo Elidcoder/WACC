@@ -5,6 +5,7 @@ import scala.collection.immutable
 import wacc.backend.ir.{Label, Operand}
 import wacc.semantic.QualifiedName
 import wacc.backend.generator.prebuilts.Prebuilt
+import wacc.backend.ir.RoData
 
 class Context() {
     /* Stores the initial offset for any function due to the initial operations. */
@@ -35,9 +36,10 @@ class Context() {
         (() => {funcOffsets.put(funcName, INITIAL_FUNC_OFF); INITIAL_FUNC_OFF})()
     )
     
-    private val strRoData: Map[String, Label] = Map.empty
-    def addRoData(str: String, ro: Label) = strRoData.put(str, ro)
-    def getRoData(str: String): Label = strRoData(str)
+    private val strRoData: Map[String, RoData] = Map.empty
+    def addRoData(str: String, ro: RoData) = strRoData.put(str, ro)
+    def getRoData(str: String): RoData = strRoData(str)
+    def getAllRodata(): List[RoData] = strRoData.values.toList
 
     private val prebuiltsUsed: Set[Prebuilt] = Set.empty
     def addPrebuilt(prebuilt: Prebuilt) = prebuiltsUsed.add(prebuilt)
