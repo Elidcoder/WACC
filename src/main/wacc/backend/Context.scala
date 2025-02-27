@@ -2,25 +2,11 @@ package wacc.backend
 
 import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
-import wacc.backend.ir.{Label, ValDest}
-import wacc.semantic.QualifiedName
+import wacc.backend.ir.{Label, ValDest, RoData}
 import wacc.backend.generator.prebuilts.Prebuilt
-import wacc.backend.ir.RoData
-import wacc.backend.generator.prebuilts.DivZero
-import wacc.backend.generator.prebuilts.PbErrOverflow
-import wacc.backend.generator.prebuilts.PbExit
-import wacc.backend.generator.prebuilts.PbFree
-import wacc.backend.generator.prebuilts.PbFreePair
-import wacc.backend.generator.prebuilts.PbMalloc
-import wacc.backend.generator.prebuilts.PbPrint
-import wacc.backend.generator.prebuilts.PbPrintln
-import wacc.backend.generator.prebuilts.PbRead
-import wacc.ast.StringT
-import wacc.ast.IntT
-
+import wacc.semantic.QualifiedName
 
 class Context() {
-
     private var stringUID: Int = 0
     def nextStringLabel(): Label = {
         stringUID += 1

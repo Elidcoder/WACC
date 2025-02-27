@@ -119,17 +119,17 @@ object prebuiltGenerator {
                 IRet
             )
         )
-    private val printEnd = 
-        given DataSize = QWORD
-        List(
-            IMov(Reg(RAX), Imm(0))(using size = BYTE),
-            ICall("puts@plt"),
-            IMov(Reg(RDI), Imm(0)),
-            ICall("fflush@plt"),
-            IMov(Reg(RSP), Reg(RBP)),
-            IPop(Reg(RBP)),
-            IRet
-        )
+    // private val printEnd = 
+    //     given DataSize = QWORD
+    //     List(
+    //         IMov(Reg(RAX), Imm(0))(using size = BYTE),
+    //         ICall("puts@plt"),
+    //         IMov(Reg(RDI), Imm(0)),
+    //         ICall("fflush@plt"),
+    //         IMov(Reg(RSP), Reg(RBP)),
+    //         IPop(Reg(RBP)),
+    //         IRet
+    //     )
     private def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         List(
