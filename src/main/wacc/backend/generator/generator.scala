@@ -228,6 +228,7 @@ object generator {
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
+                    += ICall ("_prints")
                     += ICall ("_println")
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
