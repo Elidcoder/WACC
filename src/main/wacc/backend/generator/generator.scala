@@ -147,7 +147,7 @@ object generator {
             += IPush (Reg (RETURN_REG)) 
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
-            += apply((Reg (RETURN_REG)), (Reg (REMAINDER_REG)))
+            += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
             // TODO: check for overflow
     }
 
@@ -175,7 +175,7 @@ object generator {
         right: Expr[QualifiedName, KnownType],
         cond: JumpCond
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        given DataSize = QWORD
+        given DataSize = DWORD
         generate(left) 
         builder 
             += IPush (Reg (RETURN_REG)) 
@@ -186,6 +186,7 @@ object generator {
             += IPop (Reg (RETURN_REG))
             += ICmp (Reg (RETURN_REG), Reg (TEMP_REG))
             += ISet (Reg (RETURN_REG), cond)
+            += ICmp (Reg (RETURN_REG), Imm (1))(using BYTE)
     }
 
     def generate(
@@ -215,7 +216,7 @@ object generator {
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply)
             case Div(x, y) => generateDivMod(x, y)
             case Mod(x, y) => generateDivMod(x, y)
-                builder += IMov (Reg (RETURN_REG), Reg (TEMP_REG))(using QWORD)
+                builder += IMov (Reg (RETURN_REG), Reg (REMAINDER_REG))(using QWORD)
             case Eq(left, right) => 
                 generateBinCond(left, right, JumpCond.E)
             case NotEq(left, right) => 
@@ -379,7 +380,7 @@ object generator {
                     += Jmp (ifLabel, JumpCond.E)
                 generateStmts(elseStmts)
                 builder
-                    += Jmp (endLabel, JumpCond.E)
+                    += Jmp (endLabel, JumpCond.UnCond)
                     += ifLabel
                 generateStmts(ifStmts)
                 builder

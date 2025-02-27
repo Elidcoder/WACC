@@ -97,18 +97,18 @@ object prebuiltGenerator {
         case PbErrBadChar => List(badCharBlock)
     }
     private def readBlock(size: DataSize, label: String): List[Instr] = 
-        given DataSize = DWORD
+        given DataSize = QWORD
         List(
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
             ISub(Reg(RSP), Imm(16)),
-            IMov(MemOff(RSP, 0), Reg(RDI))(using size = size),
+            IMov(MemInd(RSP), Reg(RDI))(using size),
             ILea(Reg(RSI), MemOff(RSP, 0)),
             ILea(Reg(RDI), Rip(Label(label))),
-            IMov(Reg(RAX), Imm(0))(using size = BYTE),
+            IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("scanf@plt"),
-            IMov(Reg(RAX), MemOff(RSP, 0))(using size = size),
+            IMov(Reg(RAX), MemInd(RSP))(using size = size),
             IAdd(Reg(RSP), Imm(16)),
             IMov(Reg(RSP), Reg(RBP)),
             IPop(Reg(RBP)),
@@ -124,7 +124,7 @@ object prebuiltGenerator {
         Block (
             Label("_readi"),
             Some(List(RoData(2, "%d", Label(".L._readi_str0")))),
-            readBlock(BYTE, ".L._readi_str0")
+            readBlock(DWORD, ".L._readi_str0")
         )
     val mallocBlock: Block = 
         given DataSize = QWORD
