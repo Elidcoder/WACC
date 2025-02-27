@@ -7,13 +7,14 @@ import wacc.backend.ir
 import wacc.backend.Context
 import scala.collection.mutable.{Builder, Set}
 
-import wacc.backend.referencing.referencer.getTypeSize
+import wacc.backend.referencing.referencer.{getTypeSize, parameterRegisters}
 import wacc.backend.generator.prebuilts._
 
 type InstrBuilder = Builder[Instr, List[Instr]]
 
 final val RETURN_REG       = RAX
 final val TEMP_REG         = R10
+final val PAIR_REG         = R11
 final val BASE_PTR_REG     = RBP
 final val STACK_PTR_REG    = RSP
 final val FIRST_PARAM_REG  = RDI
@@ -22,6 +23,8 @@ final val THIRD_PARAM_REG  = RDX
 final val FOURTH_PARAM_REG = RCX
 final val FIFTH_PARAM_REG  = R8
 final val SIXTH_PARAM_REG  = R9
+
+final val PAIR_ELEM_REG = RBX //TODO(change and check)
 
 final val REMAINDER_REG = RDX
 
@@ -52,7 +55,6 @@ object generator {
     
     def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
         given DataSize = QWORD
-        // TODO: roData for function?
         given builder: InstrBuilder = List.newBuilder[Instr]
         builder
             += IPush (Reg (BASE_PTR_REG))
@@ -65,19 +67,66 @@ object generator {
 
     def generate(
         rVal: RValue[QualifiedName, KnownType]
-    )(using ctx: Context, builder: InstrBuilder): Unit = rVal match {
-        case expr: Expr[QualifiedName, KnownType] => generate(expr)
-        case _ => ???
+    )(using ctx: Context, builder: InstrBuilder): Unit = 
+        given DataSize = QWORD
+        rVal match {
+            case expr: Expr[QualifiedName, KnownType] => generate(expr)
+            case ArrayLit(exprs) => ???
+            case NewPair(fst, snd) =>
+                ctx.addPrebuilt(PbMalloc)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), Imm (QWORD.bytes * 2))(using DWORD)
+                    += ICall ("_malloc")
+                    += IMov (Reg (PAIR_REG), Reg (RETURN_REG))
+                generate(fst)
+                builder += IMov (MemInd (PAIR_REG), Reg (RETURN_REG))
+                generate(snd)
+                builder 
+                    += IMov (MemOff (PAIR_REG, QWORD.bytes), Reg (RETURN_REG))
+                    += IMov (Reg (RETURN_REG), Reg (PAIR_REG))
+            
+            case First(value) => 
+                loadPairElem(value)
+                builder += IMov (Reg (RETURN_REG), MemInd (PAIR_ELEM_REG))
+            case Second(value) => 
+                loadPairElem(value)
+                builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
+
+            case Call(id, exprs) => 
+                exprs.zip(parameterRegisters).foreach { (expr, reg) =>
+                    generate(expr)
+                    builder += IMov (Reg (reg), Reg (RETURN_REG))(using QWORD) //TODO(get types)
+                }
+                //TODO(stack parameters)
+                builder += ICall (s"wacc_${id.name.oldName}")(using QWORD) //TODO(generic label)
+        }
+
+    def loadPairElem(
+        lVal: LValue[QualifiedName, KnownType]
+    )(using ctx: Context, builder: InstrBuilder): Unit = {
+        given DataSize = QWORD
+        builder
+            += IMov (Reg(PAIR_ELEM_REG), findOp(lVal))
+            += ICmp(Reg(PAIR_ELEM_REG), Imm(0))
+            += Jmp(Label("_errNull"), JumpCond.E)
     }
 
     def findOp(
         lVal: LValue[QualifiedName, KnownType]
-    )(using ctx: Context): ValDest = {
+    )(using ctx: Context, builder: InstrBuilder): ValDest = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
-            case ArrayElem(id, expr) => ???
-            case First(lVal) => ???
-            case Second(lVal) => ???
+            case ArrayElem(id, expr) => id.t match {
+                case ArrayT(ty) => 
+                    ???
+                case _ => ???
+            }
+            case First(lVal) => 
+                loadPairElem(lVal)
+                MemInd(PAIR_ELEM_REG)
+            case Second(lVal) => 
+                loadPairElem(lVal)
+                MemOff(PAIR_ELEM_REG, QWORD.bytes)
         }
     }
 
@@ -204,7 +253,11 @@ object generator {
                 ctx.addRoData(str, RoData(str.size, str, label))
                 builder 
                     += ILea (Reg (RETURN_REG), Rip (label))
-            case _         => ??? // TODO
+            case wacc.ast.CharLit(char) => 
+                builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
+            case wacc.ast.PairLit() => 
+                builder += IMov (Reg (RETURN_REG), Imm (0))
+            case ArrayElem(id, exprs) => ???
         }
         builder.result()
     }
@@ -223,8 +276,18 @@ object generator {
                 generate(rVal)
                 builder
                     += IMov (findOp(lVal), Reg (RETURN_REG))(using getTypeSize(a.ty))
-            case Read(lVal) => ???
-            case Free(expr) => ???
+            case r@Read(lVal) => 
+                ctx.addPrebuilt(PbRead(r.ty))
+                val lValOp = findOp(lVal)
+                builder 
+                    += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
+                    += ICall ("_readi") // TODO(generic)
+                    += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
+            case Free(expr) =>
+                generate(expr)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
+                    += ICall ("_free")
             case Return(expr) =>
                 generate(expr)
                 builder
@@ -281,6 +344,6 @@ object generator {
     def generateStmts(
         stmts: List[Stmt[QualifiedName, KnownType]]
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        stmts.foreach { stmt => generate(stmt) }
+        stmts.foreach(generate)
     }
 }
