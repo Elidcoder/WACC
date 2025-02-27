@@ -8,6 +8,8 @@ usage() {
 
 CATEGORY=${1:-all}
 
+trap 'rm -f -- *.s' EXIT
+
 case "$CATEGORY" in
     all)
         echo "Running all tests..."
@@ -35,3 +37,4 @@ case "$CATEGORY" in
 esac
 
 echo "Testing complete!"
+rm -f -- *.s
