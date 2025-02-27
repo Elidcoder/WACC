@@ -97,12 +97,23 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
 
             case Call(id, exprs) => 
-                exprs.zip(parameterRegisters).foreach { (expr, reg) =>
-                    generate(expr)
-                    builder += IMov (Reg (reg), Reg (RETURN_REG))(using QWORD) //TODO(get types)
+                val ty = id.t.asInstanceOf[FuncT]
+                exprs.zip(parameterRegisters).foreach { (_, reg) =>
+                    builder 
+                        += IPush (Reg (reg))
+                }
+                exprs.zip(parameterRegisters).zip(ty.paramTs).foreach { (exprReg, t) =>
+                    generate(exprReg._1)
+                    builder 
+                        += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
                 }
                 //TODO(stack parameters)
-                builder += ICall (s"wacc_${id.name.oldName}")(using QWORD) //TODO(generic label)
+                builder += ICall (s"wacc_${id.name.oldName}")(using QWORD)
+
+                exprs.zip(parameterRegisters).reverse.foreach { (_, reg) =>
+                    builder 
+                        += IPop (Reg (reg))
+                }
         }
 
     def loadPairElem(
@@ -255,7 +266,18 @@ object generator {
                 builder 
                     += IMov (Reg (RETURN_REG), Imm (numb))
             case StrLit(str) => 
-                val roData = ctx.addRoData(str)
+                val newStr = str.flatMap {
+                    case '\n' => "\\n"
+                    case '\t' => "\\t"
+                    case '\b' => "\\b"
+                    case '\r' => "\\r"
+                    case '\f' => "\\f"
+                    case '\\' => "\\\\"
+                    case '\"' => "\\\""
+                    case '\'' => "\\\'"
+                    case c => c.toString
+                }
+                val roData = ctx.addRoData(newStr)
                 builder 
                     += ILea (Reg (RETURN_REG), Rip (roData.label))
             case wacc.ast.CharLit(char) => 
@@ -339,15 +361,19 @@ object generator {
                 val label = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
                 builder 
+                    += IPush(Reg(FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
-                    += ICall (label) // TODO(generic)
+                    += ICall (label)
+                    += IPop(Reg(FIRST_PARAM_REG))
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
             case f@Free(expr) =>
                 val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
                 builder
+                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
                     += ICall (label)
+                    += IPop (Reg (FIRST_PARAM_REG))
             case Return(expr) =>
                 generate(expr)
                 builder
@@ -358,21 +384,27 @@ object generator {
                 val label = ctx.addPrebuilt(PbExit)
                 generate(expr)
                 builder
+                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
                     += ICall (label)
+                    += IPop (Reg (FIRST_PARAM_REG))
             case p@Print(expr) => 
                 val label = ctx.addPrebuilt(PbPrint(p.ty))
                 generate(expr)
                 builder
+                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
                     += ICall (label)
+                    += IPop (Reg (FIRST_PARAM_REG))
             case p@PrintLn(expr) => 
                 val label = ctx.addPrebuilt(PbPrintln(p.ty))
                 generate(expr)
                 builder
+                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
                     += ICall (label)
                     += ICall ("_println")
+                    += IPop (Reg (FIRST_PARAM_REG))
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 generate(cond)
