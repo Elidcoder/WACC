@@ -6,10 +6,14 @@ import wacc.semantic.QualifiedName
 import wacc.ast._
 import wacc.backend.ir._
 import wacc.backend.generator.STACK_PTR_REG
+import wacc.backend.generator.BASE_PTR_REG
 
 object referencer {
     /* An ordered list of registers used for parameters. */
     private val parameterRegisters: List[Register] = List(RDI, RSI, RDX, RCX, R8, R9) 
+
+    /* Stores the initial offset for any function due to the initial operations. */
+    private val INITIAL_PARAM_OFF = 16
 
     /* Returns the dataSize matching a given type, 
      * we have a static guarantee from frontend _ never occurs. */
@@ -26,19 +30,20 @@ object referencer {
 
     /* Creates a stack reference for a new variable and increases the function offset */
     private def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
-        ctx.addVar(id.name, MemOff(STACK_PTR_REG, ctx.getFuncOff(funcName)))
         ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
+        ctx.addVar(id.name, MemOff(BASE_PTR_REG, -ctx.getFuncOff(funcName)))
     }
 
     /* Reference the variables used in a program. */
     def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Program[QualifiedName, KnownType] = {
-        given funcName:QualifiedName = QualifiedName("main", -1)
+        given mainName:QualifiedName = QualifiedName("main", -1)
 
         /* Reference each function defined at the top. */
         prog.funcs.foreach(reference)
         
         /* Reference the main function. */
         reference(prog.stmts)
+        ctx.mainOffset = ctx.getFuncOff(mainName)
 
         /* Return the given program to allow chaining in main. */
         prog
@@ -55,8 +60,10 @@ object referencer {
         )
 
         /* Paramters exceeding numb registers */
-        func.params.reverse.drop(parameterRegisters.size).foreach(
-            (param) => addVarToContext(param.paramId)
+        var offset = INITIAL_PARAM_OFF
+        func.params.reverse.drop(parameterRegisters.size).foreach( (param) => 
+            ctx.addVar(param.paramId.name, MemOff(STACK_PTR_REG, offset))
+            offset += getTypeSize(param.paramId.t).bytes
         )
         
         /* Handle statements*/
