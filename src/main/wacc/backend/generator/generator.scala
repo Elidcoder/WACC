@@ -33,7 +33,11 @@ object generator {
         mainBuilder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
+        if ctx.mainOffset != 0 then
+            mainBuilder += ISub (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
         generateStmts(prog.stmts)
+        if ctx.mainOffset != 0 then
+            mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
         mainBuilder
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
@@ -51,6 +55,8 @@ object generator {
         builder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
+        if ctx.getFuncOff(func.id.name) != 0 then
+            builder += ISub (Reg (STACK_PTR_REG), Imm (ctx.getFuncOff(func.id.name)))
         generateStmts(func.stmts)
         Block(Label (func.id.name.oldName), None, builder.result())
     }
@@ -146,7 +152,8 @@ object generator {
                     += ITest (Reg (RETURN_REG), Imm (-128))
                     += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
                     += Jmp (Label ("_errBadChar"), JumpCond.NE)
-            case i@Ident(name) => IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
+            case i@Ident(name) => 
+                builder += IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply)
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply)
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply)
