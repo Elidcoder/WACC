@@ -53,26 +53,8 @@ class Context() {
 
     private val prebuiltsUsed: Set[Prebuilt] = Set.empty
 
-    private def unpackPrebuilts(prebuilt: Prebuilt): Unit = {
-        prebuilt match {
-            case DivZero => unpackPrebuilts(PbPrint(StringT()))
-            case PbErrOverflow => unpackPrebuilts(PbPrint(StringT()))
-            case PbFreePair() => /*unpackPrebuilts(PbErNull())*/
-            case PbMalloc => {unpackPrebuilts(PbPrint(StringT())); /*unpackPrebuilts(PbOutOfMem())*/}
-            case PbPrint(varType) => {}
-            case PbPrintln(varType) => {
-                prebuiltsUsed.add(PbPrint(IntT()))
-                {}
-            }
-            case PbRead(arType) => {}
-            case PbExit => {}
-            case PbFree(varType) => {}
-        }
-        prebuiltsUsed.add(prebuilt)
-    }
-
     def addPrebuilt(prebuilt: Prebuilt): Label = {
-        unpackPrebuilts(prebuilt)
+        prebuiltsUsed.add(prebuilt)
         Label(prebuilt.labelString)
     }
     def getPrebuilts(): List[Prebuilt] = prebuiltsUsed.toList

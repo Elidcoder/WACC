@@ -9,31 +9,43 @@ sealed trait Prebuilt {
 }
 
 case object PbMalloc extends Prebuilt {
-    val labelString = ""
+    val labelString = "_malloc"
 }
 case object PbExit extends Prebuilt{
-    val labelString = ""
+    val labelString = "_exit"
 }
 case object PbErrOverflow extends Prebuilt{
-    val labelString = ""
+    val labelString = "_errOverflow"
 }
 case object DivZero extends Prebuilt{
-    val labelString = ""
+    val labelString = "_errDivZero"
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
-    val labelString = ""
+    val labelString = varType match {
+        case ArrayT(_)   => "_printp"
+        case PairT(_, _) => "_printp"
+        case IntT()      => "_printi"
+        case BoolT()     => "_printb"
+        case CharT()     => "_printc"
+        case StringT()   => "_prints"
+        case _           => ""
+    }
 }
 case class PbPrintln(varType: KnownType) extends Prebuilt{
-    val labelString = ""
+    val labelString = "_printi"
 }
 case class PbFree(varType: KnownType) extends Prebuilt{
-    val labelString = ""
+    val labelString = "_free"
 }
 case class PbFreePair() extends Prebuilt{
-    val labelString = ""
+    val labelString = "_freepair"
 }
 case class PbRead(arType: KnownType) extends Prebuilt{
-    val labelString = ""
+    val labelString = arType match{
+        case CharT() => "_readc"
+        case IntT()  => "_readi"
+        case _ => ""
+    }
 }
 
 object prebuiltGenerator {
