@@ -1,28 +1,19 @@
 package wacc.backend.generator
 
 import wacc.ast._
-import wacc.semantic.QualifiedName
 import wacc.backend.ir._
-import wacc.backend.ir
 import wacc.backend.Context
+import wacc.semantic.QualifiedName
 import scala.collection.mutable.{Builder, Set}
 
-import wacc.backend.referencing.referencer.{getTypeSize, parameterRegisters}
 import wacc.backend.generator.prebuilts._
+import wacc.backend.referencing.referencer.getTypeSize
 
 type InstrBuilder = Builder[Instr, List[Instr]]
 
-final val RETURN_REG       = RAX
-final val TEMP_REG         = R10
-final val PAIR_REG         = R11
-final val BASE_PTR_REG     = RBP
-final val STACK_PTR_REG    = RSP
-final val FIRST_PARAM_REG  = RDI
-final val SECOND_PARAM_REG = RSI
-final val THIRD_PARAM_REG  = RDX
-final val FOURTH_PARAM_REG = RCX
-final val FIFTH_PARAM_REG  = R8
-final val SIXTH_PARAM_REG  = R9
+final val RETURN_REG = RAX
+final val TEMP_REG   = R10
+final val PAIR_REG   = R11
 
 final val PAIR_ELEM_REG = RBX //TODO(change and check)
 
