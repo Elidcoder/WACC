@@ -6,7 +6,7 @@ import wacc.semantic.rename
 import wacc.syntax.lexer.lexErrBuilder
 import wacc.semantic.typecheck.typechecker
 import wacc.backend.generator.generator
-import wacc.backend.referencer.referencer
+import wacc.backend.referencing.referencer
 import wacc.backend.formatter.formatBlocks
 import wacc.backend.Context
 

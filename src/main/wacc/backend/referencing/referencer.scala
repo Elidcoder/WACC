@@ -1,4 +1,4 @@
-package wacc.backend.referencer
+package wacc.backend.referencing
 
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
@@ -29,7 +29,7 @@ object referencer {
     }
 
     /* Creates a stack reference for a new variable and increases the function offset */
-    private def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
+    protected [referencing] def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
         ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
         ctx.addVar(id.name, MemOff(BASE_PTR_REG, -ctx.getFuncOff(funcName)))
     }
@@ -50,7 +50,7 @@ object referencer {
     }
     
     /* Reference the variables used in a function as well as its parameters. */
-    private def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
+    protected [referencing] def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
         given funcName:QualifiedName = func.id.name
 
         /* Parameter made into registers */
@@ -71,11 +71,11 @@ object referencer {
     }
 
     /* Call reference on all stmts in a list of stmts. */
-    private def reference(stmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, funcName: QualifiedName): Unit
+    protected [referencing] def reference(stmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, funcName: QualifiedName): Unit
         = stmts.foreach(reference)
 
     /* Reference the variables used in a stmt. */
-    private def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
+    protected [referencing] def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
         case NewAss(_, id, rval) => {
             addVarToContext(id)
         }
