@@ -1,7 +1,7 @@
 package wacc.test
 
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers.shouldBe
+import org.scalatest.matchers.should.Matchers._
 import scala.sys.process._
 import java.io.File
 
@@ -66,11 +66,16 @@ class BackEndIntegrationTest extends AnyFlatSpec with ConditionalTest {
                         |${if (outputBuilder.toString.trim.isEmpty) "NONE" else outputBuilder.toString.trim.split("\n").map("    " + _).mkString("\n")}
                         |[DEBUG] Actual exit: ${if (actualExit == 0 && expectedExitOpt.isEmpty) "NONE" else actualExit.toString}
                     """.stripMargin)
+                
+                if (expectedOutputOpt.contains("#runtime_error#")) {
+                    actualExit.shouldBe(expectedExitOpt.getOrElse(0))
+                    outputBuilder.toString.trim should include("fatal error:")
+                } else {
+                    actualExit.shouldBe(expectedExitOpt.getOrElse(0))
 
-                for (expectedExit <- expectedExitOpt) yield { actualExit.shouldBe(expectedExit) }
-
-                for (expectedOutput <- expectedOutputOpt) yield { 
-                    outputBuilder.toString.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#") shouldBe expectedOutput.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#")
+                    for (expectedOutput <- expectedOutputOpt) yield { 
+                        outputBuilder.toString.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#") shouldBe expectedOutput.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#")
+                    }
                 }
             }
         }
