@@ -5,23 +5,32 @@ import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
 sealed trait Prebuilt {
-    val labelString: String
+    def labelString: String
 }
 
+case object PbOutOfBounds extends Prebuilt {
+    def labelString = "_errOutOfBounds"
+}
+case object PbErrBadChar extends Prebuilt {
+    def labelString = "_errBadChar"
+}
+case object PbErrNull extends Prebuilt {
+    def labelString = "_errNull"
+}
 case object PbMalloc extends Prebuilt {
-    val labelString = "_malloc"
+    def labelString = "_malloc"
 }
 case object PbExit extends Prebuilt{
-    val labelString = "_exit"
+    def labelString = "_exit"
 }
 case object PbErrOverflow extends Prebuilt{
-    val labelString = "_errOverflow"
+    def labelString = "_errOverflow"
 }
 case object DivZero extends Prebuilt{
-    val labelString = "_errDivZero"
+    def labelString = "_errDivZero"
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
-    val labelString = varType match {
+    def labelString = varType match {
         case ArrayT(_)   => "_printp"
         case PairT(_, _) => "_printp"
         case IntT()      => "_printi"
@@ -32,20 +41,27 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
     }
 }
 case class PbPrintln(varType: KnownType) extends Prebuilt{
-    val labelString = "_printi"
+    def labelString = PbPrint(varType).labelString
 }
 case class PbFree(varType: KnownType) extends Prebuilt{
-    val labelString = "_free"
-}
-case class PbFreePair() extends Prebuilt{
-    val labelString = "_freepair"
+    def labelString = varType match {
+        case ArrayT(_) => "_free"
+        case PairT(_,_) => "_freepair"
+        case _ => ???
+    }
 }
 case class PbRead(arType: KnownType) extends Prebuilt{
-    val labelString = arType match{
+    def labelString = arType match{
         case CharT() => "_readc"
         case IntT()  => "_readi"
         case _ => ""
     }
+}
+case class PbArrLoad(size: DataSize) extends Prebuilt {
+    def labelString = s"_arrLoad${size.bytes}"
+}
+case class PbArrStore(size: DataSize) extends Prebuilt {
+    def labelString = s"_arrStore${size.bytes}"
 }
 
 object prebuiltGenerator {
@@ -64,27 +80,35 @@ object prebuiltGenerator {
             case _          => ???
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
-        case PbFreePair() => List(freePairBlock)
-        case PbFree(varType) => List(freeBlock)
+        case PbFree(varType) => varType match {
+            case ArrayT(_) => List(freeBlock)
+            case PairT(_,_) => freePairBlock :: generatePrebuiltBlock(PbErrNull) 
+            case _ => ???
+        }
         case PbRead(varType) => varType match {
             case CharT() => List(readcBlock)
             case IntT() => List(readiBlock)
-            case _      => ???
+            case _      => List()
         }
+        case PbErrNull => errNull :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbArrLoad(size) => genericArrLoadBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
+        case PbArrStore(size) => genericArrStoreBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
+        case PbOutOfBounds => List(outOfBoundsBlock)
+        case PbErrBadChar => List(badCharBlock)
     }
     private def readBlock(size: DataSize, label: String): List[Instr] = 
-        given DataSize = DWORD
+        given DataSize = QWORD
         List(
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
             ISub(Reg(RSP), Imm(16)),
-            IMov(MemOff(RSP, 0), Reg(RDI))(using size = size),
+            IMov(MemInd(RSP), Reg(RDI))(using size),
             ILea(Reg(RSI), MemOff(RSP, 0)),
             ILea(Reg(RDI), Rip(Label(label))),
-            IMov(Reg(RAX), Imm(0))(using size = BYTE),
+            IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("scanf@plt"),
-            IMov(Reg(RAX), MemOff(RSP, 0))(using size = size),
+            IMov(Reg(RAX), MemInd(RSP))(using size = size),
             IAdd(Reg(RSP), Imm(16)),
             IMov(Reg(RSP), Reg(RBP)),
             IPop(Reg(RBP)),
@@ -100,7 +124,7 @@ object prebuiltGenerator {
         Block (
             Label("_readi"),
             Some(List(RoData(2, "%d", Label(".L._readi_str0")))),
-            readBlock(BYTE, ".L._readi_str0")
+            readBlock(DWORD, ".L._readi_str0")
         )
     val mallocBlock: Block = 
         given DataSize = QWORD
@@ -113,7 +137,7 @@ object prebuiltGenerator {
                 IAnd(Reg(RSP), Imm(-16)),
                 ICall("malloc@plt"),
                 ICmp(Reg(RAX), Imm(0)),
-                Jmp(Label("_errOverflow"), JumpCond.E),
+                Jmp(Label("_errOutOfMemory"), JumpCond.E),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
                 IRet
@@ -164,7 +188,7 @@ object prebuiltGenerator {
     val printbBlock: Block =  
         given DataSize = QWORD
         Block (
-            Label("_printp"),
+            Label("_printb"),
             Some(List(
                 RoData(5, "false", Label(".L._printb_str0")),
                 RoData(4, "true", Label(".L._printb_str1")),
@@ -327,6 +351,79 @@ object prebuiltGenerator {
                 ICall("free@plt"),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    val badCharBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_errBadChar"),
+            Some(List(RoData(50, "fatal error: int %d is not ascii character 0-127 \n", Label(".L._errBadChar_str0")))),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Rip(Label(".L._errBadChar_str0"))),
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                ICall("printf@plt"),
+                IMov(Reg(RDI), Imm(0)),
+                ICall("fflush@plt"),
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
+                ICall("exit@plt")
+            )
+        )
+
+    val outOfBoundsBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_errOutOfBounds"),
+            Some(List(RoData(42, "fatal error: array index %d out of bounds\n", Label(".L._errOutOfBounds_str0")))),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Rip(Label(".L._errOutOfBounds_str0"))),
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                ICall("printf@plt"),
+                IMov(Reg(RDI), Imm(0)),
+                ICall("fflush@plt"),
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
+                ICall("exit@plt")
+            )
+        )
+
+    def genericArrLoadBlock(size: DataSize): Block = 
+        given DataSize = QWORD
+        Block (
+            Label(s"_arrLoad${size.bytes}"),
+            None,
+            List(
+                IPush(Reg(RBX)),
+                ITest(Reg(R10), Reg(R10))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.L),
+                Jmp(Label("_errOutOfBounds"), JumpCond.L),
+                IMov(Reg(RBX), MemOff(R9, -4)),
+                ICmp(Reg(R10), Reg(RBX))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
+                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
+                IMov(Reg(R9), MemOff(R9, 4))(using size), // MemOff wrong
+                IPop(Reg(RBX)),
+                IRet
+            )
+        )
+    
+    def genericArrStoreBlock(size: DataSize): Block = 
+        given DataSize = QWORD
+        Block (
+            Label(s"_arrStore${size.bytes}"),
+            None,
+            List(
+                IPush(Reg(RBX)),
+                ITest(Reg(R10), Reg(R10))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.L),
+                Jmp(Label("_errOutOfBounds"), JumpCond.L),
+                IMov(Reg(RBX), MemOff(R9, -4)),
+                ICmp(Reg(R10), Reg(RBX))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
+                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
+                IMov(MemOff(R9, 4), Reg(RAX))(using size), // MemOff wrong
+                IPop(Reg(RBX)),
                 IRet
             )
         )

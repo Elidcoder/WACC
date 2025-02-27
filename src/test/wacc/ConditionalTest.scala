@@ -1,6 +1,8 @@
 package wacc.test
 
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.concurrent.TimeLimits.failAfter
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 trait ConditionalTest extends AnyFlatSpec {
     def conditionalTest(
@@ -9,7 +11,7 @@ trait ConditionalTest extends AnyFlatSpec {
     )(testBlock: => Any): Unit = {
         it should name in {
             if (flags.get(key).exists(_.toBoolean))
-                testBlock
+                failAfter(20.seconds){ testBlock}
             else
                 pending
         }

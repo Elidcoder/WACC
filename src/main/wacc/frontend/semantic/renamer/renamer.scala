@@ -127,6 +127,7 @@ def rename(
     funcNameScope: FuncScope
 ): RValue[QualifiedName, Typeless] = 
     given Pos = rval.pos
+    given Typeless = Typeless()
     rval match {
         case expr: Expr[String, Typeless] => rename(expr)
         case ArrayLit(exprs)              => ArrayLit(exprs.map(rename))

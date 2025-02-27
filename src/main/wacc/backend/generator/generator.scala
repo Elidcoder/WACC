@@ -13,7 +13,7 @@ type InstrBuilder = Builder[Instr, List[Instr]]
 
 final val RETURN_REG = RAX
 final val TEMP_REG   = R10
-final val PAIR_REG   = R11
+final val MALLOC_REG   = R11
 
 final val PAIR_ELEM_REG = RBX //TODO(change and check)
 
@@ -36,12 +36,12 @@ object generator {
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
             += IRet
-        blockBuilder += Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
         prog.funcs.foreach { func => blockBuilder += generate(func) }
         val prebuilts: Set[Block] = Set()
         ctx.getPrebuilts().foreach { prebuilt => prebuilts ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
         blockBuilder ++= prebuilts
-        blockBuilder.result()
+        val mainBlock = Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
+        mainBlock :: blockBuilder.result()
     }
     
     def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
@@ -53,7 +53,7 @@ object generator {
         if ctx.getFuncOff(func.id.name) != 0 then
             builder += ISub (Reg (STACK_PTR_REG), Imm (ctx.getFuncOff(func.id.name)))
         generateStmts(func.stmts)
-        Block(Label (func.id.name.oldName), None, builder.result())
+        Block(Label (s"wacc_${func.id.name.oldName}"), None, builder.result())
     }
 
     def generate(
@@ -62,19 +62,32 @@ object generator {
         given DataSize = QWORD
         rVal match {
             case expr: Expr[QualifiedName, KnownType] => generate(expr)
-            case ArrayLit(exprs) => ???
+            case a@ArrayLit(exprs) => 
+                val elemSize = getTypeSize(a.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                val label = ctx.addPrebuilt(PbMalloc)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), Imm (elemSize.bytes * exprs.size + DWORD.bytes))(using DWORD)
+                    += ICall (label)
+                    += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
+                    += IAdd (Reg (MALLOC_REG), Imm (DWORD.bytes))
+                    += IMov (MemOff (MALLOC_REG, -4), Imm (exprs.size))(using DWORD)
+                exprs.zipWithIndex.foreach { (expr, i) =>
+                    generate(expr)
+                    builder
+                        += IMov (MemOff (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
+                }
             case NewPair(fst, snd) =>
-                ctx.addPrebuilt(PbMalloc)
+                val label = ctx.addPrebuilt(PbMalloc)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Imm (QWORD.bytes * 2))(using DWORD)
-                    += ICall ("_malloc")
-                    += IMov (Reg (PAIR_REG), Reg (RETURN_REG))
+                    += ICall (label)
+                    += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                 generate(fst)
-                builder += IMov (MemInd (PAIR_REG), Reg (RETURN_REG))
+                builder += IMov (MemInd (MALLOC_REG), Reg (RETURN_REG))
                 generate(snd)
                 builder 
-                    += IMov (MemOff (PAIR_REG, QWORD.bytes), Reg (RETURN_REG))
-                    += IMov (Reg (RETURN_REG), Reg (PAIR_REG))
+                    += IMov (MemOff (MALLOC_REG, QWORD.bytes), Reg (RETURN_REG))
+                    += IMov (Reg (RETURN_REG), Reg (MALLOC_REG))
             
             case First(value) => 
                 loadPairElem(value)
@@ -96,10 +109,11 @@ object generator {
         lVal: LValue[QualifiedName, KnownType]
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = QWORD
+        val label = ctx.addPrebuilt(PbErrNull)
         builder
             += IMov (Reg(PAIR_ELEM_REG), findOp(lVal))
             += ICmp(Reg(PAIR_ELEM_REG), Imm(0))
-            += Jmp(Label("_errNull"), JumpCond.E)
+            += Jmp(Label(label), JumpCond.E)
     }
 
     def findOp(
@@ -107,11 +121,10 @@ object generator {
     )(using ctx: Context, builder: InstrBuilder): ValDest = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
-            case ArrayElem(id, expr) => id.t match {
-                case ArrayT(ty) => 
-                    ???
-                case _ => ???
-            }
+            case ArrayElem(id, expr) => ???
+                // val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                // ctx.addPrebuilt(PbArrStore(size))
+
             case First(lVal) => 
                 loadPairElem(lVal)
                 MemInd(PAIR_ELEM_REG)
@@ -126,7 +139,6 @@ object generator {
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        given DataSize = DWORD
         generate(left) 
         builder 
             += IPush (Reg (RETURN_REG)) 
@@ -135,7 +147,7 @@ object generator {
             += IPush (Reg (RETURN_REG)) 
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
-            += apply((Reg (RETURN_REG)), (Reg (REMAINDER_REG)))
+            += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
             // TODO: check for overflow
     }
 
@@ -163,7 +175,7 @@ object generator {
         right: Expr[QualifiedName, KnownType],
         cond: JumpCond
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        given DataSize = QWORD
+        given DataSize = DWORD
         generate(left) 
         builder 
             += IPush (Reg (RETURN_REG)) 
@@ -174,6 +186,7 @@ object generator {
             += IPop (Reg (RETURN_REG))
             += ICmp (Reg (RETURN_REG), Reg (TEMP_REG))
             += ISet (Reg (RETURN_REG), cond)
+            += ICmp (Reg (RETURN_REG), Imm (1))(using BYTE)
     }
 
     def generate(
@@ -189,11 +202,13 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (RETURN_REG, -4))
             case Ord(expr) => generate(expr)
                 builder += IMovzx (Reg (RETURN_REG), Reg (RETURN_REG), BYTE)
-            case Chr(expr) => generate(expr)
+            case Chr(expr) => 
+                val label = ctx.addPrebuilt(PbErrBadChar)
+                generate(expr)
                 builder
                     += ITest (Reg (RETURN_REG), Imm (-128))
                     += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
-                    += Jmp (Label ("_errBadChar"), JumpCond.NE)
+                    += Jmp (Label (label), JumpCond.NE)
             case i@Ident(name) => 
                 builder += IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply)
@@ -201,7 +216,7 @@ object generator {
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply)
             case Div(x, y) => generateDivMod(x, y)
             case Mod(x, y) => generateDivMod(x, y)
-                builder += IMov (Reg (RETURN_REG), Reg (TEMP_REG))(using QWORD)
+                builder += IMov (Reg (RETURN_REG), Reg (REMAINDER_REG))(using QWORD)
             case Eq(left, right) => 
                 generateBinCond(left, right, JumpCond.E)
             case NotEq(left, right) => 
@@ -240,17 +255,62 @@ object generator {
                 builder 
                     += IMov (Reg (RETURN_REG), Imm (numb))
             case StrLit(str) => 
-                val label = ctx.nextStringLabel()
-                ctx.addRoData(str, RoData(str.size, str, label))
+                val roData = ctx.addRoData(str)
                 builder 
-                    += ILea (Reg (RETURN_REG), Rip (label))
+                    += ILea (Reg (RETURN_REG), Rip (roData.label))
             case wacc.ast.CharLit(char) => 
                 builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
             case wacc.ast.PairLit() => 
                 builder += IMov (Reg (RETURN_REG), Imm (0))
-            case ArrayElem(id, exprs) => ???
+            case ArrayElem(id, exprs) => 
+                val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                ctx.addPrebuilt(PbArrLoad(size))
+                builder += IPush(Reg(FIRST_PARAM_REG))
+                generate(id)
+                generateArrayElem(size, exprs)
+                builder += IPop(Reg(FIRST_PARAM_REG))
         }
         builder.result()
+    }
+
+    def generateArrayElem(
+        size: DataSize,
+        exprs: List[Expr[QualifiedName, KnownType]]
+    )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
+                case Nil => ()
+                case ex::exs =>
+                    given DataSize = QWORD
+                    val label = ctx.addPrebuilt(PbArrLoad(size))
+                    builder += IPush(Reg(RETURN_REG))
+                    generate(ex)
+                    builder 
+                        += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))(using size)
+                        += IPop(Reg(RETURN_REG))
+                    ICall(label)
+                    generateArrayElem(size, exs)
+    }
+
+    def arrayAssign(
+        exprs: List[Expr[QualifiedName, KnownType]],
+        rVal: RValue[QualifiedName, KnownType],
+        size: DataSize
+    )(using ctx: Context, builder: InstrBuilder): Unit = exprs match {
+        case Nil => ()
+        case List(expr) =>
+            given DataSize = QWORD
+            val label = ctx.addPrebuilt(PbArrStore(size))
+            builder += IPush(Reg(FIRST_PARAM_REG))
+            builder += IPush(Reg(SECOND_PARAM_REG))
+            builder += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))
+            generate(expr)
+            builder += IMov(Reg(SECOND_PARAM_REG), Reg(RETURN_REG))
+            generate(rVal)
+            builder 
+                += ICall(label) // TODO(generic)
+                += IPop(Reg(FIRST_PARAM_REG))
+                += IPop(Reg(SECOND_PARAM_REG))
+        case ex::exs =>
+            generateArrayElem(size, exs)
     }
 
     def generate(
@@ -263,22 +323,31 @@ object generator {
                 generate(rVal)
                 builder
                     += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
-            case a@Assign(lVal, rVal) =>
-                generate(rVal)
-                builder
-                    += IMov (findOp(lVal), Reg (RETURN_REG))(using getTypeSize(a.ty))
+            case a@Assign(lVal, rVal) => lVal match {
+                case ArrayElem(id, exprs) => 
+                    val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                    builder += IPush(Reg(FIRST_PARAM_REG))
+                    generate(id)
+                    arrayAssign(exprs, rVal, size)
+                case _ => 
+                    generate(rVal)
+                    val lValOp = findOp(lVal)
+                    builder
+                        += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
+            }
             case r@Read(lVal) => 
-                ctx.addPrebuilt(PbRead(r.ty))
+                val label = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
                 builder 
                     += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
-                    += ICall ("_readi") // TODO(generic)
+                    += ICall (label) // TODO(generic)
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
-            case Free(expr) =>
+            case f@Free(expr) =>
+                val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
-                    += ICall ("_free")
+                    += ICall (label)
             case Return(expr) =>
                 generate(expr)
                 builder
@@ -286,23 +355,23 @@ object generator {
                     += IPop (Reg (BASE_PTR_REG))
                     += IRet
             case Exit(expr) => 
-                ctx.addPrebuilt(PbExit)
+                val label = ctx.addPrebuilt(PbExit)
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
-                    += ICall ("_exit")
+                    += ICall (label)
             case p@Print(expr) => 
-                ctx.addPrebuilt(PbPrint(p.ty))
+                val label = ctx.addPrebuilt(PbPrint(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
-                    += ICall ("_prints")
+                    += ICall (label)
             case p@PrintLn(expr) => 
-                ctx.addPrebuilt(PbPrintln(p.ty))
+                val label = ctx.addPrebuilt(PbPrintln(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
-                    += ICall ("_prints")
+                    += ICall (label)
                     += ICall ("_println")
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
@@ -311,7 +380,7 @@ object generator {
                     += Jmp (ifLabel, JumpCond.E)
                 generateStmts(elseStmts)
                 builder
-                    += Jmp (endLabel, JumpCond.E)
+                    += Jmp (endLabel, JumpCond.UnCond)
                     += ifLabel
                 generateStmts(ifStmts)
                 builder

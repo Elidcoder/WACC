@@ -369,7 +369,8 @@ object typechecker {
             None
         }
         else {
-            Some(ArrayLit(exprsOptTrees.map(_.get)))
+            for (aType <- arrayType; given KnownType = aType) yield
+                ArrayLit(exprsOptTrees.map(_.get))
         }
         
         (for { defArrayType <- arrayType; 

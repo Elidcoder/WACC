@@ -19,8 +19,9 @@ case class MemInd(reg: Register)               extends Mem
 case class Imm(value: Int)                     extends Operand
 case class MemOff(reg: Register, offset: Int)  extends Mem
 
-// TODO(push case validation)
-case class IPush(source: Operand)(using val size: DataSize) extends Instr
+case class IPush(source: Operand) extends Instr {
+    val size = QWORD
+}
 case class IPop private (dest: Operand)(using val size: DataSize) extends Instr
 case class Label(name: String) extends Instr {
     val size = QWORD
