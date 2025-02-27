@@ -20,7 +20,7 @@ private final val SYN_ERR_FILES = List(
     "while"
 )
 
-class SyntaxTest extends AnyFlatSpec with ConditionalTest {
+class SyntaxIntegrationTest extends AnyFlatSpec with ConditionalTest {
     val flags = getProperties()
     SYN_ERR_FILES.foreach{ dir =>
         val key = s"tests.syntax.${dir.toLowerCase}"

@@ -22,7 +22,7 @@ private final val SEM_ERR_FILES = List(
     "while"
 )
 
-class SemanticTest extends AnyFlatSpec with ConditionalTest {
+class SemanticIntegrationTest extends AnyFlatSpec with ConditionalTest {
     val flags = getProperties()
     SEM_ERR_FILES.foreach{ dir =>
         val key = s"tests.semantic.${dir.toLowerCase}"
