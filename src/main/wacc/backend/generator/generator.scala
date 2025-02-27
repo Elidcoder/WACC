@@ -29,7 +29,6 @@ object generator {
     def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
         given DataSize = QWORD
         val blockBuilder = List.newBuilder[Block]
-        // TODO: change roData for main
         given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         mainBuilder
             += IPush (Reg (BASE_PTR_REG))
@@ -39,7 +38,7 @@ object generator {
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
             += IRet
-        blockBuilder += Block(Label ("main"), None, mainBuilder.result())
+        blockBuilder += Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
         prog.funcs.foreach { func => blockBuilder += generate(func) }
         ctx.getPrebuilts().foreach { prebuilt => blockBuilder ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
         blockBuilder.result()
@@ -174,12 +173,17 @@ object generator {
                     += afterLabel
                     += ISet (Reg (RETURN_REG), JumpCond.E)
             case BoolLit(bool) =>
-                builder += 
-                    IMov (Reg (RETURN_REG), (Imm (if (bool) 1 else 0)))(using BYTE)
-                    ICmp (Reg (RETURN_REG), Imm (1))(using BYTE)
+                builder 
+                    += IMov (Reg (RETURN_REG), (Imm (if (bool) 1 else 0)))(using BYTE)
+                    += ICmp (Reg (RETURN_REG), Imm (1))(using BYTE)
             case IntLit(numb) =>
-                builder +=
-                    IMov (Reg (RETURN_REG), Imm (numb))
+                builder 
+                    += IMov (Reg (RETURN_REG), Imm (numb))
+            case StrLit(str) => 
+                val label = ctx.nextStringLabel()
+                ctx.addRoData(str, RoData(str.size, str, label))
+                builder 
+                    += ILea (Reg (RETURN_REG), Rip (label))
             case _         => ??? // TODO
         }
         builder.result()
@@ -212,9 +216,19 @@ object generator {
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
-                    += ICall ("_exit") // TODO: replace _exit string with prebuilt attrib
-            case Print(expr) => ???
-            case PrintLn(expr) => ???
+                    += ICall ("_exit")
+            case p@Print(expr) => 
+                ctx.addPrebuilt(PbPrint(p.ty))
+                generate(expr)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
+                    += ICall ("_prints")
+            case p@PrintLn(expr) => 
+                ctx.addPrebuilt(PbPrintln(p.ty))
+                generate(expr)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
+                    += ICall ("_println")
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 generate(cond)

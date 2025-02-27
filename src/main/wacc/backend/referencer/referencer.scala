@@ -30,7 +30,7 @@ object referencer {
         ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
     }
 
-    /* Reference the variables used in a program as well as storing any strings. */
+    /* Reference the variables used in a program. */
     def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Program[QualifiedName, KnownType] = {
         given funcName:QualifiedName = QualifiedName("main", -1)
 
@@ -67,35 +67,17 @@ object referencer {
     private def reference(stmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, funcName: QualifiedName): Unit
         = stmts.foreach(reference)
 
-    /* Reference the variables used in a stmt as well as storing any strings. */
+    /* Reference the variables used in a stmt. */
     private def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
         case NewAss(_, id, rval) => {
             addVarToContext(id)
-            searchForStrings(rval)
         }
-        case Assign(_, rVal) => searchForStrings(rVal) 
 
         /* Check nested statements. */
         case If(cond, ifStmts, elseStmts) => {reference(ifStmts); reference(elseStmts)}
         case While(cond, subStmts) => reference(subStmts)
         case Nest(stmts) => reference(stmts)
 
-        case _ => {}
-    }
-
-    /* Search through a rValue. recursively looking for strings. */
-    private def searchForStrings(rval: RValue[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = rval match {
-        case Eq(lhsExpr, rhsExpr) => {
-            searchForStrings(lhsExpr)
-            searchForStrings(rhsExpr)
-        }
-        case NotEq(lhsExpr, rhsExpr) => {
-            searchForStrings(lhsExpr)
-            searchForStrings(rhsExpr)
-        }
-        case StrLit(str) => {
-            ctx.addRoData(str, ctx.nextStringLabel())
-        }
         case _ => {}
     }
 }
