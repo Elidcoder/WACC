@@ -2,9 +2,9 @@ package wacc.backend
 
 import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
-import wacc.backend.ir.{Reference, Label}
+import wacc.backend.ir.{Label, Operand}
 import wacc.semantic.QualifiedName
-import wacc.backend.referencer.Prebuilt
+import wacc.backend.generator.prebuilts.Prebuilt
 
 class Context() {
     /* Stores the initial offset for any function due to the initial operations. */
@@ -22,9 +22,9 @@ class Context() {
         Label(s".L$labelUID")
     }
 
-    private val nameReferences: Map[QualifiedName, Reference] = Map.empty
-    def addVar(varName: QualifiedName, ref: Reference) = nameReferences.put(varName, ref)
-    def getVarRef(varName: QualifiedName): Reference = nameReferences(varName)
+    private val nameReferences: Map[QualifiedName, Operand] = Map.empty
+    def addVar(varName: QualifiedName, ref: Operand) = nameReferences.put(varName, ref)
+    def getVarRef(varName: QualifiedName): Operand = nameReferences(varName)
 
     private val funcOffsets: Map[QualifiedName, Int] = Map.empty
     def addFunc(funcName: QualifiedName, offset: Int) = funcOffsets.put(funcName, offset)

@@ -5,48 +5,28 @@ import wacc.semantic.QualifiedName
 
 import wacc.ast._
 import wacc.backend.ir._
-
-sealed trait Prebuilt 
-
-case class PbMalloc()      extends Prebuilt
-case class PbExit()        extends Prebuilt
-case class PbErrOverflow() extends Prebuilt
-case class PbPrint(varType: KnownType) extends Prebuilt
-case class PbFree( varType: KnownType) extends Prebuilt
-case class PbRead( varType: KnownType) extends Prebuilt
+import wacc.backend.generator.STACK_PTR_REG
 
 object referencer {
     /* An ordered list of registers used for parameters. */
-    private val parameterRegisters: List[Register] = List(rdi, rsi, rdx, rcx, r8, r9) 
+    private val parameterRegisters: List[Register] = List(RDI, RSI, RDX, RCX, R8, R9) 
 
     /* Returns the dataSize matching a given type, 
      * we have a static guarantee from frontend _ never occurs. */
-    private def getTypeSize(usedType: Type): DataSize = usedType match {
-        case IntT()          => DWORD()
-        case CharT()         => BYTE()
-        case BoolT()         => BYTE()
-        case StringT()       => QWORD()
-        case PairT(a, b)     => QWORD()
-        case ArrayT(t)       => QWORD()
+    def getTypeSize(usedType: Type): DataSize = usedType match {
+        case IntT()          => DWORD
+        case CharT()         => BYTE
+        case BoolT()         => BYTE
+        case StringT()       => QWORD
+        case PairT(a, b)     => QWORD
+        case ArrayT(t)       => QWORD
         case FuncT(retTy, _) => getTypeSize(retTy)
-        case _               => QWORD()
-    }
-
-    /* Creates a Reg of the size matching the given ty and the given register. */
-    private def buildReg(reg: Register, ty: Type): Reg[DataSize] = ty match {
-        case IntT()          => Reg[DWORD](reg)
-        case CharT()         => Reg[BYTE](reg)
-        case BoolT()         => Reg[BYTE](reg)
-        case StringT()       => Reg[QWORD](reg)
-        case PairT(a, b)     => Reg[QWORD](reg)
-        case ArrayT(t)       => Reg[QWORD](reg)
-        case FuncT(retTy, _) => buildReg(reg, retTy)
-        case _               => ???
+        case _               => QWORD
     }
 
     /* Creates a stack reference for a new variable and increases the function offset */
     private def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
-        ctx.addVar(id.name, Stack(ctx.getFuncOff(funcName)))
+        ctx.addVar(id.name, MemOff(STACK_PTR_REG, ctx.getFuncOff(funcName)))
         ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
     }
 
@@ -71,7 +51,7 @@ object referencer {
         /* Parameter made into registers */
         func.params.zip(parameterRegisters).foreach(
             (param, reg) => 
-                ctx.addVar(param.paramId.name, buildReg(reg, param.paramType))
+                ctx.addVar(param.paramId.name, Reg(reg))
         )
 
         /* Paramters exceeding numb registers */
