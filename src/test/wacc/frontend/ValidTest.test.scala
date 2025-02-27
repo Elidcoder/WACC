@@ -21,7 +21,7 @@ private final val VALID_FILES = List(
     "while"
 )
 
-class ValidTest extends AnyFlatSpec with ConditionalTest {
+class ValidIntegrationTest extends AnyFlatSpec with ConditionalTest {
     val flags = getProperties()
     VALID_FILES.foreach{ dir =>
         val key = s"tests.valid.${dir.toLowerCase}"

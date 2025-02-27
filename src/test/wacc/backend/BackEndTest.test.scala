@@ -7,6 +7,8 @@ import java.io.File
 
 import wacc.pipeline
 import wacc.CODE_SUCCESS
+import java.io.ByteArrayInputStream
+import java.nio.charset.StandardCharsets
 
 private final val BACKEND_FILES = List(
     "basic",
@@ -23,13 +25,13 @@ private final val BACKEND_FILES = List(
     "while"
 )
 
-class BackEndTest extends AnyFlatSpec with ConditionalTest {
+class BackEndIntegrationTest extends AnyFlatSpec with ConditionalTest {
     val flags = getProperties()
     BACKEND_FILES.foreach{ dir =>
         val key = s"tests.backend.${dir.toLowerCase}"
         val tests = getTests(s"valid/$dir")
         tests.foreach { file =>
-            val name = s"should compile without error in [${dir}/${file.getName()}]"
+            val name = s"compile and run [${dir}/${file.getName()}] with correct output"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
                 result shouldBe CODE_SUCCESS
@@ -37,9 +39,35 @@ class BackEndTest extends AnyFlatSpec with ConditionalTest {
                 val baseName = file.getName.stripSuffix(".wacc")
                 val ass = new File(s"./${baseName}.s")
                 ass.exists() shouldBe true
+                
+                val exec = s"./${baseName}.o"
+                val cmpExit = s"gcc -z noexecstack -o ${baseName}.o ${baseName}.s" .!
+                cmpExit shouldBe 0
 
-                val exit = s"gcc -z noexecstack -o ${baseName}.o ${baseName}.s" .!
-                exit shouldBe 0
+                val (inputOpt, expectedOutputOpt, expectedExitOpt) = parseExample(file)
+
+                val outputBuilder = new StringBuilder
+                val processLogger = ProcessLogger(line => outputBuilder.append(line + "\n"))
+
+                val actualExit = (for {
+                    inputStr    <- inputOpt
+                    inputStream = new ByteArrayInputStream(inputStr.getBytes(StandardCharsets.UTF_8))
+                } yield Process(exec) #< inputStream ! processLogger)
+                .getOrElse(Process(exec) ! processLogger)
+
+                /* Prints for debugging */
+                println("--------------------------------------------------")
+                println(s"[DEBUG] Input provided: ${inputOpt.getOrElse("NONE")}")
+                println(s"[DEBUG] Expected output: ${expectedOutputOpt.getOrElse("NONE")}")
+                println(s"[DEBUG] Expected exit: ${expectedExitOpt.getOrElse("NONE")}")
+                println(s"[DEBUG] Actual output: ${if (outputBuilder.toString.trim.isEmpty) "NONE" else outputBuilder.toString.trim}")
+                println(s"[DEBUG] Actual exit: ${if (actualExit == 0 && expectedExitOpt.isEmpty) "NONE" else actualExit.toString}")
+
+                for (expectedExit <- expectedExitOpt) yield { actualExit.shouldBe(expectedExit) }
+
+                for (expectedOutput <- expectedOutputOpt) yield { 
+                    outputBuilder.toString.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#") shouldBe expectedOutput.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#")
+                }
             }
         }
     }
