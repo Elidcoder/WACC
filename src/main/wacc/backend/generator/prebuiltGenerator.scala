@@ -16,7 +16,7 @@ object prebuiltGenerator {
     )
     private val printEnd = 
         List(
-            IMov(Reg[BYTE](al), Imm[BYTE](0)),
+            IMov(Reg[BYTE](rax), Imm[BYTE](0)),
             ICall("puts@plt"),
             IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
             ICall("fflush@plt"),
@@ -66,15 +66,15 @@ object prebuiltGenerator {
             IMov(Reg[QWORD](rbp), Reg[QWORD](rsp)),
             IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
             ICmp(Reg[BYTE](rdi), Imm[BYTE](0)),
-            Jmp(Label(".L_printb0"), JumpCond.NotEq),
+            Jmp(Label(".L_printb0"), JumpCond.NE),
             ILea(Reg[QWORD](rdx), Rip[QWORD](Label(".L._printb_str0"))),
             Jmp(Label(".L_printb1"), JumpCond.UnCond),
             Label(".L_printb0"),
             ILea(Reg[QWORD](rdx), Rip[QWORD](Label(".L._printb_str1"))),
             Label(".L_printb1"),
-            IMov(Reg[DWORD](esi), MemOff[DWORD](rdx, -4)),
+            IMov(Reg[DWORD](rsi), MemOff[DWORD](rdx, -4)),
             ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._printb_str2"))),
-            IMov(Reg[BYTE](al), Imm[BYTE](0)),
+            IMov(Reg[BYTE](rax), Imm[BYTE](0)),
             ICall("printf@plt"),
             IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
             ICall("fflush@plt"),
@@ -135,6 +135,32 @@ object prebuiltGenerator {
         List(
             IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
             ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._errDivZero_str0"))),
+            ICall("_prints"),
+            IMov(Reg[BYTE](rdi), Imm[BYTE](-1)),
+            ICall("exit@plt")
+        )
+    )
+    val malloc = Block (
+        Label("_malloc"),
+        None,
+        List(
+            IPush(Reg[QWORD](rbp)),
+            IMov(Reg[QWORD](rbp), Reg[QWORD](rsp)),
+            IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
+            ICall("malloc@plt"),
+            ICmp(Reg[QWORD](rax), Imm[QWORD](0)),
+            Jmp(Label("_errOutOfMemory"), JumpCond.E),
+            IMov(Reg[QWORD](rsp), Reg[QWORD](rbp)),
+            IPop(Reg[QWORD](rbp)),
+            IRet
+        )
+    )
+    val errOutOfMemory = Block (
+        Label("_errOutOfMemory"),
+        Some(List(RoData(27, "fatal error: out of memory\n", Label(".L._errOutOfMemory_str0")))),
+        List(
+            IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
+            ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._errOutOfMemory_str0"))),
             ICall("_prints"),
             IMov(Reg[BYTE](rdi), Imm[BYTE](-1)),
             ICall("exit@plt")
