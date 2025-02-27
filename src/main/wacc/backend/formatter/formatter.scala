@@ -79,13 +79,20 @@ private def format[S <: DataSize](op: Operand)(using wr: BufferedWriter, size: D
     op match
         case Reg(reg) => format(reg)
         case Rip(label) => s"[rip + ${label.name}]"
-        case MemInd(reg) => s"[${format(reg)}]"
+        case MemInd(reg) => memSize(size) + s"[${{format(reg)(using QWORD)}}]"
         case Imm(value) => value.toString
-        case MemOff(reg, offset) => 
-            if offset < 0 then
-                s"[${format(reg)} - ${-offset}]"
+        case MemOff(reg, offset) => memSize(size) +
+            (if offset < 0 then
+                s"[${format(reg)(using QWORD)} - ${-offset}]"
             else
-                s"[${format(reg)} + $offset]"
+                s"[${format(reg)(using QWORD)} + $offset]")
+
+private def memSize(size: DataSize): String = size match {
+    case BYTE => "byte ptr "
+    case WORD => "word ptr "
+    case DWORD => "dword ptr "
+    case QWORD => "qword ptr "
+}
 
 private def format(reg: Register)(using size: DataSize): String = reg match {
     case RAX => size match {
