@@ -7,7 +7,7 @@ import wacc.backend.ir
 import wacc.backend.Context
 import scala.collection.mutable.Builder
 
-import wacc.backend.referencer.referencer.getTypeSize
+import wacc.backend.referencing.referencer.getTypeSize
 import wacc.backend.generator.prebuilts._
 
 type InstrBuilder = Builder[Instr, List[Instr]]
