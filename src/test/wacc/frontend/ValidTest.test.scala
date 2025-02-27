@@ -21,13 +21,13 @@ private final val VALID_FILES = List(
     "while"
 )
 
-class ValidTest extends AnyFlatSpec with ConditionalTest {
+class ValidIntegrationTest extends AnyFlatSpec with ConditionalTest {
     val flags = getProperties()
     VALID_FILES.foreach{ dir =>
         val key = s"tests.valid.${dir.toLowerCase}"
         val tests = getTests(s"valid/$dir")
         tests.foreach { file =>
-            val name = s"should compile without error in [${dir}/${file.getName()}]"
+            val name = s"compile without error in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
                 result shouldBe CODE_SUCCESS

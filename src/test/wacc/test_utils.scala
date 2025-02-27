@@ -41,3 +41,45 @@ def getProperties(): Map[String, String] = {
         source.close()
     }
 }
+
+def parseExample(file: File): (Option[String], Option[String], Option[Int]) = {
+    val lines = Source.fromFile(file).getLines().toList.takeWhile(line => !line.trim.startsWith("# Program:"))
+    var input: Option[String] = None
+    var outputLines: List[String] = Nil
+    var exit: Option[Int] = None
+    var currentSection: Option[String] = None
+
+    lines.foreach { line =>
+        line.trim match {
+        case s if s.startsWith("# Input:") =>
+            currentSection = Some("input")
+            val content = s.stripPrefix("# Input:").trim
+            if (content.nonEmpty) input = Some(content)
+        case s if s.startsWith("# Output:") =>
+            currentSection = Some("output")
+            val content = s.stripPrefix("# Output:").trim
+            if (content.nonEmpty) outputLines = outputLines :+ content
+        case s if s.startsWith("# Exit:") =>
+            currentSection = Some("exit")
+            val content = s.stripPrefix("# Exit:").trim
+            if (content.nonEmpty)
+                try { exit = Some(content.toInt) } catch { case _: NumberFormatException => }
+        case "#" =>
+            currentSection = None
+        case s if s.startsWith("#") =>
+            currentSection match {
+                case Some("input") if input.isEmpty =>
+                input = Some(s.stripPrefix("#").trim)
+                case Some("output") =>
+                outputLines = outputLines :+ s.stripPrefix("#").trim
+                case Some("exit") if exit.isEmpty =>
+                try { exit = Some(s.stripPrefix("#").trim.toInt) } catch { case _: NumberFormatException => }
+                case _ =>
+            }
+        case _ =>
+        }
+    }
+    
+    val output = if (outputLines.isEmpty) None else Some(outputLines.mkString("\n"))
+    (input, output, exit)
+}

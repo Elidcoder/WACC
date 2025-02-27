@@ -21,19 +21,19 @@ case "$CATEGORY" in
         ;;
     valid)
         echo "Running valid tests..."
-        scala test . --test-only "*ValidTest*"
+        scala test . --test-only "*Valid*"
         ;;
     syntax)
         echo "Running syntax tests..."
-        scala test . --test-only "*SyntaxTest*"
+        scala test . --test-only "*Syntax*"
         ;;
     semantic)
         echo "Running semantic tests..."
-        scala test . --test-only "*SemanticTest*"
+        scala test . --test-only "*Semantic*"
         ;;
     backend)
         echo "Running back-end tests..."
-        scala test . --test-only "*BackEndTest*"
+        scala test . --test-only "*BackEndIntegration*"
         ;;
     *)
         usage
