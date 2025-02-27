@@ -15,6 +15,8 @@ case class PbPrintln(varType: KnownType) extends Prebuilt
 case class PbFree(varType: KnownType)   extends Prebuilt
 case class PbFreePair()   extends Prebuilt
 case class PbRead(arType: KnownType)   extends Prebuilt
+case class PbArrLoad(size: DataSize) extends Prebuilt
+case class PbArrStore(size: DataSize) extends Prebuilt
 
 object prebuiltGenerator {
 
@@ -35,7 +37,9 @@ object prebuiltGenerator {
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
         case PbFreePair() => List(freePairBlock)
         case PbFree(varType) => List(freeBlock)
-        case PbRead(varType) => ???
+        case PbRead(varType) => List()
+        case PbArrLoad(size) => List()
+        case PbArrStore(size) => List()
     }
     val mallocBlock: Block = 
         given DataSize = QWORD
@@ -54,17 +58,17 @@ object prebuiltGenerator {
                 IRet
             )
         )
-    private val printEnd = 
-        given DataSize = QWORD
-        List(
-            IMov(Reg(RAX), Imm(0))(using size = BYTE),
-            ICall("puts@plt"),
-            IMov(Reg(RDI), Imm(0)),
-            ICall("fflush@plt"),
-            IMov(Reg(RSP), Reg(RBP)),
-            IPop(Reg(RBP)),
-            IRet
-        )
+    // private val printEnd = 
+    //     given DataSize = QWORD
+    //     List(
+    //         IMov(Reg(RAX), Imm(0))(using size = BYTE),
+    //         ICall("puts@plt"),
+    //         IMov(Reg(RDI), Imm(0)),
+    //         ICall("fflush@plt"),
+    //         IMov(Reg(RSP), Reg(RBP)),
+    //         IPop(Reg(RBP)),
+    //         IRet
+    //     )
     private def genericPrintBlock(size: DataSize): List[Instr] = 
         given DataSize = QWORD
         List(

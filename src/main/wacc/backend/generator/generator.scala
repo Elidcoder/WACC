@@ -13,7 +13,7 @@ type InstrBuilder = Builder[Instr, List[Instr]]
 
 final val RETURN_REG = RAX
 final val TEMP_REG   = R10
-final val PAIR_REG   = R11
+final val MALLOC_REG   = R11
 
 final val PAIR_ELEM_REG = RBX //TODO(change and check)
 
@@ -62,19 +62,32 @@ object generator {
         given DataSize = QWORD
         rVal match {
             case expr: Expr[QualifiedName, KnownType] => generate(expr)
-            case ArrayLit(exprs) => ???
+            case a@ArrayLit(exprs) => 
+                val elemSize = getTypeSize(a.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                ctx.addPrebuilt(PbMalloc)
+                builder
+                    += IMov (Reg (FIRST_PARAM_REG), Imm (elemSize.bytes * exprs.size + DWORD.bytes))(using DWORD)
+                    += ICall ("_malloc")
+                    += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
+                    += IAdd (Reg (MALLOC_REG), Imm (DWORD.bytes))
+                    += IMov (MemOff (MALLOC_REG, -4), Imm (exprs.size))(using DWORD)
+                exprs.zipWithIndex.foreach { (expr, i) =>
+                    generate(expr)
+                    builder
+                        += IMov (MemOff (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
+                }
             case NewPair(fst, snd) =>
                 ctx.addPrebuilt(PbMalloc)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Imm (QWORD.bytes * 2))(using DWORD)
                     += ICall ("_malloc")
-                    += IMov (Reg (PAIR_REG), Reg (RETURN_REG))
+                    += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                 generate(fst)
-                builder += IMov (MemInd (PAIR_REG), Reg (RETURN_REG))
+                builder += IMov (MemInd (MALLOC_REG), Reg (RETURN_REG))
                 generate(snd)
                 builder 
-                    += IMov (MemOff (PAIR_REG, QWORD.bytes), Reg (RETURN_REG))
-                    += IMov (Reg (RETURN_REG), Reg (PAIR_REG))
+                    += IMov (MemOff (MALLOC_REG, QWORD.bytes), Reg (RETURN_REG))
+                    += IMov (Reg (RETURN_REG), Reg (MALLOC_REG))
             
             case First(value) => 
                 loadPairElem(value)
@@ -107,11 +120,10 @@ object generator {
     )(using ctx: Context, builder: InstrBuilder): ValDest = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
-            case ArrayElem(id, expr) => id.t match {
-                case ArrayT(ty) => 
-                    ???
-                case _ => ???
-            }
+            case ArrayElem(id, expr) => ???
+                // val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                // ctx.addPrebuilt(PbArrStore(size))
+
             case First(lVal) => 
                 loadPairElem(lVal)
                 MemInd(PAIR_ELEM_REG)
@@ -248,9 +260,54 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
             case wacc.ast.PairLit() => 
                 builder += IMov (Reg (RETURN_REG), Imm (0))
-            case ArrayElem(id, exprs) => ???
+            case ArrayElem(id, exprs) => 
+                val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                ctx.addPrebuilt(PbArrLoad(size))
+                builder += IPush(Reg(FIRST_PARAM_REG))
+                generate(id)
+                generateArrayElem(size, exprs)
+                builder += IPop(Reg(FIRST_PARAM_REG))
         }
         builder.result()
+    }
+
+    def generateArrayElem(
+        size: DataSize,
+        exprs: List[Expr[QualifiedName, KnownType]]
+    )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
+                case Nil => ()
+                case ex::exs =>
+                    given DataSize = QWORD
+                    builder += IPush(Reg(RETURN_REG))
+                    generate(ex)
+                    builder 
+                        += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))(using size)
+                        += IPop(Reg(RETURN_REG))
+                    ICall("_arrLoad4") // TODO(generic)
+                    generateArrayElem(size, exs)
+    }
+
+    def arrayAssign(
+        exprs: List[Expr[QualifiedName, KnownType]],
+        rVal: RValue[QualifiedName, KnownType],
+        size: DataSize
+    )(using ctx: Context, builder: InstrBuilder): Unit = exprs match {
+        case Nil => ()
+        case List(expr) =>
+            given DataSize = QWORD
+            ctx.addPrebuilt(PbArrStore(size))
+            builder += IPush(Reg(FIRST_PARAM_REG))
+            builder += IPush(Reg(SECOND_PARAM_REG))
+            builder += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))
+            generate(expr)
+            builder += IMov(Reg(SECOND_PARAM_REG), Reg(RETURN_REG))
+            generate(rVal)
+            builder 
+                += ICall("_arrStore4") // TODO(generic)
+                += IPop(Reg(FIRST_PARAM_REG))
+                += IPop(Reg(SECOND_PARAM_REG))
+        case ex::exs =>
+            generateArrayElem(size, exs)
     }
 
     def generate(
@@ -263,10 +320,18 @@ object generator {
                 generate(rVal)
                 builder
                     += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
-            case a@Assign(lVal, rVal) =>
-                generate(rVal)
-                builder
-                    += IMov (findOp(lVal), Reg (RETURN_REG))(using getTypeSize(a.ty))
+            case a@Assign(lVal, rVal) => lVal match {
+                case ArrayElem(id, exprs) => 
+                    val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
+                    builder += IPush(Reg(FIRST_PARAM_REG))
+                    generate(id)
+                    arrayAssign(exprs, rVal, size)
+                case _ => 
+                    generate(rVal)
+                    val lValOp = findOp(lVal)
+                    builder
+                        += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
+            }
             case r@Read(lVal) => 
                 ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)

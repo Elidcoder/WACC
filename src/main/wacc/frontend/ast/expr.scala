@@ -24,7 +24,7 @@ case class ArrayElem[N, T](id: Ident[N, T], exprs: List[Expr[N, T]])(using val p
         b.result()
 }
 
-case class ArrayLit[N, T](exprs: List[Expr[N, T]])(using val pos: Pos) extends RValue[N, T] {
+case class ArrayLit[N, T](exprs: List[Expr[N, T]])(using val pos: Pos, val t: T) extends RValue[N, T] {
     override def toString(): String = 
         val b = new StringBuilder()
         b ++= "["
@@ -137,7 +137,7 @@ case object ArrayOrIdent extends ParserBridgePos2[Ident, OptionWrap[ListWrap[Exp
         exprs.fold(id)(ArrayElem(id, _))
 }
 
-case object ArrayLit extends ParserBridgePos1[ListWrap[Expr], ArrayLit] {
+case object ArrayLit extends ParserBridgePosType1[ListWrap[Expr], ArrayLit] {
     override def labels: List[String] = List("array literal")
 }
 case object NewPair extends ParserBridgePos2[Expr, Expr, NewPair] {
