@@ -43,9 +43,9 @@ class Context() {
 
     private val prebuiltsUsed: Set[Prebuilt] = Set.empty
 
-    def addPrebuilt(prebuilt: Prebuilt): Label = {
+    def addPrebuilt(prebuilt: Prebuilt): String = {
         prebuiltsUsed.add(prebuilt)
-        Label(prebuilt.labelString)
+        prebuilt.labelString
     }
     def getPrebuilts(): List[Prebuilt] = prebuiltsUsed.toList
 

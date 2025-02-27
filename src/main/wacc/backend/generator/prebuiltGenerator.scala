@@ -5,23 +5,25 @@ import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
 sealed trait Prebuilt {
-    val labelString: String
+    def labelString: String
 }
-
+case object PbErrNull extends Prebuilt {
+    def labelString = "_errNull"
+}
 case object PbMalloc extends Prebuilt {
-    val labelString = "_malloc"
+    def labelString = "_malloc"
 }
 case object PbExit extends Prebuilt{
-    val labelString = "_exit"
+    def labelString = "_exit"
 }
 case object PbErrOverflow extends Prebuilt{
-    val labelString = "_errOverflow"
+    def labelString = "_errOverflow"
 }
 case object DivZero extends Prebuilt{
-    val labelString = "_errDivZero"
+    def labelString = "_errDivZero"
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
-    val labelString = varType match {
+    def labelString = varType match {
         case ArrayT(_)   => "_printp"
         case PairT(_, _) => "_printp"
         case IntT()      => "_printi"
@@ -32,26 +34,27 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
     }
 }
 case class PbPrintln(varType: KnownType) extends Prebuilt{
-    val labelString = "_printi"
+    def labelString = PbPrint(varType).labelString
 }
 case class PbFree(varType: KnownType) extends Prebuilt{
-    val labelString = "_free"
-}
-case class PbFreePair() extends Prebuilt{
-    val labelString = "_freepair"
+    def labelString = varType match {
+        case ArrayT(_) => "_free"
+        case PairT(_,_) => "_freepair"
+        case _ => ???
+    }
 }
 case class PbRead(arType: KnownType) extends Prebuilt{
-    val labelString = arType match{
+    def labelString = arType match{
         case CharT() => "_readc"
         case IntT()  => "_readi"
         case _ => ""
     }
 }
 case class PbArrLoad(size: DataSize) extends Prebuilt {
-    val labelString = s"_arrLoad${size.bytes}"
+    def labelString = s"_arrLoad${size.bytes}"
 }
 case class PbArrStore(size: DataSize) extends Prebuilt {
-    val labelString = s"_arrStore${size.bytes}"
+    def labelString = s"_arrStore${size.bytes}"
 }
 
 object prebuiltGenerator {
@@ -70,13 +73,17 @@ object prebuiltGenerator {
             case _          => ???
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
-        case PbFreePair() => List(freePairBlock)
-        case PbFree(varType) => List(freeBlock)
+        case PbFree(varType) => varType match {
+            case ArrayT(_) => List(freeBlock)
+            case PairT(_,_) => freePairBlock :: generatePrebuiltBlock(PbErrNull) 
+            case _ => ???
+        }
         case PbRead(varType) => varType match {
             case CharT() => List(readcBlock)
             case IntT() => List(readiBlock)
             case _      => List()
         }
+        case PbErrNull => errNull :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbArrLoad(size) => List()
         case PbArrStore(size) => List()
     }
@@ -121,7 +128,7 @@ object prebuiltGenerator {
                 IAnd(Reg(RSP), Imm(-16)),
                 ICall("malloc@plt"),
                 ICmp(Reg(RAX), Imm(0)),
-                Jmp(Label("_errOverflow"), JumpCond.E),
+                Jmp(Label("_errOutOfMemory"), JumpCond.E),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
                 IRet
@@ -172,7 +179,7 @@ object prebuiltGenerator {
     val printbBlock: Block =  
         given DataSize = QWORD
         Block (
-            Label("_printp"),
+            Label("_printb"),
             Some(List(
                 RoData(5, "false", Label(".L._printb_str0")),
                 RoData(4, "true", Label(".L._printb_str1")),

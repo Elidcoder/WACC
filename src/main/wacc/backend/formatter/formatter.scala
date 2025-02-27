@@ -63,7 +63,7 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit =
         case IAnd(dest, source) => writeIndentedLine(s"and ${format(dest)}, ${format(source)}")
         case INeg(dest) => writeIndentedLine(s"neg ${format(dest)}")
         case ITest(dest, source) => writeIndentedLine(s"test ${format(dest)}, ${format(source)}")
-        case IMovzx(dest, source, _) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)}")
+        case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size = size)}")
         case ISet(dest, cond) => 
             if cond == JumpCond.UnCond then
                 writeIndentedLine(s"set ${format(dest)}")

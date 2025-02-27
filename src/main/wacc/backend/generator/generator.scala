@@ -64,10 +64,10 @@ object generator {
             case expr: Expr[QualifiedName, KnownType] => generate(expr)
             case a@ArrayLit(exprs) => 
                 val elemSize = getTypeSize(a.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
-                ctx.addPrebuilt(PbMalloc)
+                val label = ctx.addPrebuilt(PbMalloc)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Imm (elemSize.bytes * exprs.size + DWORD.bytes))(using DWORD)
-                    += ICall ("_malloc")
+                    += ICall (label)
                     += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                     += IAdd (Reg (MALLOC_REG), Imm (DWORD.bytes))
                     += IMov (MemOff (MALLOC_REG, -4), Imm (exprs.size))(using DWORD)
@@ -77,10 +77,10 @@ object generator {
                         += IMov (MemOff (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
                 }
             case NewPair(fst, snd) =>
-                ctx.addPrebuilt(PbMalloc)
+                val label = ctx.addPrebuilt(PbMalloc)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Imm (QWORD.bytes * 2))(using DWORD)
-                    += ICall ("_malloc")
+                    += ICall (label)
                     += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                 generate(fst)
                 builder += IMov (MemInd (MALLOC_REG), Reg (RETURN_REG))
@@ -109,10 +109,11 @@ object generator {
         lVal: LValue[QualifiedName, KnownType]
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = QWORD
+        val label = ctx.addPrebuilt(PbErrNull)
         builder
             += IMov (Reg(PAIR_ELEM_REG), findOp(lVal))
             += ICmp(Reg(PAIR_ELEM_REG), Imm(0))
-            += Jmp(Label("_errNull"), JumpCond.E)
+            += Jmp(Label(label), JumpCond.E)
     }
 
     def findOp(
@@ -276,12 +277,13 @@ object generator {
                 case Nil => ()
                 case ex::exs =>
                     given DataSize = QWORD
+                    val label = ctx.addPrebuilt(PbArrLoad(size))
                     builder += IPush(Reg(RETURN_REG))
                     generate(ex)
                     builder 
                         += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))(using size)
                         += IPop(Reg(RETURN_REG))
-                    ICall("_arrLoad4") // TODO(generic)
+                    ICall(label)
                     generateArrayElem(size, exs)
     }
 
@@ -293,7 +295,7 @@ object generator {
         case Nil => ()
         case List(expr) =>
             given DataSize = QWORD
-            ctx.addPrebuilt(PbArrStore(size))
+            val label = ctx.addPrebuilt(PbArrStore(size))
             builder += IPush(Reg(FIRST_PARAM_REG))
             builder += IPush(Reg(SECOND_PARAM_REG))
             builder += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))
@@ -301,7 +303,7 @@ object generator {
             builder += IMov(Reg(SECOND_PARAM_REG), Reg(RETURN_REG))
             generate(rVal)
             builder 
-                += ICall("_arrStore4") // TODO(generic)
+                += ICall(label) // TODO(generic)
                 += IPop(Reg(FIRST_PARAM_REG))
                 += IPop(Reg(SECOND_PARAM_REG))
         case ex::exs =>
@@ -331,17 +333,18 @@ object generator {
                         += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
             }
             case r@Read(lVal) => 
-                ctx.addPrebuilt(PbRead(r.ty))
+                val label = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
                 builder 
                     += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
-                    += ICall ("_readi") // TODO(generic)
+                    += ICall (label) // TODO(generic)
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
-            case Free(expr) =>
+            case f@Free(expr) =>
+                val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
-                    += ICall ("_free")
+                    += ICall (label)
             case Return(expr) =>
                 generate(expr)
                 builder
@@ -349,23 +352,23 @@ object generator {
                     += IPop (Reg (BASE_PTR_REG))
                     += IRet
             case Exit(expr) => 
-                ctx.addPrebuilt(PbExit)
+                val label = ctx.addPrebuilt(PbExit)
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
-                    += ICall ("_exit")
+                    += ICall (label)
             case p@Print(expr) => 
-                ctx.addPrebuilt(PbPrint(p.ty))
+                val label = ctx.addPrebuilt(PbPrint(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
-                    += ICall ("_prints")
+                    += ICall (label)
             case p@PrintLn(expr) => 
-                ctx.addPrebuilt(PbPrintln(p.ty))
+                val label = ctx.addPrebuilt(PbPrintln(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
-                    += ICall ("_prints")
+                    += ICall (label)
                     += ICall ("_println")
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
