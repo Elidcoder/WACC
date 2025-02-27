@@ -14,7 +14,76 @@ object prebuiltGenerator {
             IRet
         )
     )
-    val printBlock: Block = Block (
+    private val printEnd = 
+        List(
+            IMov(Reg[BYTE](al), Imm[BYTE](0)),
+            ICall("puts@plt"),
+            IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
+            ICall("fflush@plt"),
+            IMov(Reg[QWORD](rsp), Reg[QWORD](rbp)),
+            IPop(Reg[QWORD](rbp)),
+            IRet
+        )
+    private def genericPrintBlock(size: DataSize): List[Instr] = 
+        List(
+            IPush(Reg[QWORD](rbp)),
+            IMov(Reg[QWORD](rbp), Reg[QWORD](rsp)),
+            IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
+            IMov(Reg[size.type](rsi), Reg[size.type](rdi)),
+            ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._printi_str0"))),
+            IMov(Reg[BYTE](rax), Imm[BYTE](0)),
+            ICall("printf@plt"),
+            IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
+            ICall("fflush@plt"),
+            IMov(Reg[QWORD](rsp), Reg[QWORD](rbp)),
+            IPop(Reg[QWORD](rbp)),
+            IRet
+        )
+    val printcBlock: Block = Block (
+        Label("_printc"),
+        Some(List(RoData(2, "%c", Label(".L._printc_str0")))),
+        genericPrintBlock(BYTE())
+    )
+    val printiBlock: Block = Block (
+        Label("_printi"),
+        Some(List(RoData(2, "%d", Label(".L._printi_str0")))),
+        genericPrintBlock(DWORD())
+    )
+    val printpBlock: Block = Block (
+        Label("_printp"),
+        Some(List(RoData(2, "%p", Label(".L._printp_str0")))),
+        genericPrintBlock(QWORD())
+    )
+    val printbBlock: Block =  Block (
+        Label("_printp"),
+        Some(List(
+            RoData(5, "false", Label(".L._printb_str0")),
+            RoData(4, "true", Label(".L._printb_str1")),
+            RoData(4, "%.*s", Label(".L._printb_str2"))
+        )),
+        List(
+            IPush(Reg[QWORD](rbp)),
+            IMov(Reg[QWORD](rbp), Reg[QWORD](rsp)),
+            IAnd(Reg[QWORD](rsp), Imm[QWORD](-16)),
+            ICmp(Reg[BYTE](rdi), Imm[BYTE](0)),
+            Jmp(Label(".L_printb0"), JumpCond.NotEq),
+            ILea(Reg[QWORD](rdx), Rip[QWORD](Label(".L._printb_str0"))),
+            Jmp(Label(".L_printb1"), JumpCond.UnCond),
+            Label(".L_printb0"),
+            ILea(Reg[QWORD](rdx), Rip[QWORD](Label(".L._printb_str1"))),
+            Label(".L_printb1"),
+            IMov(Reg[DWORD](esi), MemOff[DWORD](rdx, -4)),
+            ILea(Reg[QWORD](rdi), Rip[QWORD](Label(".L._printb_str2"))),
+            IMov(Reg[BYTE](al), Imm[BYTE](0)),
+            ICall("printf@plt"),
+            IMov(Reg[QWORD](rdi), Imm[QWORD](0)),
+            ICall("fflush@plt"),
+            IMov(Reg[QWORD](rsp), Reg[QWORD](rbp)),
+            IPop(Reg[QWORD](rbp)),
+            IRet
+        )
+    )
+    val printsBlock: Block = Block (
         Label("_prints"),
         Some(List(RoData(4, "%.*s", Label(".L._prints_str0")))),
         List(
