@@ -2,17 +2,18 @@ package wacc.backend.generator.prebuilts
 
 import wacc.backend.ir._
 import wacc.ast.KnownType
+import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
 sealed trait Prebuilt 
 
 case object PbMalloc      extends Prebuilt
 case object PbExit        extends Prebuilt
 case object PbErrOverflow extends Prebuilt
-case object DivZero         extends Prebuilt
+case object DivZero       extends Prebuilt
 case class PbPrint(varType: KnownType)   extends Prebuilt
 case class PbPrintln(varType: KnownType) extends Prebuilt
-case class PbFree( varType: KnownType)   extends Prebuilt
-case class PbRead( varType: KnownType)   extends Prebuilt
+case class PbFree(varType: KnownType)   extends Prebuilt
+case class PbRead(arType: KnownType)   extends Prebuilt
 
 object prebuiltGenerator {
 
@@ -21,8 +22,16 @@ object prebuiltGenerator {
         case PbExit => List(exitBlock)
         case DivZero => List(divZeroBlock)
         case PbErrOverflow => List(overflowBlock)
-        case PbPrint(varType) => List(printsBlock)
-        case PbPrintln(varType) => List(printsBlock, printlnBlock)
+        case PbPrint(varType) => varType match {
+            case CharT() => List(printcBlock)
+            case IntT() => List(printiBlock)
+            case BoolT() => List(printbBlock)
+            case ArrayT(_) => List(printpBlock)
+            case StringT() => List(printsBlock)
+            case PairT(_,_) => List(printpBlock)
+            case _          => List()
+        }
+        case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
         case PbFree(varType) => ???
         case PbRead(varType) => ???
     }
@@ -46,7 +55,7 @@ object prebuiltGenerator {
     private val printEnd = 
         given DataSize = QWORD
         List(
-            {given DataSize = BYTE; IMov(Reg(RAX), Imm(0)) },
+            IMov(Reg(RAX), Imm(0))(using size = BYTE),
             ICall("puts@plt"),
             IMov(Reg(RDI), Imm(0)),
             ICall("fflush@plt"),
@@ -60,9 +69,9 @@ object prebuiltGenerator {
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
-            {given DataSize = size; IMov(Reg(RSI), Reg(RDI))},
+            IMov(Reg(RSI), Reg(RDI))(using size = size),
             ILea(Reg(RDI), Rip(Label(".L._printi_str0"))),
-            {given DataSize = BYTE; IMov(Reg(RAX), Imm(0))},
+            IMov(Reg(RAX), Imm(0))(using size = BYTE),
             ICall("printf@plt"),
             IMov(Reg(RDI), Imm(0)),
             ICall("fflush@plt"),
@@ -98,7 +107,7 @@ object prebuiltGenerator {
                 IPush(Reg(RBP)),
                 IMov(Reg(RBP), Reg(RSP)),
                 IAnd(Reg(RSP), Imm(-16)),
-                {given DataSize = BYTE; ICmp(Reg(RDI), Imm(0))},
+                ICmp(Reg(RDI), Imm(0))(using size = BYTE),
                 Jmp(Label(".L_printb0"), JumpCond.NE),
                 ILea(Reg(RDX), Rip(Label(".L._printb_str0"))),
                 Jmp(Label(".L_printb1"), JumpCond.UnCond),
@@ -107,7 +116,7 @@ object prebuiltGenerator {
                 Label(".L_printb1"),
                 IMov(Reg(RSI), MemOff(RDX, -4)),
                 ILea(Reg(RDI), Rip(Label(".L._printb_str2"))),
-                {given DataSize = BYTE; IMov(Reg(RAX), Imm(0))},
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt"),
@@ -128,7 +137,7 @@ object prebuiltGenerator {
                 IMov(Reg(RDX), Reg(RDI)),
                 IMov(Reg(RSI), MemOff(RDI, -4)),
                 ILea(Reg(RDI), Rip(Label(".L._prints_str0"))),
-                {given DataSize = BYTE; IMov(Reg(RAX), Imm(0))},
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt"),
@@ -190,7 +199,7 @@ object prebuiltGenerator {
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errOutOfMemory_str0"))),
                 ICall("_prints"),
-                {given DataSize = BYTE; IMov(Reg(RDI), Imm(-1))},
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
                 ICall("exit@plt")
             )
         )
