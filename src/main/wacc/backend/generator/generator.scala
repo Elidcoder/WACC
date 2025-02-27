@@ -201,11 +201,13 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (RETURN_REG, -4))
             case Ord(expr) => generate(expr)
                 builder += IMovzx (Reg (RETURN_REG), Reg (RETURN_REG), BYTE)
-            case Chr(expr) => generate(expr)
+            case Chr(expr) => 
+                val label = ctx.addPrebuilt(PbErrBadChar)
+                generate(expr)
                 builder
                     += ITest (Reg (RETURN_REG), Imm (-128))
                     += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
-                    += Jmp (Label ("_errBadChar"), JumpCond.NE)
+                    += Jmp (Label (label), JumpCond.NE)
             case i@Ident(name) => 
                 builder += IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply)

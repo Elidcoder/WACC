@@ -7,6 +7,13 @@ import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 sealed trait Prebuilt {
     def labelString: String
 }
+
+case object PbOutOfBounds extends Prebuilt {
+    def labelString = "_errOutOfBounds"
+}
+case object PbErrBadChar extends Prebuilt {
+    def labelString = "_errBadChar"
+}
 case object PbErrNull extends Prebuilt {
     def labelString = "_errNull"
 }
@@ -84,8 +91,10 @@ object prebuiltGenerator {
             case _      => List()
         }
         case PbErrNull => errNull :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbArrLoad(size) => List()
-        case PbArrStore(size) => List()
+        case PbArrLoad(size) => genericArrLoadBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
+        case PbArrStore(size) => genericArrStoreBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
+        case PbOutOfBounds => List(outOfBoundsBlock)
+        case PbErrBadChar => List(badCharBlock)
     }
     private def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = DWORD
@@ -342,6 +351,79 @@ object prebuiltGenerator {
                 ICall("free@plt"),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    val badCharBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_errBadChar"),
+            Some(List(RoData(50, "fatal error: int %d is not ascii character 0-127 \n", Label(".L._errBadChar_str0")))),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Rip(Label(".L._errBadChar_str0"))),
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                ICall("printf@plt"),
+                IMov(Reg(RDI), Imm(0)),
+                ICall("fflush@plt"),
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
+                ICall("exit@plt")
+            )
+        )
+
+    val outOfBoundsBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_errOutOfBounds"),
+            Some(List(RoData(42, "fatal error: array index %d out of bounds\n", Label(".L._errOutOfBounds_str0")))),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Rip(Label(".L._errOutOfBounds_str0"))),
+                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                ICall("printf@plt"),
+                IMov(Reg(RDI), Imm(0)),
+                ICall("fflush@plt"),
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
+                ICall("exit@plt")
+            )
+        )
+
+    def genericArrLoadBlock(size: DataSize): Block = 
+        given DataSize = QWORD
+        Block (
+            Label(s"_arrLoad${size.bytes}"),
+            None,
+            List(
+                IPush(Reg(RBX)),
+                ITest(Reg(R10), Reg(R10))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.L),
+                Jmp(Label("_errOutOfBounds"), JumpCond.L),
+                IMov(Reg(RBX), MemOff(R9, -4)),
+                ICmp(Reg(R10), Reg(RBX))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
+                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
+                IMov(Reg(R9), MemOff(R9, 4))(using size), // MemOff wrong
+                IPop(Reg(RBX)),
+                IRet
+            )
+        )
+    
+    def genericArrStoreBlock(size: DataSize): Block = 
+        given DataSize = QWORD
+        Block (
+            Label(s"_arrStore${size.bytes}"),
+            None,
+            List(
+                IPush(Reg(RBX)),
+                ITest(Reg(R10), Reg(R10))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.L),
+                Jmp(Label("_errOutOfBounds"), JumpCond.L),
+                IMov(Reg(RBX), MemOff(R9, -4)),
+                ICmp(Reg(R10), Reg(RBX))(using size),
+                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
+                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
+                IMov(MemOff(R9, 4), Reg(RAX))(using size), // MemOff wrong
+                IPop(Reg(RBX)),
                 IRet
             )
         )
