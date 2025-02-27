@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import wacc.ast.*
 
-class UnitTest extends AnyFlatSpec {
+class UnitFrontEndTest extends AnyFlatSpec {
     /* Tests for atomics */
     it should "parse an integer literal successfully" in {
         parser.expr.parse("37") match {

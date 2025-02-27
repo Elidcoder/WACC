@@ -8,7 +8,7 @@ usage() {
 
 CATEGORY=${1:-all}
 
-trap 'rm -f -- *.s' EXIT
+trap 'rm -f -- *.s *.o' EXIT
 
 case "$CATEGORY" in
     all)
@@ -17,7 +17,7 @@ case "$CATEGORY" in
         ;;
     unit)
         echo "Running unit tests..."
-        scala test . --test-only "*UnitTest*"
+        scala test . --test-only "*Unit*"
         ;;
     valid)
         echo "Running valid tests..."
@@ -30,6 +30,10 @@ case "$CATEGORY" in
     semantic)
         echo "Running semantic tests..."
         scala test . --test-only "*SemanticTest*"
+        ;;
+    backend)
+        echo "Running back-end tests..."
+        scala test . --test-only "*BackEndTest*"
         ;;
     *)
         usage
