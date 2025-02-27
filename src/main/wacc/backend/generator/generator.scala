@@ -56,17 +56,28 @@ object generator {
     }
 
     def generate(
-        rVal: RValue[QualifiedName, Type], 
-        builder: Builder[Instr, List[Instr]]
-    ): Unit = {
-        ???
+        rVal: RValue[QualifiedName, KnownType]
+    )(using ctx: Context, builder: InstrBuilder): Unit = rVal match {
+        case expr: Expr[QualifiedName, KnownType] => generate(expr)
+        case _ => ???
+    }
+
+    def findOp(
+        lVal: LValue[QualifiedName, KnownType]
+    )(using ctx: Context): ValDest = {
+        lVal match {
+            case Ident(name) => ctx.getVarRef(name)
+            case ArrayElem(id, expr) => ???
+            case First(lVal) => ???
+            case Second(lVal) => ???
+        }
     }
 
     def generateAddSubMul(
         left: Expr[QualifiedName, KnownType], 
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
-    )(using ctx: Context, builder: Builder[Instr, List[Instr]]): Unit = {
+    )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = DWORD
         generate(left) 
         builder 
@@ -188,12 +199,6 @@ object generator {
         }
         builder.result()
     }
-    
-    def generateExprs(
-        exprs: List[Expr[QualifiedName, KnownType]]
-    )(using ctx: Context, builder: InstrBuilder): Unit = {
-        exprs.foreach { expr => generate(expr) }
-    }
 
     def generate(
         stmt: Stmt[QualifiedName, KnownType]
@@ -201,8 +206,14 @@ object generator {
         given DataSize = QWORD
         stmt match {
             case Skip() => ()
-            case NewAss(assType, id, rVal) => ??? // TODO
-            case Assign(lVal, rVal) => ???
+            case NewAss(assType, id, rVal) => 
+                generate(rVal)
+                builder
+                    += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
+            case a@Assign(lVal, rVal) =>
+                generate(rVal)
+                builder
+                    += IMov (findOp(lVal), Reg (RETURN_REG))(using getTypeSize(a.ty))
             case Read(lVal) => ???
             case Free(expr) => ???
             case Return(expr) =>

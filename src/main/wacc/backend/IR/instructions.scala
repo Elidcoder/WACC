@@ -1,7 +1,8 @@
 package wacc.backend.ir
 
 sealed trait Operand
-sealed trait Mem extends Operand
+sealed trait Mem extends Operand, ValDest
+sealed trait ValDest extends Operand
 
 sealed trait Instr {
     def size: DataSize
@@ -11,7 +12,7 @@ sealed trait Reference
 case class Stack(offset: Int) extends Reference
 case class Heap(pointer: Int) extends Reference
 
-case class Reg(reg: Register) extends Reference, Operand
+case class Reg(reg: Register) extends Reference, ValDest, Operand
 
 case class Rip(label: Label)                   extends Mem
 case class MemInd(reg: Register)               extends Mem
@@ -77,12 +78,16 @@ case object ICmp {
     def apply(dest: Mem, opR: Imm)(using size: DataSize): ICmp = new ICmp(dest, opR)
 }
 case object IMov {    
-    def apply(dest: Reg, opR: Operand)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
+    def apply(dest: ValDest, opR: Reg, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
+    def apply(dest: ValDest, opR: Imm, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
+    def apply(dest: Reg, opR: Mem, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
+    def apply(dest: Reg, opR: Reg)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
+    def apply(dest: Reg, opR: Mem)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
+    def apply(dest: Reg, opR: Imm)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
     def apply(dest: Mem, opR: Reg)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
     def apply(dest: Mem, opR: Imm)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
-    def apply(dest: Reg, opR: Operand, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
-    def apply(dest: Mem, opR: Reg, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
-    def apply(dest: Mem, opR: Imm, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, cond)
+    def apply(dest: ValDest, opR: Reg)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
+    def apply(dest: Reg, opR: ValDest)(using size: DataSize): IMov = new IMov(dest, opR, JumpCond.UnCond)
 }
 case object IAnd {    
     def apply(dest: Reg, opR: Operand)(using size: DataSize): IAnd = new IAnd(dest, opR)
