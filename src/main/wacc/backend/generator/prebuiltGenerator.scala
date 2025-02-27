@@ -4,27 +4,62 @@ import wacc.backend.ir._
 import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
-sealed trait Prebuilt 
+sealed trait Prebuilt {
+    val labelString: String
+}
 
-case object PbMalloc      extends Prebuilt
-case object PbExit        extends Prebuilt
-case object PbErrOverflow extends Prebuilt
-case object DivZero       extends Prebuilt
-case class PbPrint(varType: KnownType)   extends Prebuilt
-case class PbPrintln(varType: KnownType) extends Prebuilt
-case class PbFree(varType: KnownType)   extends Prebuilt
-case class PbFreePair()   extends Prebuilt
-case class PbRead(arType: KnownType)   extends Prebuilt
-case class PbArrLoad(size: DataSize) extends Prebuilt
-case class PbArrStore(size: DataSize) extends Prebuilt
+case object PbMalloc extends Prebuilt {
+    val labelString = "_malloc"
+}
+case object PbExit extends Prebuilt{
+    val labelString = "_exit"
+}
+case object PbErrOverflow extends Prebuilt{
+    val labelString = "_errOverflow"
+}
+case object DivZero extends Prebuilt{
+    val labelString = "_errDivZero"
+}
+case class PbPrint(varType: KnownType) extends Prebuilt{
+    val labelString = varType match {
+        case ArrayT(_)   => "_printp"
+        case PairT(_, _) => "_printp"
+        case IntT()      => "_printi"
+        case BoolT()     => "_printb"
+        case CharT()     => "_printc"
+        case StringT()   => "_prints"
+        case _           => ""
+    }
+}
+case class PbPrintln(varType: KnownType) extends Prebuilt{
+    val labelString = "_printi"
+}
+case class PbFree(varType: KnownType) extends Prebuilt{
+    val labelString = "_free"
+}
+case class PbFreePair() extends Prebuilt{
+    val labelString = "_freepair"
+}
+case class PbRead(arType: KnownType) extends Prebuilt{
+    val labelString = arType match{
+        case CharT() => "_readc"
+        case IntT()  => "_readi"
+        case _ => ""
+    }
+}
+case class PbArrLoad(size: DataSize) extends Prebuilt {
+    val labelString = s"_arrLoad${size.bytes}"
+}
+case class PbArrStore(size: DataSize) extends Prebuilt {
+    val labelString = s"_arrStore${size.bytes}"
+}
 
 object prebuiltGenerator {
-
     def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
-        case PbMalloc => List(mallocBlock)
+        case PbMalloc => mallocBlock :: errOutOfMemory :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbExit => List(exitBlock)
-        case DivZero => List(divZeroBlock)
-        case PbErrOverflow => List(overflowBlock)
+        case DivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbErrOverflow => overflowBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbPrint(varType) => varType match {
             case CharT() => List(printcBlock)
             case IntT() => List(printiBlock)
@@ -32,15 +67,49 @@ object prebuiltGenerator {
             case ArrayT(_) => List(printpBlock)
             case StringT() => List(printsBlock)
             case PairT(_,_) => List(printpBlock)
-            case _          => List()
+            case _          => ???
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
         case PbFreePair() => List(freePairBlock)
         case PbFree(varType) => List(freeBlock)
-        case PbRead(varType) => List()
+        case PbRead(varType) => varType match {
+            case CharT() => List(readcBlock)
+            case IntT() => List(readiBlock)
+            case _      => List()
+        }
         case PbArrLoad(size) => List()
         case PbArrStore(size) => List()
     }
+    private def readBlock(size: DataSize, label: String): List[Instr] = 
+        given DataSize = DWORD
+        List(
+            IPush(Reg(RBP)),
+            IMov(Reg(RBP), Reg(RSP)),
+            IAnd(Reg(RSP), Imm(-16)),
+            ISub(Reg(RSP), Imm(16)),
+            IMov(MemOff(RSP, 0), Reg(RDI))(using size = size),
+            ILea(Reg(RSI), MemOff(RSP, 0)),
+            ILea(Reg(RDI), Rip(Label(label))),
+            IMov(Reg(RAX), Imm(0))(using size = BYTE),
+            ICall("scanf@plt"),
+            IMov(Reg(RAX), MemOff(RSP, 0))(using size = size),
+            IAdd(Reg(RSP), Imm(16)),
+            IMov(Reg(RSP), Reg(RBP)),
+            IPop(Reg(RBP)),
+            IRet
+        )
+    val readcBlock = 
+        Block (
+            Label("_readc"),
+            Some(List(RoData(3, " %c", Label(".L._readc_str0")))),
+            readBlock(BYTE, ".L._readc_str0")
+        )
+    val readiBlock =
+        Block (
+            Label("_readi"),
+            Some(List(RoData(2, "%d", Label(".L._readi_str0")))),
+            readBlock(BYTE, ".L._readi_str0")
+        )
     val mallocBlock: Block = 
         given DataSize = QWORD
         Block (
@@ -69,14 +138,14 @@ object prebuiltGenerator {
     //         IPop(Reg(RBP)),
     //         IRet
     //     )
-    private def genericPrintBlock(size: DataSize, str: String): List[Instr] = 
+    private def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         List(
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
             IMov(Reg(RSI), Reg(RDI))(using size = size),
-            ILea(Reg(RDI), Rip(Label(str))),
+            ILea(Reg(RDI), Rip(Label(label))),
             IMov(Reg(RAX), Imm(0))(using size = BYTE),
             ICall("printf@plt"),
             IMov(Reg(RDI), Imm(0)),
