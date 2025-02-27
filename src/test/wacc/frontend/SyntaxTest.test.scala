@@ -26,7 +26,7 @@ class SyntaxIntegrationTest extends AnyFlatSpec with ConditionalTest {
         val key = s"tests.syntax.${dir.toLowerCase}"
         val tests = getTests(s"invalid/syntaxErr/$dir")
         tests.foreach { file =>
-            val name = s"should fail with syntax error (100) in [${dir}/${file.getName()}]"
+            val name = s"fail with syntax error (100) in [${dir}/${file.getName()}]"
             conditionalTest(flags, name, key) {
                 val result = pipeline(file)
                 result shouldBe CODE_SYNTAX_ERR

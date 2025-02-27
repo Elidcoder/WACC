@@ -56,12 +56,16 @@ class BackEndIntegrationTest extends AnyFlatSpec with ConditionalTest {
                 .getOrElse(Process(exec) ! processLogger)
 
                 /* Prints for debugging */
-                println("--------------------------------------------------")
-                println(s"[DEBUG] Input provided: ${inputOpt.getOrElse("NONE")}")
-                println(s"[DEBUG] Expected output: ${expectedOutputOpt.getOrElse("NONE")}")
-                println(s"[DEBUG] Expected exit: ${expectedExitOpt.getOrElse("NONE")}")
-                println(s"[DEBUG] Actual output: ${if (outputBuilder.toString.trim.isEmpty) "NONE" else outputBuilder.toString.trim}")
-                println(s"[DEBUG] Actual exit: ${if (actualExit == 0 && expectedExitOpt.isEmpty) "NONE" else actualExit.toString}")
+                println(
+                    s"""--------------------------------------------------
+                        |[DEBUG] Input provided: ${inputOpt.getOrElse("NONE")}
+                        |[DEBUG] Expected output:
+                        |${expectedOutputOpt.map(_.trim.split("\n").map("    " + _).mkString("\n")).getOrElse("NONE")}
+                        |[DEBUG] Expected exit: ${expectedExitOpt.getOrElse("NONE")}
+                        |[DEBUG] Actual output:
+                        |${if (outputBuilder.toString.trim.isEmpty) "NONE" else outputBuilder.toString.trim.split("\n").map("    " + _).mkString("\n")}
+                        |[DEBUG] Actual exit: ${if (actualExit == 0 && expectedExitOpt.isEmpty) "NONE" else actualExit.toString}
+                    """.stripMargin)
 
                 for (expectedExit <- expectedExitOpt) yield { actualExit.shouldBe(expectedExit) }
 
