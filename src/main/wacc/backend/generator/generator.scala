@@ -36,12 +36,12 @@ object generator {
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
             += IRet
-        blockBuilder += Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
         prog.funcs.foreach { func => blockBuilder += generate(func) }
         val prebuilts: Set[Block] = Set()
         ctx.getPrebuilts().foreach { prebuilt => prebuilts ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
         blockBuilder ++= prebuilts
-        blockBuilder.result()
+        val mainBlock = Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
+        mainBlock :: blockBuilder.result()
     }
     
     def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
@@ -53,7 +53,7 @@ object generator {
         if ctx.getFuncOff(func.id.name) != 0 then
             builder += ISub (Reg (STACK_PTR_REG), Imm (ctx.getFuncOff(func.id.name)))
         generateStmts(func.stmts)
-        Block(Label (func.id.name.oldName), None, builder.result())
+        Block(Label (s"wacc_${func.id.name.oldName}"), None, builder.result())
     }
 
     def generate(
@@ -138,7 +138,6 @@ object generator {
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        given DataSize = DWORD
         generate(left) 
         builder 
             += IPush (Reg (RETURN_REG)) 
@@ -252,10 +251,9 @@ object generator {
                 builder 
                     += IMov (Reg (RETURN_REG), Imm (numb))
             case StrLit(str) => 
-                val label = ctx.nextStringLabel()
-                ctx.addRoData(str, RoData(str.size, str, label))
+                val roData = ctx.addRoData(str)
                 builder 
-                    += ILea (Reg (RETURN_REG), Rip (label))
+                    += ILea (Reg (RETURN_REG), Rip (roData.label))
             case wacc.ast.CharLit(char) => 
                 builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
             case wacc.ast.PairLit() => 

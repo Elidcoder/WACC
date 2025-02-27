@@ -35,7 +35,11 @@ class Context() {
     )
     
     private val strRoData: Map[String, RoData] = Map.empty
-    def addRoData(str: String, ro: RoData) = strRoData.put(str, ro)
+    def addRoData(str: String): RoData = strRoData.get(str).getOrElse({
+        val ro = RoData(str.size, str, nextStringLabel())
+        strRoData.put(str, ro)
+        ro
+    })
     def getRoData(str: String): RoData = strRoData(str)
     def getAllRodata(): List[RoData] = strRoData.values.toList
 
