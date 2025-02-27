@@ -83,7 +83,7 @@ object prebuiltGenerator {
     val printlnBlock = 
         given DataSize = QWORD
         Block (
-            Label("_println:"),
+            Label("_println"),
             Some(List(RoData(0, "", Label(".L._println_str0")))),
             List(
                 IPush(Reg(RBP)),
