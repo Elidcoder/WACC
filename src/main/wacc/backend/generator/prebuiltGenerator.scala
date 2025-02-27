@@ -50,10 +50,10 @@ case class PbRead(arType: KnownType) extends Prebuilt{
 
 object prebuiltGenerator {
     def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
-        case PbMalloc => List(mallocBlock)
+        case PbMalloc => mallocBlock :: errOutOfMemory :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbExit => List(exitBlock)
-        case DivZero => List(divZeroBlock)
-        case PbErrOverflow => List(overflowBlock)
+        case DivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbErrOverflow => overflowBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbPrint(varType) => varType match {
             case CharT() => List(printcBlock)
             case IntT() => List(printiBlock)
@@ -96,14 +96,14 @@ object prebuiltGenerator {
             IPop(Reg(RBP)),
             IRet
         )
-    private def genericPrintBlock(size: DataSize): List[Instr] = 
+    private def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         List(
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
             IMov(Reg(RSI), Reg(RDI))(using size = size),
-            ILea(Reg(RDI), Rip(Label(".L._printi_str0"))),
+            ILea(Reg(RDI), Rip(Label(label))),
             IMov(Reg(RAX), Imm(0))(using size = BYTE),
             ICall("printf@plt"),
             IMov(Reg(RDI), Imm(0)),
@@ -115,17 +115,17 @@ object prebuiltGenerator {
     val printcBlock: Block = Block (
         Label("_printc"),
         Some(List(RoData(2, "%c", Label(".L._printc_str0")))),
-        genericPrintBlock(BYTE)
+        genericPrintBlock(BYTE, ".L._printc_str0")
     )
     val printiBlock: Block = Block (
         Label("_printi"),
         Some(List(RoData(2, "%d", Label(".L._printi_str0")))),
-        genericPrintBlock(DWORD)
+        genericPrintBlock(DWORD, ".L._printi_str0")
     )
     val printpBlock: Block = Block (
         Label("_printp"),
         Some(List(RoData(2, "%p", Label(".L._printp_str0")))),
-        genericPrintBlock(QWORD)
+        genericPrintBlock(QWORD, ".L._printp_str0")
     )
     val printbBlock: Block =  
         given DataSize = QWORD
