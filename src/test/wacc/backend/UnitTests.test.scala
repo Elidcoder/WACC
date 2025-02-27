@@ -52,9 +52,9 @@ class ReferencerTests extends AnyFlatSpec {
         }
     }
 
-    /* Test referencing variables in a list of statements */
+    /* Test referencing variables in a list of statements works */
     it should "correctly reference variables in a program" in {
-        given KnownType = charType
+        given KnownType = intType
 
         /* Create 2 vars. */
         val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 1))
@@ -68,11 +68,11 @@ class ReferencerTests extends AnyFlatSpec {
         /* Check the variables were referenced properly */
         try {
             context.getVarRef(var1.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-getTypeSize(charType).bytes)
+                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-getTypeSize(intType).bytes)
                 case _ => fail("Var1 reference was badly formatted") 
             }
             context.getVarRef(var2.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-2 * getTypeSize(charType).bytes)
+                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-2 * getTypeSize(intType).bytes)
                 case _ => fail("Var2 reference was badly formatted") 
             }
         }
@@ -81,44 +81,56 @@ class ReferencerTests extends AnyFlatSpec {
         }
     }
 
-    /* Test for referencing function parameters */
-    it should "correctly reference function parameters with registers" in {
-        given KnownType = boolType
+    /* Test referencing works for all types of variables  */
+    it should "correctly reference differently typed variables in a program" in {
+        given KnownType = intType
 
-        /* Create a function id, bool var and turn the var into a parameter. */
-        val funcID = Ident[QualifiedName, KnownType](QualifiedName("testFunc", 1))
-        val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 2))
-        val param1 = Param[QualifiedName, KnownType](intType, var1)(pos)
-        
-        {
-            /* Create another char var and turn it into a parameter. */
+        /* Create 2 vars and turn them into statments. */
+        val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 1))
+        val stmt1 = NewAss(IntT(),  var1, IntLit(50))
+        {   
             given KnownType = charType
-            val var2 = Ident[QualifiedName, KnownType](QualifiedName("var2", 3))
-            val param2 = Param[QualifiedName, KnownType](intType, var2)(pos)
-            
+            val var2 = Ident[QualifiedName, KnownType](QualifiedName("var1", 2))
+            val stmt2 = NewAss(CharT(), var2, CharLit('z'))
+            {
+                given KnownType = boolType
+                val var3 = Ident[QualifiedName, KnownType](QualifiedName("var3", 3))
+                val stmt3 = NewAss(IntT(),  var3, BoolLit(true))
+                {
+                    given KnownType = strType
+                    val var4 = Ident[QualifiedName, KnownType](QualifiedName("var1", 4))
+                    val stmt4 = NewAss(CharT(), var4, StrLit("teststring"))
 
-            /* Create a function using the params and reference it. */
-            val func = Func[QualifiedName, KnownType](
-                boolType,
-                funcID,
-                List(param1, param2),
-                List.empty
-            )(pos)
-            referencer.reference(func)(using context)
+                    /* Turn the statments into a list of statents and reference that. */
+                    referencer.reference(List(stmt1, stmt2, stmt3, stmt4))(using context, QualifiedName("main", -1))
 
-            /* Check parameters have been added to the context with correct register type */
-            try {
-                context.getVarRef(param1.paramId.name) match {
-                    case Reg(register) => register shouldBe RDI
-                    case _ => fail("Param1 reference was badly formatted") 
+                    /* Check the variables were referenced properly */
+                    try {
+                        var curOff = -getTypeSize(intType).bytes
+                        context.getVarRef(var1.name) match {
+                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case _ => fail("Var1 reference was badly formatted") 
+                        }
+                        curOff -= getTypeSize(charType).bytes
+                        context.getVarRef(var2.name) match {
+                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case _ => fail("Var2 reference was badly formatted") 
+                        }
+                        curOff -= getTypeSize(boolType).bytes
+                        context.getVarRef(var3.name) match {
+                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case _ => fail("Var3 reference was badly formatted") 
+                        }
+                        curOff -= getTypeSize(strType).bytes
+                        context.getVarRef(var4.name) match {
+                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case _ => fail("Var4 reference was badly formatted") 
+                        }
+                    }
+                    catch {
+                        _ => fail("Variables were not both added to context.")
+                    }
                 }
-                context.getVarRef(param2.paramId.name) match {
-                    case Reg(register) => register shouldBe RSI
-                    case _ => fail("Param2 reference was badly formatted") 
-                }
-            }
-            catch {
-                _ => fail("Parameters were not both added to context.")
             }
         }
     }
@@ -143,6 +155,45 @@ class ReferencerTests extends AnyFlatSpec {
         }
         catch {
             _ => fail("Variable was not added to context.")
+        }
+    }
+
+    /* Test for referencing function parameters */
+    it should "correctly reference function parameters with registers" in {
+        given KnownType = boolType
+
+        /* Create a function id, bool var and turn the var into a parameter. */
+        val funcID = Ident[QualifiedName, KnownType](QualifiedName("testFunc", 1))
+        val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 2))
+        val param1 = Param[QualifiedName, KnownType](intType, var1)(pos)
+        
+        /* Create another var and turn it into a parameter. */
+        val var2 = Ident[QualifiedName, KnownType](QualifiedName("var2", 3))
+        val param2 = Param[QualifiedName, KnownType](intType, var2)(pos)
+        
+
+        /* Create a function using the params and reference it. */
+        val func = Func[QualifiedName, KnownType](
+            boolType,
+            funcID,
+            List(param1, param2),
+            List.empty
+        )(pos)
+        referencer.reference(func)(using context)
+
+        /* Check parameters have been added to the context to correct registers */
+        try {
+            context.getVarRef(param1.paramId.name) match {
+                case Reg(register) => register shouldBe RDI
+                case _ => fail("Param1 reference was badly formatted") 
+            }
+            context.getVarRef(param2.paramId.name) match {
+                case Reg(register) => register shouldBe RSI
+                case _ => fail("Param2 reference was badly formatted") 
+            }
+        }
+        catch {
+            _ => fail("Parameters were not both added to context.")
         }
     }
 }
