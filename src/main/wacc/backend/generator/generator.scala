@@ -33,7 +33,11 @@ object generator {
         mainBuilder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
+        if ctx.mainOffset != 0 then
+            mainBuilder += ISub (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
         generateStmts(prog.stmts)
+        if ctx.mainOffset != 0 then
+            mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
         mainBuilder
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
@@ -51,22 +55,35 @@ object generator {
         builder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
+        if ctx.getFuncOff(func.id.name) != 0 then
+            builder += ISub (Reg (STACK_PTR_REG), Imm (ctx.getFuncOff(func.id.name)))
         generateStmts(func.stmts)
         Block(Label (func.id.name.oldName), None, builder.result())
     }
 
     def generate(
-        rVal: RValue[QualifiedName, Type], 
-        builder: Builder[Instr, List[Instr]]
-    ): Unit = {
-        ???
+        rVal: RValue[QualifiedName, KnownType]
+    )(using ctx: Context, builder: InstrBuilder): Unit = rVal match {
+        case expr: Expr[QualifiedName, KnownType] => generate(expr)
+        case _ => ???
+    }
+
+    def findOp(
+        lVal: LValue[QualifiedName, KnownType]
+    )(using ctx: Context): ValDest = {
+        lVal match {
+            case Ident(name) => ctx.getVarRef(name)
+            case ArrayElem(id, expr) => ???
+            case First(lVal) => ???
+            case Second(lVal) => ???
+        }
     }
 
     def generateAddSubMul(
         left: Expr[QualifiedName, KnownType], 
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
-    )(using ctx: Context, builder: Builder[Instr, List[Instr]]): Unit = {
+    )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = DWORD
         generate(left) 
         builder 
@@ -135,7 +152,8 @@ object generator {
                     += ITest (Reg (RETURN_REG), Imm (-128))
                     += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
                     += Jmp (Label ("_errBadChar"), JumpCond.NE)
-            case i@Ident(name) => IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
+            case i@Ident(name) => 
+                builder += IMov (Reg (RETURN_REG), ctx.getVarRef(name))(using getTypeSize(i.t))
             case Add(x, y) => generateAddSubMul(x, y, IAdd.apply)
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply)
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply)
@@ -188,12 +206,6 @@ object generator {
         }
         builder.result()
     }
-    
-    def generateExprs(
-        exprs: List[Expr[QualifiedName, KnownType]]
-    )(using ctx: Context, builder: InstrBuilder): Unit = {
-        exprs.foreach { expr => generate(expr) }
-    }
 
     def generate(
         stmt: Stmt[QualifiedName, KnownType]
@@ -201,8 +213,14 @@ object generator {
         given DataSize = QWORD
         stmt match {
             case Skip() => ()
-            case NewAss(assType, id, rVal) => ??? // TODO
-            case Assign(lVal, rVal) => ???
+            case NewAss(assType, id, rVal) => 
+                generate(rVal)
+                builder
+                    += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
+            case a@Assign(lVal, rVal) =>
+                generate(rVal)
+                builder
+                    += IMov (findOp(lVal), Reg (RETURN_REG))(using getTypeSize(a.ty))
             case Read(lVal) => ???
             case Free(expr) => ???
             case Return(expr) =>

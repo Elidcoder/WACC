@@ -2,14 +2,12 @@ package wacc.backend
 
 import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
-import wacc.backend.ir.{Label, Operand}
+import wacc.backend.ir.{Label, ValDest}
 import wacc.semantic.QualifiedName
 import wacc.backend.generator.prebuilts.Prebuilt
 import wacc.backend.ir.RoData
 
 class Context() {
-    /* Stores the initial offset for any function due to the initial operations. */
-    private val INITIAL_FUNC_OFF = 16
 
     private var stringUID: Int = 0
     def nextStringLabel(): Label = {
@@ -23,17 +21,17 @@ class Context() {
         Label(s".L$labelUID")
     }
 
-    private val nameReferences: Map[QualifiedName, Operand] = Map.empty
-    def addVar(varName: QualifiedName, ref: Operand) = nameReferences.put(varName, ref)
-    def getVarRef(varName: QualifiedName): Operand = nameReferences(varName)
+    private val nameReferences: Map[QualifiedName, ValDest] = Map.empty
+    def addVar(varName: QualifiedName, ref: ValDest) = nameReferences.put(varName, ref)
+    def getVarRef(varName: QualifiedName): ValDest = nameReferences(varName)
 
     private val funcOffsets: Map[QualifiedName, Int] = Map.empty
     def addFunc(funcName: QualifiedName, offset: Int) = funcOffsets.put(funcName, offset)
     def incFuncOff(funcName: QualifiedName, offsetInc: Int) = funcOffsets.updateWith(funcName)(
-        _.fold(Some(INITIAL_FUNC_OFF + offsetInc)){curOff => Some(curOff + offsetInc)} 
+        _.fold(Some(offsetInc)){curOff => Some(curOff + offsetInc)} 
     )
     def getFuncOff(funcName: QualifiedName): Int = funcOffsets.getOrElse(funcName,
-        (() => {funcOffsets.put(funcName, INITIAL_FUNC_OFF); INITIAL_FUNC_OFF})()
+        (() => {funcOffsets.put(funcName, 0); 0})()
     )
     
     private val strRoData: Map[String, RoData] = Map.empty
