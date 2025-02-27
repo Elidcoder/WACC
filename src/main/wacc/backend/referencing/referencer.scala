@@ -5,12 +5,9 @@ import wacc.semantic.QualifiedName
 
 import wacc.ast._
 import wacc.backend.ir._
-import wacc.backend.generator.STACK_PTR_REG
-import wacc.backend.generator.BASE_PTR_REG
 
 object referencer {
-    /* An ordered list of registers used for parameters. */
-    val parameterRegisters: List[Register] = List(RDI, RSI, RDX, RCX, R8, R9) 
+    
 
     /* Stores the initial offset for any function due to the initial operations. */
     private val INITIAL_PARAM_OFF = 16
@@ -55,15 +52,15 @@ object referencer {
 
         /* Parameter made into registers */
         func.params.zip(parameterRegisters).foreach(
-            (param, reg) => 
-                ctx.addVar(param.paramId.name, Reg(reg))
+            (param, reg) => ctx.addVar(param.paramId.name, Reg(reg))
         )
 
         /* Paramters exceeding numb registers */
         var offset = INITIAL_PARAM_OFF
-        func.params.reverse.drop(parameterRegisters.size).foreach( (param) => 
-            ctx.addVar(param.paramId.name, MemOff(STACK_PTR_REG, offset))
-            offset += getTypeSize(param.paramId.t).bytes
+        func.params.drop(parameterRegisters.size).foreach(
+            (param) => 
+                ctx.addVar(param.paramId.name, MemOff(STACK_PTR_REG, offset))
+                offset += getTypeSize(param.paramId.t).bytes
         )
         
         /* Handle statements*/
@@ -76,9 +73,7 @@ object referencer {
 
     /* Reference the variables used in a stmt. */
     protected [referencing] def reference(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = stmt match {
-        case NewAss(_, id, rval) => {
-            addVarToContext(id)
-        }
+        case NewAss(_, id, rval) => addVarToContext(id)
 
         /* Check nested statements. */
         case If(cond, ifStmts, elseStmts) => {reference(ifStmts); reference(elseStmts)}
