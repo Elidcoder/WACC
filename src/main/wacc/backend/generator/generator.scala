@@ -5,7 +5,7 @@ import wacc.semantic.QualifiedName
 import wacc.backend.ir._
 import wacc.backend.ir
 import wacc.backend.Context
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, Set}
 
 import wacc.backend.referencing.referencer.getTypeSize
 import wacc.backend.generator.prebuilts._
@@ -44,7 +44,9 @@ object generator {
             += IRet
         blockBuilder += Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
         prog.funcs.foreach { func => blockBuilder += generate(func) }
-        ctx.getPrebuilts().foreach { prebuilt => blockBuilder ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
+        val prebuilts: Set[Block] = Set()
+        ctx.getPrebuilts().foreach { prebuilt => prebuilts ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
+        blockBuilder ++= prebuilts
         blockBuilder.result()
     }
     
