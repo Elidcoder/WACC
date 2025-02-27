@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 import wacc.backend.referencing.referencer.getTypeSize
 
-class ReferencerTests extends AnyFlatSpec {
+class UnitBackEndTest extends AnyFlatSpec {
     given pos: Pos   = Pos(0,0)
     val initial_off  = 16
     val context      = Context()

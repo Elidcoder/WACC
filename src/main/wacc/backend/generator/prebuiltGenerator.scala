@@ -61,13 +61,47 @@ object prebuiltGenerator {
             case ArrayT(_) => List(printpBlock)
             case StringT() => List(printsBlock)
             case PairT(_,_) => List(printpBlock)
-            case _          => List()
+            case _          => ???
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
         case PbFreePair() => List(freePairBlock)
         case PbFree(varType) => List(freeBlock)
-        case PbRead(varType) => ???
+        case PbRead(varType) => varType match {
+            case CharT() => List(readcBlock)
+            case IntT() => List(readiBlock)
+            case _      => ???
+        }
     }
+    private def readBlock(size: DataSize, label: String): List[Instr] = 
+        given DataSize = DWORD
+        List(
+            IPush(Reg(RBP)),
+            IMov(Reg(RBP), Reg(RSP)),
+            IAnd(Reg(RSP), Imm(-16)),
+            ISub(Reg(RSP), Imm(16)),
+            IMov(MemOff(RSP, 0), Reg(RDI))(using size = size),
+            ILea(Reg(RSI), MemOff(RSP, 0)),
+            ILea(Reg(RDI), Rip(Label(label))),
+            IMov(Reg(RAX), Imm(0))(using size = BYTE),
+            ICall("scanf@plt"),
+            IMov(Reg(RAX), MemOff(RSP, 0))(using size = size),
+            IAdd(Reg(RSP), Imm(16)),
+            IMov(Reg(RSP), Reg(RBP)),
+            IPop(Reg(RBP)),
+            IRet
+        )
+    val readcBlock = 
+        Block (
+            Label("_readc"),
+            Some(List(RoData(3, " %c", Label(".L._readc_str0")))),
+            readBlock(BYTE, ".L._readc_str0")
+        )
+    val readiBlock =
+        Block (
+            Label("_readi"),
+            Some(List(RoData(2, "%d", Label(".L._readi_str0")))),
+            readBlock(BYTE, ".L._readi_str0")
+        )
     val mallocBlock: Block = 
         given DataSize = QWORD
         Block (
