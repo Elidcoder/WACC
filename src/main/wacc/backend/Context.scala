@@ -6,6 +6,18 @@ import wacc.backend.ir.{Label, ValDest}
 import wacc.semantic.QualifiedName
 import wacc.backend.generator.prebuilts.Prebuilt
 import wacc.backend.ir.RoData
+import wacc.backend.generator.prebuilts.DivZero
+import wacc.backend.generator.prebuilts.PbErrOverflow
+import wacc.backend.generator.prebuilts.PbExit
+import wacc.backend.generator.prebuilts.PbFree
+import wacc.backend.generator.prebuilts.PbFreePair
+import wacc.backend.generator.prebuilts.PbMalloc
+import wacc.backend.generator.prebuilts.PbPrint
+import wacc.backend.generator.prebuilts.PbPrintln
+import wacc.backend.generator.prebuilts.PbRead
+import wacc.ast.StringT
+import wacc.ast.IntT
+
 
 class Context() {
 
@@ -40,7 +52,29 @@ class Context() {
     def getAllRodata(): List[RoData] = strRoData.values.toList
 
     private val prebuiltsUsed: Set[Prebuilt] = Set.empty
-    def addPrebuilt(prebuilt: Prebuilt) = prebuiltsUsed.add(prebuilt)
+
+    private def unpackPrebuilts(prebuilt: Prebuilt): Unit = {
+        prebuilt match {
+            case DivZero => unpackPrebuilts(PbPrint(StringT()))
+            case PbErrOverflow => unpackPrebuilts(PbPrint(StringT()))
+            case PbFreePair() => /*unpackPrebuilts(PbErNull())*/
+            case PbMalloc => {unpackPrebuilts(PbPrint(StringT())); /*unpackPrebuilts(PbOutOfMem())*/}
+            case PbPrint(varType) => {}
+            case PbPrintln(varType) => {
+                prebuiltsUsed.add(PbPrint(IntT()))
+                {}
+            }
+            case PbRead(arType) => {}
+            case PbExit => {}
+            case PbFree(varType) => {}
+        }
+        prebuiltsUsed.add(prebuilt)
+    }
+
+    def addPrebuilt(prebuilt: Prebuilt): Label = {
+        unpackPrebuilts(prebuilt)
+        Label(prebuilt.labelString)
+    }
     def getPrebuilts(): List[Prebuilt] = prebuiltsUsed.toList
 
     var mainOffset: Int = 0;

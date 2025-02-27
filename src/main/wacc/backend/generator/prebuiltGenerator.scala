@@ -4,20 +4,39 @@ import wacc.backend.ir._
 import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
-sealed trait Prebuilt 
+sealed trait Prebuilt {
+    val labelString: String
+}
 
-case object PbMalloc      extends Prebuilt
-case object PbExit        extends Prebuilt
-case object PbErrOverflow extends Prebuilt
-case object DivZero       extends Prebuilt
-case class PbPrint(varType: KnownType)   extends Prebuilt
-case class PbPrintln(varType: KnownType) extends Prebuilt
-case class PbFree(varType: KnownType)   extends Prebuilt
-case class PbFreePair()   extends Prebuilt
-case class PbRead(arType: KnownType)   extends Prebuilt
+case object PbMalloc extends Prebuilt {
+    val labelString = ""
+}
+case object PbExit extends Prebuilt{
+    val labelString = ""
+}
+case object PbErrOverflow extends Prebuilt{
+    val labelString = ""
+}
+case object DivZero extends Prebuilt{
+    val labelString = ""
+}
+case class PbPrint(varType: KnownType) extends Prebuilt{
+    val labelString = ""
+}
+case class PbPrintln(varType: KnownType) extends Prebuilt{
+    val labelString = ""
+}
+case class PbFree(varType: KnownType) extends Prebuilt{
+    val labelString = ""
+}
+case class PbFreePair() extends Prebuilt{
+    val labelString = ""
+}
+case class PbRead(arType: KnownType) extends Prebuilt{
+    val labelString = ""
+}
 
 object prebuiltGenerator {
-
     def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
         case PbMalloc => List(mallocBlock)
         case PbExit => List(exitBlock)
