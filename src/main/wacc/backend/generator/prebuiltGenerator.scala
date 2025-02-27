@@ -13,6 +13,7 @@ case object DivZero       extends Prebuilt
 case class PbPrint(varType: KnownType)   extends Prebuilt
 case class PbPrintln(varType: KnownType) extends Prebuilt
 case class PbFree(varType: KnownType)   extends Prebuilt
+case class PbFreePair()   extends Prebuilt
 case class PbRead(arType: KnownType)   extends Prebuilt
 
 object prebuiltGenerator {
@@ -32,7 +33,8 @@ object prebuiltGenerator {
             case _          => List()
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
-        case PbFree(varType) => ???
+        case PbFreePair() => List(freePairBlock)
+        case PbFree(varType) => List(freeBlock)
         case PbRead(varType) => ???
     }
     val mallocBlock: Block = 
@@ -213,6 +215,51 @@ object prebuiltGenerator {
                 IMov(Reg(RBP), Reg(RSP)),
                 IAnd(Reg(RSP), Imm(-16)),
                 ICall("exit@plt"),
+                IMov(Reg(RSP), Reg(RBP)),
+                IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    val freePairBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_freepair"),
+            None,
+            List(
+                IPush(Reg(RBP)),
+                IMov(Reg(RBP), Reg(RSP)),
+                IAnd(Reg(RSP), Imm(-16)),
+                ICmp(Reg(RDI), Imm(0)),
+                Jmp(Label("_errNull"), JumpCond.E),
+                ICall("free@plt"),
+                IMov(Reg(RSP), Reg(RBP)),
+                IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    val errNull = 
+        given DataSize = QWORD
+        Block (
+            Label("_errNull"),
+            Some(List(RoData(45, "fatal error: null pair dereferenced or freed\n", Label(".L._errNull_str0")))),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Rip(Label(".L._errNull_str0"))),
+                ICall("_prints"),
+                IMov(Reg(RDI), Imm(-1))(using size = BYTE),
+                ICall("exit@plt")
+            )
+        )
+    val freeBlock = 
+        given DataSize = QWORD
+        Block (
+            Label("_free"),
+            None,
+            List(
+                IPush(Reg(RBP)),
+                IMov(Reg(RBP), Reg(RSP)),
+                IAnd(Reg(RSP), Imm(-16)),
+                ICall("free@plt"),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
                 IRet
