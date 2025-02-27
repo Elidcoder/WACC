@@ -38,7 +38,7 @@ class BackEndTest extends AnyFlatSpec with ConditionalTest {
                 val ass = new File(s"./${baseName}.s")
                 ass.exists() shouldBe true
 
-                val exit = s"gcc -o ${baseName}.o ${baseName}.s" .!
+                val exit = s"gcc -z noexecstack -o ${baseName}.o ${baseName}.s" .!
                 exit shouldBe 0
             }
         }
