@@ -10,7 +10,7 @@ import wacc.backend.generator.BASE_PTR_REG
 
 object referencer {
     /* An ordered list of registers used for parameters. */
-    private val parameterRegisters: List[Register] = List(RDI, RSI, RDX, RCX, R8, R9) 
+    val parameterRegisters: List[Register] = List(RDI, RSI, RDX, RCX, R8, R9) 
 
     /* Stores the initial offset for any function due to the initial operations. */
     private val INITIAL_PARAM_OFF = 16
