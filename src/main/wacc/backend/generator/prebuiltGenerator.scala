@@ -31,13 +31,14 @@ case object DivZero extends Prebuilt{
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
     def labelString = varType match {
-        case ArrayT(_)   => "_printp"
-        case PairT(_, _) => "_printp"
-        case IntT()      => "_printi"
-        case BoolT()     => "_printb"
-        case CharT()     => "_printc"
-        case StringT()   => "_prints"
-        case _           => ""
+        case ArrayT(CharT()) => "_prints"
+        case ArrayT(_)       => "_printp"
+        case PairT(_, _)     => "_printp"
+        case IntT()          => "_printi"
+        case BoolT()         => "_printb"
+        case CharT()         => "_printc"
+        case StringT()       => "_prints"
+        case _               => ""
     }
 }
 case class PbPrintln(varType: KnownType) extends Prebuilt{
@@ -71,6 +72,7 @@ object prebuiltGenerator {
         case DivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbErrOverflow => overflowBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbPrint(varType) => varType match {
+            case ArrayT(CharT()) => List(printsBlock)
             case CharT() => List(printcBlock)
             case IntT() => List(printiBlock)
             case BoolT() => List(printbBlock)

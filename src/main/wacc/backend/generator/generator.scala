@@ -76,6 +76,7 @@ object generator {
                     builder
                         += IMov (MemOff (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
                 }
+                builder += IMov (Reg (RETURN_REG), Reg (MALLOC_REG))
             case NewPair(fst, snd) =>
                 val label = ctx.addPrebuilt(PbMalloc)
                 builder
@@ -97,20 +98,23 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
 
             case Call(id, exprs) => 
-                val ty = id.t.asInstanceOf[FuncT]
-                exprs.zip(parameterRegisters).foreach { (_, reg) =>
+                val numParams = List(exprs.size, parameterRegisters.size).min
+                parameterRegisters.take(numParams).foreach { (reg) =>
                     builder 
                         += IPush (Reg (reg))
                 }
-                exprs.zip(parameterRegisters).zip(ty.paramTs).foreach { (exprReg, t) =>
-                    generate(exprReg._1)
+                exprs.take(numParams).foreach { (expr) =>
+                    generate(expr)
+                    builder += IPush(Reg(RETURN_REG))
+                }
+                parameterRegisters.take(numParams).reverse.foreach { (reg) =>
                     builder 
-                        += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
+                        += IPop(Reg(reg))
                 }
                 //TODO(stack parameters)
                 builder += ICall (s"wacc_${id.name.oldName}")(using QWORD)
 
-                exprs.zip(parameterRegisters).reverse.foreach { (_, reg) =>
+                parameterRegisters.take(numParams).reverse.foreach { (reg) =>
                     builder 
                         += IPop (Reg (reg))
                 }
@@ -159,7 +163,7 @@ object generator {
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
-            // TODO: check for overflow
+            // jo overflow
     }
 
     def generateDivMod(
@@ -206,7 +210,9 @@ object generator {
         given DataSize = DWORD
         expr match {
             case Not(expr) => generate(expr)
-                builder += ISet (Reg (RETURN_REG), JumpCond.NE)
+                builder
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
+                    += ISet (Reg (RETURN_REG), JumpCond.NE)
             case Neg(expr) => generate(expr)
                 builder += INeg (Reg (RETURN_REG))
             case Len(expr) => generate(expr)
@@ -244,24 +250,27 @@ object generator {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += Jmp (afterLabel, JumpCond.NE)
                 generate(right)
                 builder 
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += afterLabel
                     += ISet (Reg (RETURN_REG), JumpCond.E)
             case Or(left, right) =>
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += Jmp (afterLabel, JumpCond.E)
                 generate(right)
                 builder 
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += afterLabel
                     += ISet (Reg (RETURN_REG), JumpCond.E)
             case BoolLit(bool) =>
                 builder 
                     += IMov (Reg (RETURN_REG), (Imm (if (bool) 1 else 0)))(using BYTE)
-                    += ICmp (Reg (RETURN_REG), Imm (1))(using BYTE)
             case IntLit(numb) =>
                 builder 
                     += IMov (Reg (RETURN_REG), Imm (numb))
@@ -393,7 +402,7 @@ object generator {
                 generate(expr)
                 builder
                     += IPush (Reg (FIRST_PARAM_REG))
-                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
+                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
                     += IPop (Reg (FIRST_PARAM_REG))
             case p@PrintLn(expr) => 
@@ -401,7 +410,7 @@ object generator {
                 generate(expr)
                 builder
                     += IPush (Reg (FIRST_PARAM_REG))
-                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))
+                    += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
                     += ICall ("_println")
                     += IPop (Reg (FIRST_PARAM_REG))
@@ -409,6 +418,7 @@ object generator {
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 generate(cond)
                 builder
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += Jmp (ifLabel, JumpCond.E)
                 generateStmts(elseStmts)
                 builder
@@ -427,6 +437,7 @@ object generator {
                     += condLabel
                 generate(cond)
                 builder
+                    += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += Jmp (bodyLabel, JumpCond.E)
             case Nest(stmts) => 
                 generateStmts(stmts)
