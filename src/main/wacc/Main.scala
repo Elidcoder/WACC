@@ -13,9 +13,7 @@ import wacc.backend.Context
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
 
-import java.io.File
-import java.io.Writer
-import java.io.FileWriter
+import java.io.{File, Writer, FileWriter}
 
 final val CODE_SUCCESS      = 0
 final val CODE_SYNTAX_ERR   = 100

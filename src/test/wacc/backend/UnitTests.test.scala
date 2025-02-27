@@ -5,10 +5,8 @@ import wacc.semantic.QualifiedName
 import wacc.ast._
 import wacc.backend.ir._
 
-import wacc.backend.generator.BASE_PTR_REG
-
-import org.scalatest.matchers.should.Matchers._
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers._
 import wacc.backend.referencing.referencer.getTypeSize
 
 class ReferencerTests extends AnyFlatSpec {
