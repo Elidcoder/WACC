@@ -111,49 +111,6 @@ object generator {
                 builder 
                     += ICall (s"wacc_${id.name.oldName}")
                     += IAdd (Reg (STACK_PTR_REG), Imm (ctx.getFuncParamOff(id.name)))
-
-
-
-                // /* Unpack given function */
-                // val funcTy = id.t.asInstanceOf[FuncT]
-                // val regParamsExprAndLocs = exprs.zip(parameterRegisters)
-
-                // /* Save the registers that parameters will be put into  */
-                // regParamsExprAndLocs.foreach { (_, reg) =>
-                //     builder += IPush (Reg (reg))
-                // }
-
-                // /* For each param to put in a register, evaluate its given expr and put the result in the reg */
-                // regParamsExprAndLocs.zip(funcTy.paramTs).foreach { (exprReg, t) =>
-                //     generate(exprReg._1)
-                //     builder 
-                //         += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
-                // }
-
-                // var sizeSum = 0    
-                // val pushList = List.newBuilder[Instr]           
-                // /* Evaluate the exprs of params that don't fit in a reg (on the stack) and store on stack */
-                // exprs.zip(funcTy.paramTs).drop(parameterRegisters.size).foreach { (expr, ty) => 
-                //     val typeSize = getTypeSize(ty)
-                //     pushList += (IMov (MemOff(RSP, sizeSum), Reg (RETURN_REG))(using size = typeSize))
-                //     sizeSum += typeSize.bytes
-                //     generate(expr)
-                // }
-                // if (sizeSum > 0) {
-                //     builder += ISub(Reg(RSP), Imm(sizeSum))
-                //     builder.addAll(pushList.result())
-                // }
-
-                // /* Add the call instruction */
-                // builder += ICall (s"wacc_${id.name.oldName}")
-
-                // /* Remove the saved overflow parameter information. */
-                // builder += IAdd(Reg(RSP), Imm(sizeSum))
-
-                // /* Pop the saved register information */
-                // regParamsExprAndLocs.reverse.foreach { (_, reg) => 
-                //     builder += IPop (Reg (reg))
-                // }
         }
 
     def loadPairElem(
@@ -404,22 +361,18 @@ object generator {
                 val label = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
                 builder 
-                    += IPush(Reg(FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
                     += ICall (label)
-                    += IPop(Reg(FIRST_PARAM_REG))
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
             case f@Free(expr) =>
                 val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
-                builder += IPush (Reg (FIRST_PARAM_REG))
                 f.ty match
                     case ArrayT(t) => builder += ISub (Reg (RETURN_REG), Imm (DWORD.bytes))
                     case _ => ()
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
                     += ICall (label)
-                    += IPop (Reg (FIRST_PARAM_REG))
             case Return(expr) =>
                 generate(expr)
                 builder
@@ -430,27 +383,21 @@ object generator {
                 val label = ctx.addPrebuilt(PbExit)
                 generate(expr)
                 builder
-                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
                     += ICall (label)
-                    += IPop (Reg (FIRST_PARAM_REG))
             case p@Print(expr) => 
                 val label = ctx.addPrebuilt(PbPrint(p.ty))
                 generate(expr)
                 builder
-                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
-                    += IPop (Reg (FIRST_PARAM_REG))
             case p@PrintLn(expr) => 
                 val label = ctx.addPrebuilt(PbPrintln(p.ty))
                 generate(expr)
                 builder
-                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
                     += ICall ("_println")
-                    += IPop (Reg (FIRST_PARAM_REG))
             case If(cond, ifStmts, elseStmts) => 
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 generate(cond)
