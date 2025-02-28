@@ -26,6 +26,9 @@ case object R13 extends Register
 case object R14 extends Register
 case object R15 extends Register
 
+/* Instruction pointer */
+case object RIP extends Register
+
 
 /* Name registers according to their usecases. */
 final val BASE_PTR_REG     = RBP
@@ -40,11 +43,12 @@ final val SIXTH_PARAM_REG  = R9
 sealed trait DataSize {
     val bytes: Int
 }
+sealed trait DataSizeSmall extends DataSize
 
-case object BYTE extends DataSize {
+case object BYTE extends DataSizeSmall {
     override val bytes = 1
 }
-case object WORD extends DataSize {
+case object WORD extends DataSizeSmall {
     override val bytes = 2
 }
 case object DWORD extends DataSize {

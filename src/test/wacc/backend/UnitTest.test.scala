@@ -41,7 +41,7 @@ class BackEndUnitTest extends AnyFlatSpec {
         /* Check that the variable is correctly referenced. */
         try {
             context.getVarRef(varName.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-getTypeSize(intType).bytes)
+                case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
                 case _ => fail("Reference was badly formatted")
             }
         }
@@ -66,11 +66,11 @@ class BackEndUnitTest extends AnyFlatSpec {
         /* Check the variables were referenced properly */
         try {
             context.getVarRef(var1.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-getTypeSize(intType).bytes)
+                case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
                 case _ => fail("Var1 reference was badly formatted") 
             }
             context.getVarRef(var2.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-2 * getTypeSize(intType).bytes)
+                case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-2 * getTypeSize(intType).bytes)
                 case _ => fail("Var2 reference was badly formatted") 
             }
         }
@@ -106,22 +106,22 @@ class BackEndUnitTest extends AnyFlatSpec {
                     try {
                         var curOff = -getTypeSize(intType).bytes
                         context.getVarRef(var1.name) match {
-                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
                             case _ => fail("Var1 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(charType).bytes
                         context.getVarRef(var2.name) match {
-                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
                             case _ => fail("Var2 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(boolType).bytes
                         context.getVarRef(var3.name) match {
-                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
                             case _ => fail("Var3 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(strType).bytes
                         context.getVarRef(var4.name) match {
-                            case MemOff(BASE_PTR_REG, offset) => offset shouldBe curOff
+                            case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
                             case _ => fail("Var4 reference was badly formatted") 
                         }
                     }
@@ -147,7 +147,7 @@ class BackEndUnitTest extends AnyFlatSpec {
         /* Check the variable is referenced properly */
         try {
             context.getVarRef(var1.name) match {
-                case MemOff(BASE_PTR_REG, offset) => offset shouldBe (-getTypeSize(intType).bytes)
+                case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
                 case _ => fail("Reference was badly formatted from if-else statement") 
             }
         }
@@ -182,11 +182,11 @@ class BackEndUnitTest extends AnyFlatSpec {
     //     /* Check parameters have been added to the context to correct registers */
     //     try {
     //         context.getVarRef(param1.paramId.name) match {
-    //             case MemOff(RAX, off) => off shouldBe 16
+    //             case Mem(RAX, off) => off shouldBe 16
     //             case _ => fail("Param1 reference was badly formatted") 
     //         }
     //         context.getVarRef(param2.paramId.name) match {
-    //             case MemOff(RAX, off) => off shouldBe 20
+    //             case Mem(RAX, off) => off shouldBe 20
     //             case _ => fail("Param2 reference was badly formatted") 
     //         }
     //     }
