@@ -38,23 +38,16 @@ def pipeline(file: File): Int = {
                     val finalTree = value.get
                     given Context = new Context()
 
-                    val assFile = new File(getAssFileName(file.getName()))
-                    assFile.createNewFile()
-                    val writer: Writer = new FileWriter(assFile)
+                    val writer: Writer = 
+                        val assFile = new File(getAssFileName(file.getName()))
+                        assFile.createNewFile()
+                        new FileWriter(assFile)
 
-                    referencer.reference(finalTree)
-                    try {
-                        formatBlocks(generator.generate(finalTree), writer)
-                    } catch {
-                        case e: NotImplementedError => 
-                            println("Error: Not implemented")
-                            writer.close()
-                            assFile.delete()
-                            return -1
-                    }
-                    // assFile.delete()
-                    writer.close()
-                    /* Exit with error code 0 if the final tree exists. */
+                    formatBlocks(
+                        generator.generate(referencer.reference(finalTree)),
+                        writer
+                    )
+                    /* Exit with error code 0 if compilation succeeds */
                     CODE_SUCCESS
                         
         /* Failed to parse, print error and exit with error code 100. */

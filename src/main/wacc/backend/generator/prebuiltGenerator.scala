@@ -48,7 +48,7 @@ case class PbFree(varType: KnownType) extends Prebuilt{
     def labelString = varType match {
         case ArrayT(_) => "_free"
         case PairT(_,_) => "_freepair"
-        case _ => ???
+        case _ => ""
     }
 }
 case class PbRead(arType: KnownType) extends Prebuilt{
@@ -76,13 +76,13 @@ object prebuiltGenerator {
             case ArrayT(_) => List(printpBlock)
             case StringT() => List(printsBlock)
             case PairT(_,_) => List(printpBlock)
-            case _          => ???
+            case _          => List()
         }
         case PbPrintln(varType) => printlnBlock :: generatePrebuiltBlock(PbPrint(varType))
         case PbFree(varType) => varType match {
             case ArrayT(_) => List(freeBlock)
             case PairT(_,_) => freePairBlock :: generatePrebuiltBlock(PbErrNull) 
-            case _ => ???
+            case _ => List()
         }
         case PbRead(varType) => varType match {
             case CharT() => List(readcBlock)
