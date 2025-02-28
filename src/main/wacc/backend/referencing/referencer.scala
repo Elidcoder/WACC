@@ -7,7 +7,7 @@ import wacc.ast._
 import wacc.backend.ir._
 
 object referencer {
-    
+
 
     /* Stores the initial offset for any function due to the initial operations. */
     private val INITIAL_PARAM_OFF = 16
@@ -50,18 +50,14 @@ object referencer {
     protected [referencing] def reference(func: Func[QualifiedName, KnownType])(using ctx: Context): Unit  = {
         given funcName:QualifiedName = func.id.name
 
-        /* Parameter made into registers */
-        func.params.zip(parameterRegisters).foreach(
-            (param, reg) => ctx.addVar(param.paramId.name, Reg(reg))
-        )
-
         /* Paramters exceeding numb registers */
-        var offset = INITIAL_PARAM_OFF
-        func.params.drop(parameterRegisters.size).foreach(
+        var offset = 0
+        func.params.reverse.foreach(
             (param) => 
-                ctx.addVar(param.paramId.name, MemOff(STACK_PTR_REG, offset))
+                ctx.addVar(param.paramId.name, MemOff(BASE_PTR_REG, offset + INITIAL_PARAM_OFF))
                 offset += getTypeSize(param.paramId.t).bytes
         )
+        ctx.addFuncParamOff(funcName, offset)
         
         /* Handle statements*/
         reference(func.stmts)

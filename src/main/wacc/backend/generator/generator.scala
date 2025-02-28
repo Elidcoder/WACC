@@ -98,46 +98,62 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
 
             case Call(id, exprs) => 
-                /* Unpack given function */
-                val funcTy = id.t.asInstanceOf[FuncT]
-                val regParamsExprAndLocs = exprs.zip(parameterRegisters)
-
-                /* Save the registers that parameters will be put into  */
-                regParamsExprAndLocs.foreach { (_, reg) =>
-                    builder += IPush (Reg (reg))
-                }
-
-                /* For each param to put in a register, evaluate its given expr and put the result in the reg */
-                regParamsExprAndLocs.zip(funcTy.paramTs).foreach { (exprReg, t) =>
-                    generate(exprReg._1)
-                    builder 
-                        += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
-                }
-
-                var sizeSum = 0    
-                val pushList = List.newBuilder[Instr]           
-                /* Evaluate the exprs of params that don't fit in a reg (on the stack) and store on stack */
-                exprs.zip(funcTy.paramTs).drop(parameterRegisters.size).foreach { (expr, ty) => 
-                    val typeSize = getTypeSize(ty)
-                    pushList += (IMov (MemOff(RSP, sizeSum), Reg (RETURN_REG))(using size = typeSize))
-                    sizeSum += typeSize.bytes
+                val paramTypes = id.t.asInstanceOf[FuncT].paramTs
+                var offset = ctx.getFuncParamOff(id.name)
+                builder 
+                    += ISub (Reg (STACK_PTR_REG), Imm (offset))
+                exprs.zip(paramTypes).foreach( (expr, ty) =>
+                    val size = getTypeSize(ty)
+                    offset -= size.bytes
                     generate(expr)
-                }
-                if (sizeSum > 0) {
-                    builder += ISub(Reg(RSP), Imm(sizeSum))
-                    builder.addAll(pushList.result())
-                }
+                    builder += IMov (MemOff (STACK_PTR_REG, offset), Reg (RETURN_REG))(using size)
+                )
+                builder 
+                    += ICall (s"wacc_${id.name.oldName}")
+                    += IAdd (Reg (STACK_PTR_REG), Imm (ctx.getFuncParamOff(id.name)))
 
-                /* Add the call instruction */
-                builder += ICall (s"wacc_${id.name.oldName}")
 
-                /* Remove the saved overflow parameter information. */
-                builder += IAdd(Reg(RSP), Imm(sizeSum))
 
-                /* Pop the saved register information */
-                regParamsExprAndLocs.reverse.foreach { (_, reg) => 
-                    builder += IPop (Reg (reg))
-                }
+                // /* Unpack given function */
+                // val funcTy = id.t.asInstanceOf[FuncT]
+                // val regParamsExprAndLocs = exprs.zip(parameterRegisters)
+
+                // /* Save the registers that parameters will be put into  */
+                // regParamsExprAndLocs.foreach { (_, reg) =>
+                //     builder += IPush (Reg (reg))
+                // }
+
+                // /* For each param to put in a register, evaluate its given expr and put the result in the reg */
+                // regParamsExprAndLocs.zip(funcTy.paramTs).foreach { (exprReg, t) =>
+                //     generate(exprReg._1)
+                //     builder 
+                //         += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
+                // }
+
+                // var sizeSum = 0    
+                // val pushList = List.newBuilder[Instr]           
+                // /* Evaluate the exprs of params that don't fit in a reg (on the stack) and store on stack */
+                // exprs.zip(funcTy.paramTs).drop(parameterRegisters.size).foreach { (expr, ty) => 
+                //     val typeSize = getTypeSize(ty)
+                //     pushList += (IMov (MemOff(RSP, sizeSum), Reg (RETURN_REG))(using size = typeSize))
+                //     sizeSum += typeSize.bytes
+                //     generate(expr)
+                // }
+                // if (sizeSum > 0) {
+                //     builder += ISub(Reg(RSP), Imm(sizeSum))
+                //     builder.addAll(pushList.result())
+                // }
+
+                // /* Add the call instruction */
+                // builder += ICall (s"wacc_${id.name.oldName}")
+
+                // /* Remove the saved overflow parameter information. */
+                // builder += IAdd(Reg(RSP), Imm(sizeSum))
+
+                // /* Pop the saved register information */
+                // regParamsExprAndLocs.reverse.foreach { (_, reg) => 
+                //     builder += IPop (Reg (reg))
+                // }
         }
 
     def loadPairElem(
@@ -158,10 +174,10 @@ object generator {
             case Ident(name) => ctx.getVarRef(name)
             case ArrayElem(id, exprs) => 
                 val size = getArraySize(id.t, exprs.size)
-                val label = ctx.addPrebuilt(PbArrLoad(size))
+                val label = ctx.addPrebuilt(PbArrRef(size))
                 exprs.reverse match
                     case ex :: exs => 
-                        generateArrayElem(id, exs)
+                        generateNestedArrayElem(id, exs)
                         builder += IPush(Reg(RETURN_REG))
                         generate(ex)
                         builder
@@ -327,10 +343,10 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), Imm (0))
             case ArrayElem(id, exprs) => 
                 val size = getArraySize(id.t, exprs.size)
-                val label = ctx.addPrebuilt(PbArrLoad(size))
+                val label = ctx.addPrebuilt(PbArrRef(size))
                 exprs.reverse match
                     case ex :: exs => 
-                        generateArrayElem(id, exs)
+                        generateNestedArrayElem(id, exs)
                         builder += IPush(Reg(RETURN_REG))
                         generate(ex)
                         builder
@@ -349,19 +365,19 @@ object generator {
         case (t, n) => getTypeSize(t)
     }
 
-    def generateArrayElem(
+    def generateNestedArrayElem(
         id: Ident[QualifiedName, KnownType],
         exprs: List[Expr[QualifiedName, KnownType]]
     )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
         case Nil => generate(id)
         case ex::exs =>
             given DataSize = QWORD
-            val label = ctx.addPrebuilt(PbArrLoad(QWORD))
-            generateArrayElem(id, exs)
+            val label = ctx.addPrebuilt(PbArrRef(QWORD))
+            generateNestedArrayElem(id, exs)
             builder += IPush(Reg(RETURN_REG))
             generate(ex)
             builder
-                += IMov (Reg (R10), Reg (RETURN_REG))
+                += IMov (Reg (R10), Reg (RETURN_REG))(using DWORD)
                 += IPop (Reg (R9))
                 += ICall (label)
                 += IMov (Reg (RETURN_REG), MemInd (R9))
