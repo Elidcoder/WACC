@@ -24,11 +24,7 @@ object generator {
         given DataSize = QWORD
         val blockBuilder = List.newBuilder[Block]
         given mainBuilder: InstrBuilder = List.newBuilder[Instr]
-        mainBuilder
-            += IPush (Reg (BASE_PTR_REG))
-            += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
-        if ctx.mainOffset != 0 then
-            mainBuilder += ISub (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
+        generateFuncStart(ctx.mainOffset)
         generateStmts(prog.stmts)
         if ctx.mainOffset != 0 then
             mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
@@ -45,15 +41,19 @@ object generator {
     }
     
     def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
-        given DataSize = QWORD
         given builder: InstrBuilder = List.newBuilder[Instr]
+        generateFuncStart(ctx.getFuncOff(func.id.name))
+        generateStmts(func.stmts)
+        Block(Label (s"wacc_${func.id.name.oldName}"), None, builder.result())
+    }
+
+    def generateFuncStart(offset: Int)(using builder: InstrBuilder) = {
+        given DataSize = QWORD
         builder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
-        if ctx.getFuncOff(func.id.name) != 0 then
-            builder += ISub (Reg (STACK_PTR_REG), Imm (ctx.getFuncOff(func.id.name)))
-        generateStmts(func.stmts)
-        Block(Label (s"wacc_${func.id.name.oldName}"), None, builder.result())
+        if offset != 0 then
+            builder += ISub (Reg (STACK_PTR_REG), Imm (offset))
     }
 
     def generate(
@@ -118,8 +118,9 @@ object generator {
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = QWORD
         val label = ctx.addPrebuilt(PbErrNull)
+        val lValOp = findOp(lVal)
         builder
-            += IMov (Reg(PAIR_ELEM_REG), findOp(lVal))
+            += IMov (Reg(PAIR_ELEM_REG), lValOp)
             += ICmp(Reg(PAIR_ELEM_REG), Imm(0))
             += Jmp(Label(label), JumpCond.E)
     }
