@@ -48,7 +48,6 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit =
         case ISub(dest, opR) => writeIndentedLine(s"sub ${format(dest)}, ${format(opR)}")
         case IMul(dest, opR) => writeIndentedLine(s"imul ${format(dest)}, ${format(opR)}")
         case IDiv(dest) =>
-            writeLine("cdq")
             writeIndentedLine(s"idiv ${format(dest)}")
         case ICmp(dest, opR) => writeIndentedLine(s"cmp ${format(dest)}, ${format(opR)}")
         case IMov(dest, source, cond) => cond match
@@ -69,6 +68,7 @@ private def format(instr: Instr)(using wr: BufferedWriter): Unit =
                 writeIndentedLine(s"set ${format(dest)}")
             else
                 writeIndentedLine(s"set${cond.toString.toLowerCase} ${format(dest)}")
+        case ICdq => writeIndentedLine("cdq")
     }
 
 private def formatLabel(label: Label)(using wr: BufferedWriter): Unit = {

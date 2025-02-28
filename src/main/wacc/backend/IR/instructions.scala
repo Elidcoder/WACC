@@ -30,6 +30,9 @@ case class ICall(funcName: String)(using val size: DataSize) extends Instr
 case object IRet extends Instr {
     val size = QWORD
 }
+case object ICdq extends Instr {
+    val size = QWORD
+}
 
 case class IAnd private (dest: Operand, opR: Operand)(using val size: DataSize) extends Instr
 case class INeg(dest: Operand)(using val size: DataSize) extends Instr
@@ -46,10 +49,12 @@ case class IMovzx private (dest: Operand, source: Operand, smallSize: DataSize)(
 case class ILea private (dest: Operand, target: Operand)(using val size: DataSize) extends Instr
 
 enum JumpCond {
-    case UnCond, E, NE, G, GE, L, LE 
+    case UnCond, E, NE, G, GE, L, LE, O
 }
 
-case class Jmp(label: Label, cond: JumpCond)(using val size: DataSize) extends Instr
+case class Jmp(label: Label, cond: JumpCond) extends Instr {
+    val size = QWORD
+}
 case class ISet private (dest: Operand, cond: JumpCond)(using val size: DataSize) extends Instr
 
 case object ITest {

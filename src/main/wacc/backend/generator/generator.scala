@@ -163,7 +163,7 @@ object generator {
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
-            // jo overflow
+            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
     }
 
     def generateDivMod(
@@ -176,12 +176,10 @@ object generator {
             += IPush (Reg (RETURN_REG))
         generate(left) 
         builder
-            += IPush (Reg (RETURN_REG)) 
-            += IPop (Reg (RETURN_REG))
             += IPop (Reg (TEMP_REG))
             += ICmp (Reg (TEMP_REG), Imm (0))
-            // TODO: call cdq
-            // TODO: check div by zero
+            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.E)
+            += ICdq
             += IDiv (Reg (TEMP_REG))
     }
 
@@ -214,7 +212,9 @@ object generator {
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += ISet (Reg (RETURN_REG), JumpCond.NE)
             case Neg(expr) => generate(expr)
-                builder += INeg (Reg (RETURN_REG))
+                builder 
+                += INeg (Reg (RETURN_REG))
+                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
             case Len(expr) => generate(expr)
                 builder += IMov (Reg (RETURN_REG), MemOff (RETURN_REG, -4))
             case Ord(expr) => generate(expr)
