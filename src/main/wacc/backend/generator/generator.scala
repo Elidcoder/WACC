@@ -98,25 +98,45 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
 
             case Call(id, exprs) => 
-                val numParams = List(exprs.size, parameterRegisters.size).min
-                parameterRegisters.take(numParams).foreach { (reg) =>
-                    builder 
-                        += IPush (Reg (reg))
-                }
-                exprs.take(numParams).foreach { (expr) =>
-                    generate(expr)
-                    builder += IPush(Reg(RETURN_REG))
-                }
-                parameterRegisters.take(numParams).reverse.foreach { (reg) =>
-                    builder 
-                        += IPop(Reg(reg))
-                }
-                //TODO(stack parameters)
-                builder += ICall (s"wacc_${id.name.oldName}")(using QWORD)
+                /* Unpack given function */
+                val funcTy = id.t.asInstanceOf[FuncT]
+                val regParamsExprAndLocs = exprs.zip(parameterRegisters)
 
-                parameterRegisters.take(numParams).reverse.foreach { (reg) =>
+                /* Save the registers that parameters will be put into  */
+                regParamsExprAndLocs.foreach { (_, reg) =>
+                    builder += IPush (Reg (reg))
+                }
+
+                /* For each param to put in a register, evaluate its given expr and put the result in the reg */
+                regParamsExprAndLocs.zip(funcTy.paramTs).foreach { (exprReg, t) =>
+                    generate(exprReg._1)
                     builder 
-                        += IPop (Reg (reg))
+                        += IMov (Reg (exprReg._2), Reg (RETURN_REG))(using getTypeSize(t))
+                }
+
+                var sizeSum = 0    
+                val pushList = List.newBuilder[Instr]           
+                /* Evaluate the exprs of params that don't fit in a reg (on the stack) and store on stack */
+                exprs.zip(funcTy.paramTs).drop(parameterRegisters.size).foreach { (expr, ty) => 
+                    val typeSize = getTypeSize(ty)
+                    pushList += (IMov (MemOff(RSP, sizeSum), Reg (RETURN_REG))(using size = typeSize))
+                    sizeSum += typeSize.bytes
+                    generate(expr)
+                }
+                if (sizeSum > 0) {
+                    builder += ISub(Reg(RSP), Imm(sizeSum))
+                    builder.addAll(pushList.result())
+                }
+
+                /* Add the call instruction */
+                builder += ICall (s"wacc_${id.name.oldName}")
+
+                /* Remove the saved overflow parameter information. */
+                builder += IAdd(Reg(RSP), Imm(sizeSum))
+
+                /* Pop the saved register information */
+                regParamsExprAndLocs.reverse.foreach { (_, reg) => 
+                    builder += IPop (Reg (reg))
                 }
         }
 
@@ -136,9 +156,21 @@ object generator {
     )(using ctx: Context, builder: InstrBuilder): ValDest = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
-            case ArrayElem(id, expr) => ???
-                // val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
-                // ctx.addPrebuilt(PbArrStore(size))
+            case ArrayElem(id, exprs) => 
+                val size = getArraySize(id.t, exprs.size)
+                val label = ctx.addPrebuilt(PbArrLoad(size))
+                exprs.reverse match
+                    case ex :: exs => 
+                        generateArrayElem(id, exs)
+                        builder += IPush(Reg(RETURN_REG))
+                        generate(ex)
+                        builder
+                            += IMov (Reg (R10), Reg (RETURN_REG))(using DWORD)
+                            += IPop (Reg (R9))
+                            += ICall (label)
+                            += IMov (Reg (RETURN_REG), Reg (R9))(using size)
+                        MemInd(R9)
+                    case Nil => findOp(id)
 
             case First(lVal) => 
                 loadPairElem(lVal)
@@ -163,7 +195,7 @@ object generator {
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
-            // jo overflow
+            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
     }
 
     def generateDivMod(
@@ -176,12 +208,10 @@ object generator {
             += IPush (Reg (RETURN_REG))
         generate(left) 
         builder
-            += IPush (Reg (RETURN_REG)) 
-            += IPop (Reg (RETURN_REG))
             += IPop (Reg (TEMP_REG))
             += ICmp (Reg (TEMP_REG), Imm (0))
-            // TODO: call cdq
-            // TODO: check div by zero
+            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.E)
+            += ICdq
             += IDiv (Reg (TEMP_REG))
     }
 
@@ -214,7 +244,9 @@ object generator {
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += ISet (Reg (RETURN_REG), JumpCond.NE)
             case Neg(expr) => generate(expr)
-                builder += INeg (Reg (RETURN_REG))
+                builder 
+                += INeg (Reg (RETURN_REG))
+                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
             case Len(expr) => generate(expr)
                 builder += IMov (Reg (RETURN_REG), MemOff (RETURN_REG, -4))
             case Ord(expr) => generate(expr)
@@ -294,54 +326,45 @@ object generator {
             case wacc.ast.PairLit() => 
                 builder += IMov (Reg (RETURN_REG), Imm (0))
             case ArrayElem(id, exprs) => 
-                val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
-                ctx.addPrebuilt(PbArrLoad(size))
-                builder += IPush(Reg(FIRST_PARAM_REG))
-                generate(id)
-                generateArrayElem(size, exprs)
-                builder += IPop(Reg(FIRST_PARAM_REG))
+                val size = getArraySize(id.t, exprs.size)
+                val label = ctx.addPrebuilt(PbArrLoad(size))
+                exprs.reverse match
+                    case ex :: exs => 
+                        generateArrayElem(id, exs)
+                        builder += IPush(Reg(RETURN_REG))
+                        generate(ex)
+                        builder
+                            += IMov (Reg (R10), Reg (RETURN_REG))(using DWORD)
+                            += IPop (Reg (R9))
+                            += ICall (label)
+                            += IMov (Reg (RETURN_REG), MemInd (R9))(using size)
+                    case Nil => generate(id)
         }
         builder.result()
     }
 
-    def generateArrayElem(
-        size: DataSize,
-        exprs: List[Expr[QualifiedName, KnownType]]
-    )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
-                case Nil => ()
-                case ex::exs =>
-                    given DataSize = QWORD
-                    val label = ctx.addPrebuilt(PbArrLoad(size))
-                    builder += IPush(Reg(RETURN_REG))
-                    generate(ex)
-                    builder 
-                        += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))(using size)
-                        += IPop(Reg(RETURN_REG))
-                    ICall(label)
-                    generateArrayElem(size, exs)
+    private def getArraySize(t: Type, n: Int): DataSize = (t, n) match {
+        case (t, 0) => getTypeSize(t)
+        case (ArrayT(t), n) => getArraySize(t, n-1)
+        case (t, n) => getTypeSize(t)
     }
 
-    def arrayAssign(
-        exprs: List[Expr[QualifiedName, KnownType]],
-        rVal: RValue[QualifiedName, KnownType],
-        size: DataSize
-    )(using ctx: Context, builder: InstrBuilder): Unit = exprs match {
-        case Nil => ()
-        case List(expr) =>
-            given DataSize = QWORD
-            val label = ctx.addPrebuilt(PbArrStore(size))
-            builder += IPush(Reg(FIRST_PARAM_REG))
-            builder += IPush(Reg(SECOND_PARAM_REG))
-            builder += IMov(Reg(FIRST_PARAM_REG), Reg(RETURN_REG))
-            generate(expr)
-            builder += IMov(Reg(SECOND_PARAM_REG), Reg(RETURN_REG))
-            generate(rVal)
-            builder 
-                += ICall(label) // TODO(generic)
-                += IPop(Reg(FIRST_PARAM_REG))
-                += IPop(Reg(SECOND_PARAM_REG))
+    def generateArrayElem(
+        id: Ident[QualifiedName, KnownType],
+        exprs: List[Expr[QualifiedName, KnownType]]
+    )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
+        case Nil => generate(id)
         case ex::exs =>
-            generateArrayElem(size, exs)
+            given DataSize = QWORD
+            val label = ctx.addPrebuilt(PbArrLoad(QWORD))
+            generateArrayElem(id, exs)
+            builder += IPush(Reg(RETURN_REG))
+            generate(ex)
+            builder
+                += IMov (Reg (R10), Reg (RETURN_REG))
+                += IPop (Reg (R9))
+                += ICall (label)
+                += IMov (Reg (RETURN_REG), MemInd (R9))
     }
 
     def generate(
@@ -354,18 +377,13 @@ object generator {
                 generate(rVal)
                 builder
                     += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
-            case a@Assign(lVal, rVal) => lVal match {
-                case ArrayElem(id, exprs) => 
-                    val size = getTypeSize(id.t.asInstanceOf[ArrayT[QualifiedName, KnownType]].t)
-                    builder += IPush(Reg(FIRST_PARAM_REG))
-                    generate(id)
-                    arrayAssign(exprs, rVal, size)
-                case _ => 
-                    generate(rVal)
-                    val lValOp = findOp(lVal)
-                    builder
-                        += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
-            }
+            case a@Assign(lVal, rVal) => 
+                generate(rVal)
+                builder += IPush(Reg(RETURN_REG))
+                val lValOp = findOp(lVal)
+                builder
+                    += IPop(Reg(RETURN_REG))
+                    += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
             case r@Read(lVal) => 
                 val label = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
@@ -378,8 +396,11 @@ object generator {
             case f@Free(expr) =>
                 val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
+                builder += IPush (Reg (FIRST_PARAM_REG))
+                f.ty match
+                    case ArrayT(t) => builder += ISub (Reg (RETURN_REG), Imm (DWORD.bytes))
+                    case _ => ()
                 builder
-                    += IPush (Reg (FIRST_PARAM_REG))
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
                     += ICall (label)
                     += IPop (Reg (FIRST_PARAM_REG))
