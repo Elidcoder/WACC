@@ -26,7 +26,7 @@ case object PbExit extends Prebuilt{
 case object PbErrOverflow extends Prebuilt{
     def labelString = "_errOverflow"
 }
-case object DivZero extends Prebuilt{
+case object PbDivZero extends Prebuilt{
     def labelString = "_errDivZero"
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
@@ -69,7 +69,7 @@ object prebuiltGenerator {
     def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
         case PbMalloc => mallocBlock :: errOutOfMemory :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbExit => List(exitBlock)
-        case DivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbDivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbErrOverflow => overflowBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbPrint(varType) => varType match {
             case ArrayT(CharT()) => List(printsBlock)
@@ -261,7 +261,7 @@ object prebuiltGenerator {
         given DataSize = QWORD
         Block (
             Label("_errOverflow"),
-            Some(List(RoData(52, "fatal error: integer overflow or underflow occurred\n", Label(".L._errOverflow_str0")))),
+            Some(List(RoData(52, "fatal error: integer overflow or underflow occurred\\n", Label(".L._errOverflow_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errOverflow_str0"))),
@@ -273,11 +273,11 @@ object prebuiltGenerator {
     val divZeroBlock = 
         given DataSize = QWORD
         Block (
-            Label("_erRDIvZero"),
-            Some(List(RoData(40, "fatal error: division or modulo by zero\n", Label(".L._println_str0")))),
+            Label("_errDivZero"),
+            Some(List(RoData(40, "fatal error: division or modulo by zero\\n", Label(".L._errDivZero_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Rip(Label(".L._erRDIvZero_str0"))),
+                ILea(Reg(RDI), Rip(Label(".L._errDivZero_str0"))),
                 ICall("_prints"),
                 IMov(Reg(RDI), Imm(-1))(using size = BYTE),
                 ICall("exit@plt")
@@ -287,7 +287,7 @@ object prebuiltGenerator {
         given DataSize = QWORD 
         Block (
             Label("_errOutOfMemory"),
-            Some(List(RoData(27, "fatal error: out of memory\n", Label(".L._errOutOfMemory_str0")))),
+            Some(List(RoData(27, "fatal error: out of memory\\n", Label(".L._errOutOfMemory_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errOutOfMemory_str0"))),
@@ -332,7 +332,7 @@ object prebuiltGenerator {
         given DataSize = QWORD
         Block (
             Label("_errNull"),
-            Some(List(RoData(45, "fatal error: null pair dereferenced or freed\n", Label(".L._errNull_str0")))),
+            Some(List(RoData(45, "fatal error: null pair dereferenced or freed\\n", Label(".L._errNull_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errNull_str0"))),
@@ -360,7 +360,7 @@ object prebuiltGenerator {
         given DataSize = QWORD
         Block (
             Label("_errBadChar"),
-            Some(List(RoData(50, "fatal error: int %d is not ascii character 0-127 \n", Label(".L._errBadChar_str0")))),
+            Some(List(RoData(50, "fatal error: int %d is not ascii character 0-127 \\n", Label(".L._errBadChar_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errBadChar_str0"))),
@@ -377,7 +377,7 @@ object prebuiltGenerator {
         given DataSize = QWORD
         Block (
             Label("_errOutOfBounds"),
-            Some(List(RoData(42, "fatal error: array index %d out of bounds\n", Label(".L._errOutOfBounds_str0")))),
+            Some(List(RoData(42, "fatal error: array index %d out of bounds\\n", Label(".L._errOutOfBounds_str0")))),
             List(
                 IAnd(Reg(RSP), Imm(-16)),
                 ILea(Reg(RDI), Rip(Label(".L._errOutOfBounds_str0"))),
