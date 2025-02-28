@@ -26,6 +26,9 @@ case object R13 extends Register
 case object R14 extends Register
 case object R15 extends Register
 
+/* Instruction pointer */
+case object RIP extends Register
+
 
 /* Name registers according to their usecases. */
 final val BASE_PTR_REG     = RBP

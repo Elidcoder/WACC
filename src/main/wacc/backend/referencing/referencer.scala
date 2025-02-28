@@ -28,7 +28,7 @@ object referencer {
     /* Creates a stack reference for a new variable and increases the function offset */
     protected [referencing] def addVarToContext(id: Ident[QualifiedName, KnownType])(using ctx: Context, funcName: QualifiedName): Unit = {
         ctx.incFuncOff(funcName, getTypeSize(id.t).bytes)
-        ctx.addVar(id.name, MemOff(BASE_PTR_REG, -ctx.getFuncOff(funcName)))
+        ctx.addVar(id.name, Mem(BASE_PTR_REG, -ctx.getFuncOff(funcName)))
     }
 
     /* Reference the variables used in a program. */
@@ -54,7 +54,7 @@ object referencer {
         var offset = 0
         func.params.reverse.foreach(
             (param) => 
-                ctx.addVar(param.paramId.name, MemOff(BASE_PTR_REG, offset + INITIAL_PARAM_OFF))
+                ctx.addVar(param.paramId.name, Mem(BASE_PTR_REG, offset + INITIAL_PARAM_OFF))
                 offset += getTypeSize(param.paramId.t).bytes
         )
         ctx.addFuncParamOff(funcName, offset)

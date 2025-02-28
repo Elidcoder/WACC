@@ -75,18 +75,29 @@ private def formatLabel(label: Label)(using wr: BufferedWriter): Unit = {
     writeLine(s"${label.name}:")
 }
 
-private def format[S <: DataSize](op: Operand)(using wr: BufferedWriter, size: DataSize): String = 
-    op match
-        case Reg(reg) => format(reg)
-        case Rip(label) => s"[rip + ${label.name}]"
-        case MemInd(reg) => memSize(size) + s"[${{format(reg)(using QWORD)}}]"
-        case Imm(value) => value.toString
-        case MemOff(reg, offset) => memSize(size) +
-            (if offset < 0 then
-                s"[${format(reg)(using QWORD)} - ${-offset}]"
+private def formatOff(optOff: Option[Either[Int, Label]]) = optOff.fold("") { off => 
+    off match
+        case Left(offset) => 
+            if offset < 0 then
+                s" - ${-offset}"
             else
-                s"[${format(reg)(using QWORD)} + $offset]")
-        case MemScl(reg1, reg2, scale) => s"[${format(reg1)(using QWORD)} + $scale*${format(reg2)(using QWORD)}]"
+                s" + $offset"
+        case Right(label) =>
+            s" + ${label.name}"
+}
+
+private def formatScale(optScl: Option[(Register, DataSize)]) = optScl.fold("")( (reg, scl) =>
+    s" + ${format(reg)(using QWORD)} * ${scl.bytes}"
+)
+
+private def format(op: Operand)(using wr: BufferedWriter, size: DataSize): String = 
+    op match
+        case Reg(reg) => 
+            format(reg)
+        case Imm(value) => 
+            value.toString
+        case Mem(reg, scale, offset) => 
+            memSize(size) + s"[${format(reg)(using QWORD)}${formatScale(scale)}${formatOff(offset)}]"
 
 private def memSize(size: DataSize): String = size match {
     case BYTE => "byte ptr "
@@ -192,6 +203,7 @@ private def format(reg: Register)(using size: DataSize): String = reg match {
         case DWORD => "r15d"
         case QWORD => "r15"
     }
+    case RIP => "rip"
 }
 
 

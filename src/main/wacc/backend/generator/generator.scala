@@ -70,11 +70,11 @@ object generator {
                     += ICall (label)
                     += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                     += IAdd (Reg (MALLOC_REG), Imm (DWORD.bytes))
-                    += IMov (MemOff (MALLOC_REG, -4), Imm (exprs.size))(using DWORD)
+                    += IMov (Mem (MALLOC_REG, -4), Imm (exprs.size))(using DWORD)
                 exprs.zipWithIndex.foreach { (expr, i) =>
                     generate(expr)
                     builder
-                        += IMov (MemOff (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
+                        += IMov (Mem (MALLOC_REG, i * elemSize.bytes), Reg (RETURN_REG))
                 }
                 builder += IMov (Reg (RETURN_REG), Reg (MALLOC_REG))
             case NewPair(fst, snd) =>
@@ -84,18 +84,18 @@ object generator {
                     += ICall (label)
                     += IMov (Reg (MALLOC_REG), Reg (RETURN_REG))
                 generate(fst)
-                builder += IMov (MemInd (MALLOC_REG), Reg (RETURN_REG))
+                builder += IMov (Mem (MALLOC_REG), Reg (RETURN_REG))
                 generate(snd)
                 builder 
-                    += IMov (MemOff (MALLOC_REG, QWORD.bytes), Reg (RETURN_REG))
+                    += IMov (Mem (MALLOC_REG, QWORD.bytes), Reg (RETURN_REG))
                     += IMov (Reg (RETURN_REG), Reg (MALLOC_REG))
             
             case First(value) => 
                 loadPairElem(value)
-                builder += IMov (Reg (RETURN_REG), MemInd (PAIR_ELEM_REG))
+                builder += IMov (Reg (RETURN_REG), Mem (PAIR_ELEM_REG))
             case Second(value) => 
                 loadPairElem(value)
-                builder += IMov (Reg (RETURN_REG), MemOff (PAIR_ELEM_REG, QWORD.bytes))
+                builder += IMov (Reg (RETURN_REG), Mem (PAIR_ELEM_REG, QWORD.bytes))
 
             case Call(id, exprs) => 
                 val paramTypes = id.t.asInstanceOf[FuncT].paramTs
@@ -106,7 +106,7 @@ object generator {
                     val size = getTypeSize(ty)
                     offset -= size.bytes
                     generate(expr)
-                    builder += IMov (MemOff (STACK_PTR_REG, offset), Reg (RETURN_REG))(using size)
+                    builder += IMov (Mem (STACK_PTR_REG, offset), Reg (RETURN_REG))(using size)
                 )
                 builder 
                     += ICall (s"wacc_${id.name.oldName}")
@@ -126,7 +126,7 @@ object generator {
 
     def findOp(
         lVal: LValue[QualifiedName, KnownType]
-    )(using ctx: Context, builder: InstrBuilder): ValDest = {
+    )(using ctx: Context, builder: InstrBuilder): DestOp = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
             case ArrayElem(id, exprs) => 
@@ -142,15 +142,15 @@ object generator {
                             += IPop (Reg (R9))
                             += ICall (label)
                             += IMov (Reg (RETURN_REG), Reg (R9))(using size)
-                        MemInd(R9)
+                        Mem(R9)
                     case Nil => findOp(id)
 
             case First(lVal) => 
                 loadPairElem(lVal)
-                MemInd(PAIR_ELEM_REG)
+                Mem(PAIR_ELEM_REG)
             case Second(lVal) => 
                 loadPairElem(lVal)
-                MemOff(PAIR_ELEM_REG, QWORD.bytes)
+                Mem(PAIR_ELEM_REG, QWORD.bytes)
         }
     }
 
@@ -221,7 +221,7 @@ object generator {
                 += INeg (Reg (RETURN_REG))
                 += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
             case Len(expr) => generate(expr)
-                builder += IMov (Reg (RETURN_REG), MemOff (RETURN_REG, -4))
+                builder += IMov (Reg (RETURN_REG), Mem (RETURN_REG, -4))
             case Ord(expr) => generate(expr)
                 builder += IMovzx (Reg (RETURN_REG), Reg (RETURN_REG), BYTE)
             case Chr(expr) => 
@@ -293,7 +293,7 @@ object generator {
                 }
                 val roData = ctx.addRoData(newStr)
                 builder 
-                    += ILea (Reg (RETURN_REG), Rip (roData.label))
+                    += ILea (Reg (RETURN_REG), Mem (roData.label))
             case wacc.ast.CharLit(char) => 
                 builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
             case wacc.ast.PairLit() => 
@@ -310,7 +310,7 @@ object generator {
                             += IMov (Reg (R10), Reg (RETURN_REG))(using DWORD)
                             += IPop (Reg (R9))
                             += ICall (label)
-                            += IMov (Reg (RETURN_REG), MemInd (R9))(using size)
+                            += IMov (Reg (RETURN_REG), Mem (R9))(using size)
                     case Nil => generate(id)
         }
         builder.result()
@@ -337,7 +337,7 @@ object generator {
                 += IMov (Reg (R10), Reg (RETURN_REG))(using DWORD)
                 += IPop (Reg (R9))
                 += ICall (label)
-                += IMov (Reg (RETURN_REG), MemInd (R9))
+                += IMov (Reg (RETURN_REG), Mem (R9))
     }
 
     def generate(

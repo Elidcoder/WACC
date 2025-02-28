@@ -2,7 +2,7 @@ package wacc.backend
 
 import scala.collection.mutable.{Map, Set}
 import scala.collection.immutable
-import wacc.backend.ir.{Label, ValDest, RoData}
+import wacc.backend.ir.{Label, DestOp, RoData}
 import wacc.backend.generator.prebuilts.Prebuilt
 import wacc.semantic.QualifiedName
 
@@ -19,9 +19,9 @@ class Context() {
         Label(s".L$labelUID")
     }
 
-    private val nameReferences: Map[QualifiedName, ValDest] = Map.empty
-    def addVar(varName: QualifiedName, ref: ValDest) = nameReferences.put(varName, ref)
-    def getVarRef(varName: QualifiedName): ValDest = nameReferences(varName)
+    private val nameReferences: Map[QualifiedName, DestOp] = Map.empty
+    def addVar(varName: QualifiedName, ref: DestOp) = nameReferences.put(varName, ref)
+    def getVarRef(varName: QualifiedName): DestOp = nameReferences(varName)
 
     private val funcOffsets: Map[QualifiedName, Int] = Map.empty
     def addFunc(funcName: QualifiedName, offset: Int) = funcOffsets.put(funcName, offset)
