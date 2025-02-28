@@ -58,11 +58,8 @@ case class PbRead(arType: KnownType) extends Prebuilt{
         case _ => ""
     }
 }
-case class PbArrLoad(size: DataSize) extends Prebuilt {
-    def labelString = s"_arrLoad${size.bytes}"
-}
-case class PbArrStore(size: DataSize) extends Prebuilt {
-    def labelString = s"_arrStore${size.bytes}"
+case class PbArrRef(size: DataSize) extends Prebuilt {
+    def labelString = s"_arrRef${size.bytes}"
 }
 
 object prebuiltGenerator {
@@ -93,8 +90,7 @@ object prebuiltGenerator {
             case _      => List()
         }
         case PbErrNull => errNull :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbArrLoad(size) => genericArrLoadBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
-        case PbArrStore(size) => genericArrStoreBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
+        case PbArrRef(size) => genericArrRefBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
         case PbOutOfBounds => List(outOfBoundsBlock)
         case PbErrBadChar => List(badCharBlock)
     }
@@ -390,10 +386,10 @@ object prebuiltGenerator {
             )
         )
 
-    def genericArrLoadBlock(size: DataSize): Block = 
+    def genericArrRefBlock(size: DataSize): Block = 
         given DataSize = QWORD
         Block (
-            Label(s"_arrLoad${size.bytes}"),
+            Label(s"_arrRef${size.bytes}"),
             None,
             List(
                 IPush(Reg(RBX)),
@@ -405,26 +401,6 @@ object prebuiltGenerator {
                 IMov(Reg(RSI), Reg(R10), JumpCond.GE),
                 Jmp(Label("_errOutOfBounds"), JumpCond.GE),
                 ILea(Reg(R9), MemScl(R9, R10, size.bytes)),
-                IPop(Reg(RBX)),
-                IRet
-            )
-        )
-    
-    def genericArrStoreBlock(size: DataSize): Block = 
-        given DataSize = QWORD
-        Block (
-            Label(s"_arrStore${size.bytes}"),
-            None,
-            List(
-                IPush(Reg(RBX)),
-                ITest(Reg(R10), Reg(R10))(using size),
-                IMov(Reg(RSI), Reg(R10), JumpCond.L),
-                Jmp(Label("_errOutOfBounds"), JumpCond.L),
-                IMov(Reg(RBX), MemOff(R9, -4)),
-                ICmp(Reg(R10), Reg(RBX))(using size),
-                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
-                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
-                IMov(MemScl(R9, R10, 4), Reg(RAX))(using size),
                 IPop(Reg(RBX)),
                 IRet
             )

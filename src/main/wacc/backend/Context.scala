@@ -31,6 +31,10 @@ class Context() {
     def getFuncOff(funcName: QualifiedName): Int = funcOffsets.getOrElse(funcName,
         (() => {funcOffsets.put(funcName, 0); 0})()
     )
+
+    private val funcParamOffsets: Map[QualifiedName, Int] = Map.empty
+    def addFuncParamOff(funcName: QualifiedName, offset: Int) = funcParamOffsets.put(funcName, offset)
+    def getFuncParamOff(funcName: QualifiedName): Int = funcParamOffsets.getOrElse(funcName, 0)
     
     private val strRoData: Map[String, RoData] = Map.empty
     def addRoData(str: String): RoData = strRoData.get(str).getOrElse({
