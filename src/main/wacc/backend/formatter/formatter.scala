@@ -39,37 +39,42 @@ private def format(instrs: List[Instr])(using wr: BufferedWriter): Unit = {
 private def format(instr: Instr)(using wr: BufferedWriter): Unit = 
     given DataSize = instr.size
     instr match {
-        case IPush(source) => writeIndentedLine(s"push ${format(source)}")
         case IRet => writeIndentedLine("ret")
-        case IPop(dest) => writeIndentedLine(s"pop ${format(dest)}")
+        case ICdq => writeIndentedLine("cdq")
         case l@Label(name) => formatLabel(l)
         case ICall(funcName) => writeIndentedLine(s"call $funcName")
-        case IAdd(dest, opR) => writeIndentedLine(s"add ${format(dest)}, ${format(opR)}")
-        case ISub(dest, opR) => writeIndentedLine(s"sub ${format(dest)}, ${format(opR)}")
-        case IMul(dest, opR) => writeIndentedLine(s"imul ${format(dest)}, ${format(opR)}")
-        case IDiv(dest) =>
-            writeIndentedLine(s"idiv ${format(dest)}")
-        case ICmp(dest, opR) => writeIndentedLine(s"cmp ${format(dest)}, ${format(opR)}")
-        case IMov(dest, source, con) => con match
-            case None => writeIndentedLine(s"mov ${format(dest)}, ${format(source)}")
-            case Some(cond) => writeIndentedLine(s"cmov${cond.toString.toLowerCase} ${format(dest)}, ${format(source)}")
-        case ILea(dest, target) => writeIndentedLine(s"lea ${format(dest)}, ${format(target)}")
-        case Jmp(label, con) => con match
-            case None =>
-                writeIndentedLine(s"jmp ${label.name}")
-            case Some(cond) =>
-                writeIndentedLine(s"j${cond.toString.toLowerCase} ${label.name}")
-        case IAnd(dest, source) => writeIndentedLine(s"and ${format(dest)}, ${format(source)}")
-        case INeg(dest) => writeIndentedLine(s"neg ${format(dest)}")
-        case ITest(dest, source) => writeIndentedLine(s"test ${format(dest)}, ${format(source)}")
+        case IPush(source) => formatUnInstr(source, "push")
+        case IPop(dest) => formatUnInstr(dest, "pop")
+        case INeg(dest) => formatUnInstr(dest, "neg")
+        case IDiv(dest) => formatUnInstr(dest, "idiv")
+        case ISet(dest, con) => formatUnInstr(dest, s"set${con.getOrElse("").toString.toLowerCase}")
+        case IAdd(dest, opR) => formatBinInstr(dest, opR, "add")
+        case ISub(dest, opR) => formatBinInstr(dest, opR, "sub")
+        case IMul(dest, opR) => formatBinInstr(dest, opR, "imul")
+        case ICmp(dest, opR) => formatBinInstr(dest, opR, "cmp")
+        case ILea(dest, opR) => formatBinInstr(dest, opR, "lea")
+        case IAnd(dest, opR) => formatBinInstr(dest, opR, "and")
+        case ITest(dest, opR) => formatBinInstr(dest, opR, "test")
+        case IMov(dest, source, con) => 
+            val instr = con.fold("mov")(cond => s"cmov${cond.toString.toLowerCase}")
+            formatBinInstr(dest, source, instr)
+        case Jmp(label, con) => 
+            val instr = con.fold("jmp")(cond => s"j${cond.toString.toLowerCase}")
+            writeIndentedLine(s"$instr ${label.name}")
         case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size = size)}")
-        case ISet(dest, con) => con match
-            case None =>
-                writeIndentedLine(s"set ${format(dest)}")
-            case Some(cond) =>
-                writeIndentedLine(s"set${cond.toString.toLowerCase} ${format(dest)}")
-        case ICdq => writeIndentedLine("cdq")
     }
+
+private def formatUnInstr(op: Operand, instr: String)(using wr: BufferedWriter, size: DataSize): Unit = {
+    writeIndentedLine(s"$instr ${format(op)}")
+}
+
+private def formatBinInstr(
+    op1: Operand,
+    op2: Operand,
+    instr: String
+)(using wr: BufferedWriter, size: DataSize): Unit = {
+    writeIndentedLine(s"$instr ${format(op1)}, ${format(op2)}")
+}
 
 private def formatLabel(label: Label)(using wr: BufferedWriter): Unit = {
     writeLine(s"${label.name}:")
