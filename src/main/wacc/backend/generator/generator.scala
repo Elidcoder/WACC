@@ -293,7 +293,7 @@ object generator {
                 }
                 val roData = ctx.addRoData(newStr)
                 builder 
-                    += ILea (Reg (RETURN_REG), Mem (roData.label))
+                    += ILea (Reg (RETURN_REG), Mem (roData.label))(using QWORD)
             case wacc.ast.CharLit(char) => 
                 builder += IMov (Reg (RETURN_REG), Imm (char.toInt))
             case wacc.ast.PairLit() => 
@@ -406,7 +406,7 @@ object generator {
                     += Jmp (ifLabel, JumpCond.E)
                 generateStmts(elseStmts)
                 builder
-                    += Jmp (endLabel, JumpCond.UnCond)
+                    += Jmp (endLabel)
                     += ifLabel
                 generateStmts(ifStmts)
                 builder
@@ -414,7 +414,7 @@ object generator {
             case While(cond, stmts) =>
                 val (condLabel, bodyLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 builder
-                    += Jmp (condLabel, JumpCond.UnCond)
+                    += Jmp (condLabel)
                     += bodyLabel
                 generateStmts(stmts)
                 builder
