@@ -397,14 +397,14 @@ object prebuiltGenerator {
             None,
             List(
                 IPush(Reg(RBX)),
-                ITest(Reg(R10), Reg(R10))(using size),
+                ITest(Reg(R10), Reg(R10))(using DWORD),
                 IMov(Reg(RSI), Reg(R10), JumpCond.L),
                 Jmp(Label("_errOutOfBounds"), JumpCond.L),
                 IMov(Reg(RBX), MemOff(R9, -4)),
-                ICmp(Reg(R10), Reg(RBX))(using size),
+                ICmp(Reg(R10), Reg(RBX))(using DWORD),
                 IMov(Reg(RSI), Reg(R10), JumpCond.GE),
                 Jmp(Label("_errOutOfBounds"), JumpCond.GE),
-                IMov(Reg(R9), MemOff(R9, 4))(using size), // MemOff wrong
+                ILea(Reg(R9), MemScl(R9, R10, size.bytes)),
                 IPop(Reg(RBX)),
                 IRet
             )
@@ -424,7 +424,7 @@ object prebuiltGenerator {
                 ICmp(Reg(R10), Reg(RBX))(using size),
                 IMov(Reg(RSI), Reg(R10), JumpCond.GE),
                 Jmp(Label("_errOutOfBounds"), JumpCond.GE),
-                IMov(MemOff(R9, 4), Reg(RAX))(using size), // MemOff wrong
+                IMov(MemScl(R9, R10, 4), Reg(RAX))(using size),
                 IPop(Reg(RBX)),
                 IRet
             )

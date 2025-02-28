@@ -69,10 +69,8 @@ class BackEndIntegrationTest extends AnyFlatSpec with ConditionalTest {
                 
                 actualExit.shouldBe(expectedExitOpt.getOrElse(0))
                 if (expectedOutputOpt.getOrElse("").contains("#runtime_error#")) {
-                    println("yes")
                     outputBuilder.toString should include("fatal error:")
                 } else {
-                    println("no")
                     for (expectedOutput <- expectedOutputOpt) yield { 
                         outputBuilder.toString.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#") shouldBe expectedOutput.trim.replaceAll("0x[0-9a-fA-F]+", "#addrs#")
                     }

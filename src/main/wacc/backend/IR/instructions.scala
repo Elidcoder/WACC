@@ -14,10 +14,11 @@ case class Heap(pointer: Int) extends Reference
 
 case class Reg(reg: Register) extends Reference, ValDest, Operand
 
-case class Rip(label: Label)                   extends Mem
-case class MemInd(reg: Register)               extends Mem
-case class Imm(value: Int)                     extends Operand
-case class MemOff(reg: Register, offset: Int)  extends Mem
+case class Rip(label: Label)                                  extends Mem
+case class MemInd(reg: Register)                              extends Mem
+case class Imm(value: Int)                                    extends Operand
+case class MemOff(reg: Register, offset: Int)                 extends Mem
+case class MemScl(reg1: Register, reg2: Register, scale: Int) extends Mem
 
 case class IPush(source: Operand) extends Instr {
     val size = QWORD
@@ -26,7 +27,9 @@ case class IPop private (dest: Operand)(using val size: DataSize) extends Instr
 case class Label(name: String) extends Instr {
     val size = QWORD
 }
-case class ICall(funcName: String)(using val size: DataSize) extends Instr
+case class ICall(funcName: String) extends Instr {
+    val size = QWORD
+}
 case object IRet extends Instr {
     val size = QWORD
 }
@@ -104,8 +107,7 @@ case object ILea {
     def apply(dest: Reg, opR: Mem): ILea = new ILea(dest, opR)(using QWORD)
 }
 case object IPop {    
-    def apply(source: Reg): IPop = new IPop(source)(using QWORD)
-    def apply(source: Mem): IPop = new IPop(source)(using QWORD)
+    def apply(source: ValDest): IPop = new IPop(source)(using QWORD)
 }
 case object ISet {
     def apply(dest: Reg, cond: JumpCond) = new ISet(dest, cond)(using BYTE)

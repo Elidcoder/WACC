@@ -86,6 +86,7 @@ private def format[S <: DataSize](op: Operand)(using wr: BufferedWriter, size: D
                 s"[${format(reg)(using QWORD)} - ${-offset}]"
             else
                 s"[${format(reg)(using QWORD)} + $offset]")
+        case MemScl(reg1, reg2, scale) => s"[${format(reg1)(using QWORD)} + $scale*${format(reg2)(using QWORD)}]"
 
 private def memSize(size: DataSize): String = size match {
     case BYTE => "byte ptr "
