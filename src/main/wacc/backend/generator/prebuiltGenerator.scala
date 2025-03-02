@@ -236,68 +236,76 @@ object prebuiltGenerator {
             IMov(Reg(RDI), Imm(0)),
             ICall("fflush@plt")
         ) ++ functionEnd
+    private val printcRoData: List[RoData] = 
+        generateRoData(PbPrint(CharT()).labelString, List("%c"))
     val printcBlock: Block = Block (
-        Label("_printc"),
-        Some(List(RoData(2, "%c", Label(".L._printc_str0")))),
-        genericPrintBlock(BYTE, ".L._printc_str0")
+        Label(PbPrint(CharT()).labelString),
+        Some(printcRoData),
+        genericPrintBlock(BYTE, printcRoData(0).label.name)
     )
+    private val printiRoData: List[RoData] = 
+        generateRoData(PbPrint(IntT()).labelString, List("%d"))
     val printiBlock: Block = Block (
-        Label("_printi"),
-        Some(List(RoData(2, "%d", Label(".L._printi_str0")))),
-        genericPrintBlock(DWORD, ".L._printi_str0")
+        Label(PbPrint(IntT()).labelString),
+        Some(printiRoData),
+        genericPrintBlock(DWORD, printiRoData(0).label.name)
     )
+    private val printpRoData: List[RoData] = 
+        generateRoData(PbPrint(ArrayT(BoolT())).labelString, List("%p"))
     val printpBlock: Block = Block (
-        Label("_printp"),
-        Some(List(RoData(2, "%p", Label(".L._printp_str0")))),
-        genericPrintBlock(QWORD, ".L._printp_str0")
+        Label(PbPrint(ArrayT(BoolT())).labelString),
+        Some(printpRoData),
+        genericPrintBlock(QWORD, printpRoData(0).label.name)
     )
+    private val printbRoData: List[RoData] = 
+        generateRoData(PbPrint(BoolT()).labelString, List("false", "true", "%.*s"))
     val printbBlock: Block =  
         given DataSize = QWORD
         Block (
             Label("_printb"),
-            Some(List(
-                RoData(5, "false", Label(".L._printb_str0")),
-                RoData(4, "true", Label(".L._printb_str1")),
-                RoData(4, "%.*s", Label(".L._printb_str2"))
-            )),
+            Some(printbRoData),
             functionStart ++ List(
                 ICmp(Reg(RDI), Imm(0))(using BYTE),
                 Jmp(Label(".L_printb0"), JumpCond.NE),
-                ILea(Reg(RDX), Mem(Label(".L._printb_str0"))),
+                ILea(Reg(RDX), Mem(printbRoData(0).label)),
                 Jmp(Label(".L_printb1")),
                 Label(".L_printb0"),
-                ILea(Reg(RDX), Mem(Label(".L._printb_str1"))),
+                ILea(Reg(RDX), Mem(printbRoData(1).label)),
                 Label(".L_printb1"),
                 IMov(Reg(RSI), Mem(RDX, -4)),
-                ILea(Reg(RDI), Mem(Label(".L._printb_str2"))),
+                ILea(Reg(RDI), Mem(printbRoData(2).label)),
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt")
             ) ++ functionEnd
         )
+    private val printsRoData: List[RoData] = 
+        generateRoData(PbPrint(StringT()).labelString, List("%.*s"))
     val printsBlock: Block = 
         given DataSize = QWORD
         Block (
-            Label("_prints"),
-            Some(List(RoData(4, "%.*s", Label(".L._prints_str0")))),
+            Label(PbPrint(StringT()).labelString),
+            Some(printsRoData),
             functionStart ++ List(
                 IMov(Reg(RDX), Reg(RDI)),
                 IMov(Reg(RSI), Mem(RDI, -4))(using DWORD),
-                ILea(Reg(RDI), Mem(Label(".L._prints_str0"))),
+                ILea(Reg(RDI), Mem(printsRoData(0).label)),
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt")
             ) ++ functionEnd
         )
+    private val printlnRoData: List[RoData] = 
+        generateRoData("_println", List(""))
     val printlnBlock = 
         given DataSize = QWORD
         Block (
             Label("_println"),
-            Some(List(RoData(0, "", Label(".L._println_str0")))),
+            Some(printlnRoData),
             functionStart ++ List(
-                ILea(Reg(RDI), Mem(Label(".L._println_str0"))),
+                ILea(Reg(RDI), Mem(printlnRoData(0).label)),
                 ICall("puts@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt")
