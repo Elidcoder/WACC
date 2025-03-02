@@ -3,6 +3,7 @@ package wacc.backend.generator.prebuilts
 import wacc.backend.ir._
 import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
+import wacc.backend.generator.{RETURN_REG, TEMP_REG}
 
 sealed trait Prebuilt {
     def labelString: String
@@ -34,12 +35,12 @@ case object PbErrBadChar extends Prebuilt {
             Label(labelString),
             Some(roData),
             prebuiltGenerator.functionStart ++ List(
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                IMov(Reg(RAX), Imm(0))(using BYTE),
+                ILea(Reg(FIRST_PARAM_REG), Mem(roData(0).label)),
+                IMov(Reg(SYSTEM_CALL_REG), Imm(0))(using BYTE),
                 ICall("printf@plt"),
-                IMov(Reg(RDI), Imm(0)),
+                IMov(Reg(FIRST_PARAM_REG), Imm(0)),
                 ICall("fflush@plt"),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                IMov(Reg(FIRST_PARAM_REG), Imm(-1))(using BYTE),
                 ICall("exit@plt")
             ) ++ prebuiltGenerator.functionEnd
         )
@@ -75,7 +76,7 @@ case object PbMalloc extends Prebuilt {
             None,
             prebuiltGenerator.functionStart ++ List(
                 ICall("malloc@plt"),
-                ICmp(Reg(RAX), Imm(0)),
+                ICmp(Reg(RETURN_REG), Imm(0)),
                 Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E)
             ) ++ prebuiltGenerator.functionEnd
         )
@@ -147,18 +148,18 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
                 Label(labelString),
                 Some(roData),
                 prebuiltGenerator.functionStart ++ List(
-                    ICmp(Reg(RDI), Imm(0))(using BYTE),
+                    ICmp(Reg(FIRST_PARAM_REG), Imm(0))(using BYTE),
                     Jmp(Label(".L_printb0"), JumpCond.NE),
-                    ILea(Reg(RDX), Mem(roData(0).label)),
+                    ILea(Reg(THIRD_PARAM_REG), Mem(roData(0).label)),
                     Jmp(Label(".L_printb1")),
                     Label(".L_printb0"),
-                    ILea(Reg(RDX), Mem(roData(1).label)),
+                    ILea(Reg(THIRD_PARAM_REG), Mem(roData(1).label)),
                     Label(".L_printb1"),
-                    IMov(Reg(RSI), Mem(RDX, -4)),
-                    ILea(Reg(RDI), Mem(roData(2).label)),
-                    IMov(Reg(RAX), Imm(0))(using BYTE),
+                    IMov(Reg(SECOND_PARAM_REG), Mem(THIRD_PARAM_REG, -4)),
+                    ILea(Reg(FIRST_PARAM_REG), Mem(roData(2).label)),
+                    IMov(Reg(SYSTEM_CALL_REG), Imm(0))(using BYTE),
                     ICall("printf@plt"),
-                    IMov(Reg(RDI), Imm(0)),
+                    IMov(Reg(FIRST_PARAM_REG), Imm(0)),
                     ICall("fflush@plt")
                 ) ++ prebuiltGenerator.functionEnd
             )
@@ -176,9 +177,9 @@ case class PbPrintln(varType: KnownType) extends Prebuilt{
             Label(label),
             Some(roData),
             prebuiltGenerator.functionStart ++ List(
-                ILea(Reg(RDI), Mem(roData(0).label)),
+                ILea(Reg(FIRST_PARAM_REG), Mem(roData(0).label)),
                 ICall("puts@plt"),
-                IMov(Reg(RDI), Imm(0)),
+                IMov(Reg(FIRST_PARAM_REG), Imm(0)),
                 ICall("fflush@plt")
             ) ++ prebuiltGenerator.functionEnd
         )
@@ -197,7 +198,7 @@ case class PbFree(varType: KnownType) extends Prebuilt{
                 )
         case PairT(_,_) => 
                 List(
-                    ICmp(Reg(RDI), Imm(0)),
+                    ICmp(Reg(FIRST_PARAM_REG), Imm(0)),
                     Jmp(Label(PbErrNull.labelString), JumpCond.E),
                     ICall("free@plt")
                 )
@@ -231,16 +232,16 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
             Label(labelString),
             None,
             List(
-                IPush(Reg(RBX)),
-                ITest(Reg(R10), Reg(R10))(using DWORD),
-                IMov(Reg(RSI), Reg(R10), JumpCond.L),
+                IPush(Reg(BASE_MEMORY_REG)),
+                ITest(Reg(TEMP_REG), Reg(TEMP_REG))(using DWORD),
+                IMov(Reg(SECOND_PARAM_REG), Reg(TEMP_REG), JumpCond.L),
                 Jmp(Label(PbOutOfBounds.labelString), JumpCond.L),
-                IMov(Reg(RBX), Mem(R9, -4)),
-                ICmp(Reg(R10), Reg(RBX))(using DWORD),
-                IMov(Reg(RSI), Reg(R10), JumpCond.GE),
+                IMov(Reg(BASE_MEMORY_REG), Mem(SIXTH_PARAM_REG, -4)),
+                ICmp(Reg(TEMP_REG), Reg(BASE_MEMORY_REG))(using DWORD),
+                IMov(Reg(SECOND_PARAM_REG), Reg(TEMP_REG), JumpCond.GE),
                 Jmp(Label(PbOutOfBounds.labelString), JumpCond.GE),
-                ILea(Reg(R9), Mem(R9, R10, size)),
-                IPop(Reg(RBX)),
+                ILea(Reg(SIXTH_PARAM_REG), Mem(SIXTH_PARAM_REG, TEMP_REG, size)),
+                IPop(Reg(BASE_MEMORY_REG)),
                 IRet
             )
         )
@@ -257,61 +258,61 @@ object prebuiltGenerator {
             case _ => List.empty
         }
         prebuilt.block :: next
-    val alignStack: Instr = IAnd(Reg(RSP), Imm(-16))(using QWORD)
+    val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-16))(using QWORD)
     val functionStart: List[Instr] = 
         given DataSize = QWORD
         List(
-            IPush(Reg(RBP)),
-            IMov(Reg(RBP), Reg(RSP)),
+            IPush(Reg(BASE_PTR_REG)),
+            IMov(Reg(BASE_PTR_REG), Reg(STACK_PTR_REG)),
             alignStack
         )
     val functionEnd: List[Instr] =
         given DataSize = QWORD
         List(
-            IMov(Reg(RSP), Reg(RBP)),
-            IPop(Reg(RBP)),
+            IMov(Reg(STACK_PTR_REG), Reg(BASE_PTR_REG)),
+            IPop(Reg(BASE_PTR_REG)),
             IRet
         )
     def errorExitInstrs(label: Label): List[Instr] = 
         given DataSize = QWORD
         List(
             alignStack,
-            ILea(Reg(RDI), Mem(label)),
+            ILea(Reg(FIRST_PARAM_REG), Mem(label)),
             ICall(PbPrint(StringT()).labelString),
-            IMov(Reg(RDI), Imm(-1))(using BYTE),
+            IMov(Reg(FIRST_PARAM_REG), Imm(-1))(using BYTE),
             ICall("exit@plt")
         )
     def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
-            ISub(Reg(RSP), Imm(16)),
-            IMov(Mem(RSP), Reg(RDI))(using size),
-            ILea(Reg(RSI), Mem(RSP, 0)),
-            ILea(Reg(RDI), Mem(Label(label))),
-            IMov(Reg(RAX), Imm(0))(using BYTE),
+            ISub(Reg(STACK_PTR_REG), Imm(16)),
+            IMov(Mem(STACK_PTR_REG), Reg(FIRST_PARAM_REG))(using size),
+            ILea(Reg(SECOND_PARAM_REG), Mem(STACK_PTR_REG, 0)),
+            ILea(Reg(FIRST_PARAM_REG), Mem(Label(label))),
+            IMov(Reg(SYSTEM_CALL_REG), Imm(0))(using BYTE),
             ICall("scanf@plt"),
-            IMov(Reg(RAX), Mem(RSP))(using size),
-            IAdd(Reg(RSP), Imm(16))
+            IMov(Reg(RETURN_REG), Mem(STACK_PTR_REG))(using size),
+            IAdd(Reg(STACK_PTR_REG), Imm(16))
         ) ++ functionEnd
     def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
-            IMov(Reg(RSI), Reg(RDI))(using size),
-            ILea(Reg(RDI), Mem(Label(label))),
-            IMov(Reg(RAX), Imm(0))(using BYTE),
+            IMov(Reg(SECOND_PARAM_REG), Reg(FIRST_PARAM_REG))(using size),
+            ILea(Reg(FIRST_PARAM_REG), Mem(Label(label))),
+            IMov(Reg(SYSTEM_CALL_REG), Imm(0))(using BYTE),
             ICall("printf@plt"),
-            IMov(Reg(RDI), Imm(0)),
+            IMov(Reg(FIRST_PARAM_REG), Imm(0)),
             ICall("fflush@plt")
         ) ++ functionEnd
     val printsBlock: List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
-            IMov(Reg(RDX), Reg(RDI)),
-            IMov(Reg(RSI), Mem(RDI, -4))(using DWORD),
-            ILea(Reg(RDI), Mem(Label(".L._prints_str0"))),
-            IMov(Reg(RAX), Imm(0))(using BYTE),
+            IMov(Reg(THIRD_PARAM_REG), Reg(FIRST_PARAM_REG)),
+            IMov(Reg(SECOND_PARAM_REG), Mem(FIRST_PARAM_REG, -4))(using DWORD),
+            ILea(Reg(FIRST_PARAM_REG), Mem(Label(".L._prints_str0"))),
+            IMov(Reg(SYSTEM_CALL_REG), Imm(0))(using BYTE),
             ICall("printf@plt"),
-            IMov(Reg(RDI), Imm(0)),
+            IMov(Reg(FIRST_PARAM_REG), Imm(0)),
             ICall("fflush@plt")
         ) ++ functionEnd
 }

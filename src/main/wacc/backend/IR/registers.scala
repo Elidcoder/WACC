@@ -31,8 +31,10 @@ case object RIP extends Register
 
 
 /* Name registers according to their usecases. */
+final val SYSTEM_CALL_REG  = RAX
 final val BASE_PTR_REG     = RBP
 final val STACK_PTR_REG    = RSP
+final val BASE_MEMORY_REG  = RBX
 final val FIRST_PARAM_REG  = RDI
 final val SECOND_PARAM_REG = RSI
 final val THIRD_PARAM_REG  = RDX
