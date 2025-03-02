@@ -30,7 +30,8 @@ object referencer {
     }
 
     /* Reference the variables used in a program. */
-    def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Program[QualifiedName, KnownType] = {
+    def reference(prog: Program[QualifiedName, KnownType]): (Program[QualifiedName, KnownType], Context) = {
+        given ctx: Context = new Context()
         given mainName:QualifiedName = ctx.mainName
 
         /* Reference each function defined at the top. */
@@ -39,8 +40,8 @@ object referencer {
         /* Reference the main function. */
         reference(prog.stmts)
 
-        /* Return the given program to allow chaining in main. */
-        prog
+        /* Return a filled in context and prog to chain with generate. */
+        (prog, ctx)
     }
     
     /* Reference the variables used in a function as well as its parameters. */

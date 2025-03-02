@@ -8,7 +8,6 @@ import wacc.semantic.typecheck.typechecker
 import wacc.backend.generator.generator
 import wacc.backend.referencing.referencer
 import wacc.backend.formatter.formatBlocks
-import wacc.backend.Context
 
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
@@ -36,7 +35,6 @@ def pipeline(file: File): Int = {
                 /* Renamer & typechecker ran successfully. */
                 case Right(value) => 
                     val finalTree = value.get
-                    given Context = new Context()
 
                     val writer: Writer = 
                         val assFile = new File(getAssFileName(file.getName()))
