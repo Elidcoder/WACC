@@ -7,12 +7,16 @@ import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 sealed trait Prebuilt {
     def labelString: String
     val block: Block
+    def generateRoData(strs: List[String]): List[RoData] = 
+        strs.zipWithIndex.map { case (str, index) => 
+            RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
+        }
 }
 
 case object PbOutOfBounds extends Prebuilt {
     def labelString = "_errOutOfBounds"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: array index %d out of bounds\\n"))
+        generateRoData(List("fatal error: array index %d out of bounds\\n"))
     val block = 
         Block (
             Label(labelString),
@@ -23,7 +27,7 @@ case object PbOutOfBounds extends Prebuilt {
 case object PbErrBadChar extends Prebuilt {
     def labelString = "_errBadChar"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: int %d is not ascii character 0-127 \\n"))
+        generateRoData(List("fatal error: int %d is not ascii character 0-127 \\n"))
     val block = 
         given DataSize = QWORD
         Block (
@@ -43,7 +47,7 @@ case object PbErrBadChar extends Prebuilt {
 case object PbErrNull extends Prebuilt {
     def labelString = "_errNull"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: null pair dereferenced or freed\\n"))
+        generateRoData(List("fatal error: null pair dereferenced or freed\\n"))
     val block = 
         Block (
             Label(labelString),
@@ -54,7 +58,7 @@ case object PbErrNull extends Prebuilt {
 case object PbErrOutOfMemory extends Prebuilt {
     def labelString = "_errOutOfMemory"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: out of memory\\n"))
+        generateRoData(List("fatal error: out of memory\\n"))
     val block = 
         Block (
             Label(labelString),
@@ -90,7 +94,7 @@ case object PbExit extends Prebuilt{
 case object PbErrOverflow extends Prebuilt{
     def labelString = "_errOverflow"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: integer overflow or underflow occurred\\n"))
+        generateRoData(List("fatal error: integer overflow or underflow occurred\\n"))
     val block = 
         Block (
             Label(labelString),
@@ -101,7 +105,7 @@ case object PbErrOverflow extends Prebuilt{
 case object PbDivZero extends Prebuilt{
     def labelString = "_errDivZero"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(labelString, List("fatal error: division or modulo by zero\\n"))
+        generateRoData(List("fatal error: division or modulo by zero\\n"))
     val block = 
         Block (
             Label(labelString),
@@ -121,13 +125,13 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
         case _               => ""
     }
     private val roData: List[RoData] = varType match {
-        case CharT() => prebuiltGenerator.generateRoData(labelString, List("%c"))
-        case IntT() => prebuiltGenerator.generateRoData(labelString, List("%d"))
-        case ArrayT(CharT()) => prebuiltGenerator.generateRoData(labelString, List("%.*s"))
-        case ArrayT(_) => prebuiltGenerator.generateRoData(labelString, List("%p"))
-        case PairT(_,_) => prebuiltGenerator.generateRoData(labelString, List("%p"))
-        case StringT() => prebuiltGenerator.generateRoData(labelString, List("%.*s"))
-        case BoolT() => prebuiltGenerator.generateRoData(labelString, List("false", "true", "%.*s"))
+        case CharT() => generateRoData(List("%c"))
+        case IntT() => generateRoData(List("%d"))
+        case ArrayT(CharT()) => generateRoData(List("%.*s"))
+        case ArrayT(_) => generateRoData(List("%p"))
+        case PairT(_,_) => generateRoData(List("%p"))
+        case StringT() => generateRoData(List("%.*s"))
+        case BoolT() => generateRoData(List("false", "true", "%.*s"))
         case _ => List()
     }
     given DataSize = QWORD
@@ -165,7 +169,7 @@ case class PbPrintln(varType: KnownType) extends Prebuilt{
     def labelString = PbPrint(varType).labelString
     val label: String = "_println"
     private val roData: List[RoData] = 
-        prebuiltGenerator.generateRoData(label, List(""))
+        List(RoData(0, "", Label(s".L.${label}_str0")))
     val block = 
         given DataSize = QWORD
         Block (
@@ -209,8 +213,8 @@ case class PbRead(arType: KnownType) extends Prebuilt{
         case _ => ""
     }
     private val roData: List[RoData] = arType match {
-        case CharT() => prebuiltGenerator.generateRoData(labelString, List(" %c"))
-        case IntT() => prebuiltGenerator.generateRoData(labelString, List("%d"))
+        case CharT() => generateRoData(List(" %c"))
+        case IntT() => generateRoData(List("%d"))
         case _ => List()
     }
     val block: Block = arType match {
@@ -243,20 +247,16 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
 }
 
 object prebuiltGenerator {
-    def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
-        case PbMalloc => PbMalloc.block :: generatePrebuiltBlock(PbErrOutOfMemory) ++ generatePrebuiltBlock(PbPrint(StringT()))
-        case PbDivZero => PbDivZero.block :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbErrOverflow => PbErrOverflow.block :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbPrintln(varType) => PbPrintln(varType).block :: generatePrebuiltBlock(PbPrint(varType))
-        case PbFree(ty@PairT(_,_)) => PbFree(ty).block :: generatePrebuiltBlock(PbErrNull)
-        case PbErrNull => PbErrNull.block :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbArrRef(size) => PbArrRef(size).block :: generatePrebuiltBlock(PbOutOfBounds)
-        case _ => List(prebuilt.block)
-    }
-    def generateRoData(labelString: String, strs: List[String]): List[RoData] = 
-        strs.zipWithIndex.map { case (str, index) => 
-            RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
+    def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = 
+        val next: List[Block] = prebuilt match {
+            case (PbErrNull|PbErrOutOfMemory|PbErrOverflow|PbDivZero) => generatePrebuiltBlock(PbPrint(StringT()))
+            case PbMalloc           => generatePrebuiltBlock(PbErrOutOfMemory)
+            case PbPrintln(varType) => generatePrebuiltBlock(PbPrint(varType))
+            case PbFree(PairT(_,_)) => generatePrebuiltBlock(PbErrNull)
+            case PbArrRef(size)     => generatePrebuiltBlock(PbOutOfBounds)
+            case _ => List.empty
         }
+        prebuilt.block :: next
     val alignStack: Instr = IAnd(Reg(RSP), Imm(-16))(using QWORD)
     val functionStart: List[Instr] = 
         given DataSize = QWORD
