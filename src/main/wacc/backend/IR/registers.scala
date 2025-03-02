@@ -1,5 +1,6 @@
 package wacc.backend.ir
 
+/* Define the registers available. */
 sealed trait Register
 
 /* Caller */
@@ -41,23 +42,34 @@ final val THIRD_PARAM_REG  = RDX
 final val FOURTH_PARAM_REG = RCX
 final val FIFTH_PARAM_REG  = R8
 final val SIXTH_PARAM_REG  = R9
+final val RETURN_REG       = RAX
+final val TEMP_REG         = R10
+final val MALLOC_REG       = R11
+final val PAIR_ELEM_REG    = RBX //TODO(change and check)
+final val REMAINDER_REG    = RDX
 
+/* Define the data sizes. */
 sealed trait DataSize {
     val bytes: Int
+    val name: String
 }
 sealed trait DataSizeSmall extends DataSize
 
 case object BYTE extends DataSizeSmall {
     override val bytes = 1
+    override val name = "byte"
 }
 case object WORD extends DataSizeSmall {
     override val bytes = 2
+    override val name = "word"
 }
 case object DWORD extends DataSize {
     override val bytes = 4
+    override val name = "dword"
 }
 case object QWORD extends DataSize {
     override val bytes = 8
+    override val name = "qword"
 }
 
 /* An ordered list of registers used for parameters. */

@@ -7,10 +7,8 @@ import wacc.ast._
 import wacc.backend.ir._
 
 object referencer {
-
-
     /* Stores the initial offset for any function due to the initial operations. */
-    private val INITIAL_PARAM_OFF = 16
+    private val INITIAL_PARAM_OFF = 2 * QWORD.bytes
 
     /* Returns the dataSize matching a given type, 
      * we have a static guarantee from frontend _ never occurs. */
@@ -33,14 +31,13 @@ object referencer {
 
     /* Reference the variables used in a program. */
     def reference(prog: Program[QualifiedName, KnownType])(using ctx: Context): Program[QualifiedName, KnownType] = {
-        given mainName:QualifiedName = QualifiedName("main", -1)
+        given mainName:QualifiedName = ctx.mainName
 
         /* Reference each function defined at the top. */
         prog.funcs.foreach(reference)
         
         /* Reference the main function. */
         reference(prog.stmts)
-        ctx.mainOffset = ctx.getFuncOff(mainName)
 
         /* Return the given program to allow chaining in main. */
         prog
@@ -51,15 +48,13 @@ object referencer {
         given funcName:QualifiedName = func.id.name
 
         /* Paramters exceeding numb registers */
-        var offset = 0
-        func.params.reverse.foreach(
-            (param) => 
-                ctx.addVar(param.paramId.name, Mem(BASE_PTR_REG, offset + INITIAL_PARAM_OFF))
-                offset += getTypeSize(param.paramId.t).bytes
+        val offset = func.params.foldRight(0)( (param, acc) => 
+            ctx.addVar(param.paramId.name, Mem(BASE_PTR_REG, acc + INITIAL_PARAM_OFF))
+            acc + getTypeSize(param.paramId.t).bytes
         )
         ctx.addFuncParamOff(funcName, offset)
         
-        /* Handle statements*/
+        /* Handle function body */
         reference(func.stmts)
     }
 
@@ -72,9 +67,12 @@ object referencer {
         case NewAss(_, id, rval) => addVarToContext(id)
 
         /* Check nested statements. */
-        case If(cond, ifStmts, elseStmts) => {reference(ifStmts); reference(elseStmts)}
-        case While(cond, subStmts) => reference(subStmts)
-        case Nest(stmts) => reference(stmts)
+        case If(_, ifStmts, elseStmts) => {
+            reference(ifStmts)
+            reference(elseStmts)
+        }
+        case While(_, subStmts) => reference(subStmts)
+        case Nest(subStmts)     => reference(subStmts)
 
         case _ => {}
     }

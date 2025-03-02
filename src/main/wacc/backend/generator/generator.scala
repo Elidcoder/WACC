@@ -1,40 +1,34 @@
 package wacc.backend.generator
 
+
+import scala.collection.mutable.{Builder, Set}
+
 import wacc.ast._
 import wacc.backend.ir._
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
-import scala.collection.mutable.{Builder, Set}
-
 import wacc.backend.generator.prebuilts._
 import wacc.backend.referencing.referencer.getTypeSize
 
 type InstrBuilder = Builder[Instr, List[Instr]]
 
-final val RETURN_REG = RAX
-final val TEMP_REG   = R10
-final val MALLOC_REG   = R11
-
-final val PAIR_ELEM_REG = RBX //TODO(change and check)
-
-final val REMAINDER_REG = RDX
-
 object generator {
     def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
+        given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         given DataSize = QWORD
         val blockBuilder: Set[Block] = Set()
-        given mainBuilder: InstrBuilder = List.newBuilder[Instr]
-        generateFuncStart(ctx.mainOffset)
+        val mainOffset = ctx.getFuncOff(ctx.mainName)
+        generateFuncStart(mainOffset)
         generateStmts(prog.stmts)
-        if ctx.mainOffset != 0 then
-            mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (ctx.mainOffset))
+        if mainOffset != 0 then
+            mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (mainOffset))
         mainBuilder
             += IMov (Reg (RETURN_REG), Imm (0))
             += IPop (Reg (BASE_PTR_REG))
             += IRet
         prog.funcs.foreach { func => blockBuilder += generate(func) }
         ctx.getPrebuilts().foreach { prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder) }
-        val mainBlock = Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
+        val mainBlock = Block(Label (ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
         blockBuilder += mainBlock 
         blockBuilder.toList
     }
