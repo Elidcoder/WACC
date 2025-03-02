@@ -20,18 +20,19 @@ object generator {
         val blockBuilder: Set[Block] = Set()
         val mainOffset = ctx.getFuncOff(ctx.mainName)
 
+        /* Generate the main function. */
         generateFuncStart(mainOffset)
         generateStmts(prog.stmts)
-        if mainOffset != 0 then
+        if (mainOffset != 0) then
             mainBuilder += IAdd(Reg(STACK_PTR_REG), Imm(mainOffset))
         mainBuilder
             += IMov(Reg(RETURN_REG), Imm(0))
             += IPop(Reg(BASE_PTR_REG))
             += IRet
-
-        prog.funcs.foreach { func => blockBuilder += generate(func) }
-        ctx.getPrebuilts().foreach { prebuilt => prebuiltGenerator.generatePrebuiltBlock(prebuilt)(using blockBuilder) }
-
+        
+        /* Generate all other functions' code. */
+        prog.funcs.foreach(blockBuilder += generate(_))
+        ctx.getPrebuilts().foreach(prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder))
         val mainBlock = Block(Label(ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
         blockBuilder += mainBlock
         blockBuilder.toList
@@ -51,7 +52,7 @@ object generator {
         builder
             += IPush (Reg (BASE_PTR_REG))
             += IMov (Reg (BASE_PTR_REG), Reg (STACK_PTR_REG))
-        if offset != 0 then
+        if (offset != 0) then
             builder += ISub (Reg (STACK_PTR_REG), Imm (offset))
     }
 
@@ -125,9 +126,9 @@ object generator {
         val label = ctx.addPrebuilt(PbErrNull)
         val lValOp = findOp(lVal)
         builder
-            += IMov (Reg(PAIR_ELEM_REG), lValOp)
-            += ICmp(Reg(PAIR_ELEM_REG), Imm(0))
-            += Jmp(Label(label), JumpCond.E)
+            += IMov (Reg (PAIR_ELEM_REG), lValOp)
+            += ICmp (Reg (PAIR_ELEM_REG), Imm (0))
+            += Jmp (Label (label), JumpCond.E)
     }
 
     /* Determines the DestOp (destination/location) of a given lvalue. */
@@ -165,8 +166,7 @@ object generator {
         apply: (Reg, Reg) => Instr
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         generate(left) 
-        builder 
-            += IPush (Reg (RETURN_REG)) 
+        builder += IPush (Reg (RETURN_REG)) 
         generate(right)
         builder
             += IPush (Reg (RETURN_REG)) 
@@ -183,8 +183,7 @@ object generator {
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = DWORD
         generate(right)
-        builder
-            += IPush (Reg (RETURN_REG))
+        builder += IPush (Reg (RETURN_REG))
         generate(left) 
         builder
             += IPop (Reg (TEMP_REG))
@@ -222,9 +221,11 @@ object generator {
             case Sub(x, y) => generateAddSubMul(x, y, ISub.apply)
             case Mul(x, y) => generateAddSubMul(x, y, IMul.apply)
             case Div(x, y) => generateDivMod(x, y)
-            case Mod(x, y) => generateDivMod(x, y)
+            case Mod(x, y) => {
+                generateDivMod(x, y)
                 builder += IMov (Reg (RETURN_REG), Reg (REMAINDER_REG))(using QWORD)
-            
+            }
+
             /* Generate code for a binary comparison operator. */
             case Eq(left, right)        => generateBinCond(left, right, JumpCond.E)
             case NotEq(left, right)     => generateBinCond(left, right, JumpCond.NE)
@@ -232,7 +233,7 @@ object generator {
             case GreaterEq(left, right) => generateBinCond(left, right, JumpCond.GE)
             case Less(left, right)      => generateBinCond(left, right, JumpCond.L)
             case LessEq(left, right)    => generateBinCond(left, right, JumpCond.LE)
-            case And(left, right) => 
+            case And(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
@@ -243,7 +244,8 @@ object generator {
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += afterLabel
                     += ISet (Reg (RETURN_REG), JumpCond.E)
-            case Or(left, right) =>
+            }
+            case Or(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
@@ -254,7 +256,8 @@ object generator {
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += afterLabel
                     += ISet (Reg (RETURN_REG), JumpCond.E)
-            
+            }
+
             /* Generate code for a unary operator. */
             case Len(expr) => 
                 generate(expr)
@@ -267,18 +270,20 @@ object generator {
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += ISet (Reg (RETURN_REG), JumpCond.NE)
-            case Neg(expr) => 
+            case Neg(expr) => {
                 generate(expr)
                 builder 
                 += INeg (Reg (RETURN_REG))
                 += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
-            case Chr(expr) => 
+            }
+            case Chr(expr) => {
                 val label = ctx.addPrebuilt(PbErrBadChar)
                 generate(expr)
                 builder
                     += ITest (Reg (RETURN_REG), Imm (-128))
                     += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
                     += Jmp (Label (label), JumpCond.NE)
+            }
 
             /* Generate code for an identifier. */
             case i@Ident(name) => 
@@ -293,7 +298,7 @@ object generator {
                 builder += IMov (Reg (RETURN_REG), (Imm (if (bool) 1 else 0)))(using BYTE)
             case IntLit(numb) =>
                 builder += IMov (Reg (RETURN_REG), Imm (numb))
-            case StrLit(str) => 
+            case StrLit(str) => {
                 val newStr = str.flatMap {
                     case '\n' => "\\n"
                     case '\t' => "\\t"
@@ -306,9 +311,9 @@ object generator {
                     case c => c.toString
                 }
                 val roData = ctx.addRoData(newStr)
-                builder 
-                    += ILea (Reg (RETURN_REG), Mem (roData.label))(using QWORD)
-            case ArrayElem(id, exprs) => 
+                builder += ILea (Reg (RETURN_REG), Mem (roData.label))(using QWORD)
+            }
+            case ArrayElem(id, exprs) => {
                 val size = getArraySize(id.t, exprs.size)
                 val label = ctx.addPrebuilt(PbArrRef(size))
                 exprs.reverse match
@@ -322,6 +327,7 @@ object generator {
                             += ICall (label)
                             += IMov (Reg (RETURN_REG), Mem (R9))(using size)
                     case Nil => generate(id)
+            }
         }
         builder.result()
     }
@@ -360,31 +366,33 @@ object generator {
             case Nest(stmts) => generateStmts(stmts)
 
             /* Move the value into the right place based on the reference calculated in the referencer. */
-            case NewAss(assType, id, rVal) => 
+            case NewAss(assType, id, rVal) => {
                 generate(rVal)
-                builder
-                    += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
-            
+                builder += IMov (ctx.getVarRef(id.name), Reg (RETURN_REG))(using getTypeSize(assType))
+            }
+
             /* Generate the rvalue, save the result to find the lval's location and then save the result there. */
-            case a@Assign(lVal, rVal) => 
+            case a@Assign(lVal, rVal) => {
                 generate(rVal)
                 builder += IPush(Reg(RETURN_REG))
                 val lValOp = findOp(lVal)
                 builder
                     += IPop(Reg(RETURN_REG))
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(a.ty))
+            }
 
             /* Add the correct read prebuilt using the lval and then add the correct call. */
-            case r@Read(lVal) => 
-                val label = ctx.addPrebuilt(PbRead(r.ty))
+            case r@Read(lVal) => {
+                val label  = ctx.addPrebuilt(PbRead(r.ty))
                 val lValOp = findOp(lVal)
                 builder 
                     += IMov (Reg (FIRST_PARAM_REG), lValOp)(using getTypeSize(r.ty))
                     += ICall (label)
                     += IMov (lValOp, Reg (RETURN_REG))(using getTypeSize(r.ty))
+            }
 
             /* Add the free prebuilt, generate the expr, modify the return if it was an array and correctly calling free. */
-            case f@Free(expr) =>
+            case f@Free(expr) => {
                 val label = ctx.addPrebuilt(PbFree(f.ty))
                 generate(expr)
                 f.ty match
@@ -393,42 +401,47 @@ object generator {
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), Reg (RETURN_REG))
                     += ICall (label)
+            }
 
             /* Generate the expr, then reset the base and stack pointer and then return. */
-            case Return(expr) =>
+            case Return(expr) => {
                 generate(expr)
                 builder
                     += IMov (Reg (STACK_PTR_REG), Reg (BASE_PTR_REG))
                     += IPop (Reg (BASE_PTR_REG))
                     += IRet
+            }
             
             /* Generate the expr, then add the exit prebuilt and call it correctly. */
-            case Exit(expr) => 
+            case Exit(expr) => {
                 val label = ctx.addPrebuilt(PbExit)
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using DWORD)
                     += ICall (label)
+            }
 
             /* Generate the expr, then add the print prebuilt and call it correctly. */
-            case p@Print(expr) => 
+            case p@Print(expr) => {
                 val label = ctx.addPrebuilt(PbPrint(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
+            }
 
              /* Generate the expr, then add the println prebuilt and call it correctly. */
-            case p@PrintLn(expr) => 
+            case p@PrintLn(expr) => {
                 val label = ctx.addPrebuilt(PbPrintln(p.ty))
                 generate(expr)
                 builder
                     += IMov (Reg (FIRST_PARAM_REG), (Reg (RETURN_REG)))(using getTypeSize(p.ty))
                     += ICall (label)
                     += ICall ("_println")
+            }
             
             /* Generate the condition, its jumps and the 2 bodies. */
-            case If(cond, ifStmts, elseStmts) => 
+            case If(cond, ifStmts, elseStmts) => {
                 val (ifLabel, endLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 generate(cond)
                 builder
@@ -440,9 +453,10 @@ object generator {
                     += ifLabel
                 generateStmts(ifStmts)
                 builder += endLabel
+            }
 
             /* Generate the cond, its jumps and the body. */
-            case While(cond, stmts) =>
+            case While(cond, stmts) =>{
                 val (condLabel, bodyLabel) = (ctx.nextLabel(), ctx.nextLabel())
                 builder
                     += Jmp (condLabel)
@@ -453,6 +467,7 @@ object generator {
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(1))(using BYTE)
                     += Jmp (bodyLabel, JumpCond.E)
+            }
         }
     }
 
