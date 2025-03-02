@@ -25,6 +25,8 @@ final val MALLOC_CALL = "malloc@plt"
 final val PUTS_CALL = "puts@plt"
 final val FREE_CALL = "free@plt"
 
+/* A trait representing a prebuilt section of code inserted 
+ * whenever inbuilt function calls are found in the program. */
 sealed trait Prebuilt {
     def labelString: String
     val block: Block
@@ -34,6 +36,7 @@ sealed trait Prebuilt {
         }
 }
 
+/* Prebuilt section for out of bounds errors in array indexing. */
 case object PbOutOfBounds extends Prebuilt {
     def labelString = "_errOutOfBounds"
     private val roData: List[RoData] = 
@@ -45,6 +48,8 @@ case object PbOutOfBounds extends Prebuilt {
             prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
         )
 }
+
+/* Prebuilt section for a invalid char. */
 case object PbErrBadChar extends Prebuilt {
     def labelString = "_errBadChar"
     private val roData: List[RoData] = 
@@ -65,6 +70,8 @@ case object PbErrBadChar extends Prebuilt {
             ) ++ prebuiltGenerator.functionEnd
         )
 }
+
+/* Prebuilt section for attempts to dereference or free a null pair. */
 case object PbErrNull extends Prebuilt {
     def labelString = "_errNull"
     private val roData: List[RoData] = 
@@ -76,6 +83,8 @@ case object PbErrNull extends Prebuilt {
             prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
         )
 }
+
+/* Prebuilt section for malloc failing due to insufficient memory. */
 case object PbErrOutOfMemory extends Prebuilt {
     def labelString = "_errOutOfMemory"
     private val roData: List[RoData] = 
@@ -87,6 +96,8 @@ case object PbErrOutOfMemory extends Prebuilt {
             prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
         )
 }
+
+/* Prebuilt section for malloc calls. */
 case object PbMalloc extends Prebuilt {
     def labelString = "_malloc"
     val block = 
@@ -101,6 +112,8 @@ case object PbMalloc extends Prebuilt {
             ) ++ prebuiltGenerator.functionEnd
         )
 }
+
+/* Prebuilt section for exit calls. */
 case object PbExit extends Prebuilt{
     def labelString = "_exit"
     val block = 
@@ -112,6 +125,8 @@ case object PbExit extends Prebuilt{
             ) ++ prebuiltGenerator.functionEnd
         )
 }
+
+/* Prebuilt section for over or under flowing in integer calculations. */
 case object PbErrOverflow extends Prebuilt{
     def labelString = "_errOverflow"
     private val roData: List[RoData] = 
@@ -123,6 +138,8 @@ case object PbErrOverflow extends Prebuilt{
             prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
         )
 }
+
+/* Prebuilt section for a 0 denominator in division. */
 case object PbDivZero extends Prebuilt{
     def labelString = "_errDivZero"
     private val roData: List[RoData] = 
@@ -134,6 +151,8 @@ case object PbDivZero extends Prebuilt{
             prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
         )
 }
+
+/* Prebuilt section for a print call. */
 case class PbPrint(varType: KnownType) extends Prebuilt{
     def labelString = varType match {
         case ArrayT(CharT()) => "_prints"
@@ -187,6 +206,8 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
         case _ => Block(Label(labelString), None, List())
     }
 }
+
+/* Prebuilt section for a println call. */
 case class PbPrintln(varType: KnownType) extends Prebuilt{
     def labelString = PbPrint(varType).labelString
     val label: String = "_println"
@@ -205,6 +226,8 @@ case class PbPrintln(varType: KnownType) extends Prebuilt{
             ) ++ prebuiltGenerator.functionEnd
         )
 }
+
+/* Prebuilt section for a free or freepair call. */
 case class PbFree(varType: KnownType) extends Prebuilt{
     def labelString = varType match {
         case ArrayT(_) => "_free"
@@ -228,6 +251,8 @@ case class PbFree(varType: KnownType) extends Prebuilt{
     val block = Block (Label(labelString), None, 
         prebuiltGenerator.functionStart ++ instrs ++ prebuiltGenerator.functionEnd)
 }
+
+/* Prebuilt section for a read call. */
 case class PbRead(arType: KnownType) extends Prebuilt{
     def labelString = arType match{
         case CharT() => "_readc"
@@ -245,6 +270,8 @@ case class PbRead(arType: KnownType) extends Prebuilt{
         case _ => Block(Label(labelString), None, List())
     }
 }
+
+/* Prebuilt section for an array reference. */
 case class PbArrRef(size: DataSize) extends Prebuilt {
     def labelString = s"_arrRef${size.bytes}"
     val block = 
@@ -268,7 +295,9 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
         )
 }
 
+/* Prebuilt generator. */
 object prebuiltGenerator {
+    /* Ensures prebuilt dependencies for prebuilts are included. */
     def generatePrebuiltBlock(prebuilt: Prebuilt)(using builder: Set[Block]): Unit = 
         given Set[Block] = builder
         prebuilt match {
@@ -280,7 +309,12 @@ object prebuiltGenerator {
             case _ => List.empty
         }
         builder += prebuilt.block
-    val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-16))(using QWORD)
+    
+    /* Instruction to align the stack after a function call. */
+    val twoPTRS = 2 * QWORD.bytes
+    val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-twoPTRS))(using QWORD)
+
+    /* Instruction set that appears at the start of each function. */
     val functionStart: List[Instr] = 
         given DataSize = QWORD
         List(
@@ -288,6 +322,8 @@ object prebuiltGenerator {
             IMov(Reg(BASE_PTR_REG), Reg(STACK_PTR_REG)),
             alignStack
         )
+
+    /* Instruction set that appears at the end of each function. */
     val functionEnd: List[Instr] =
         given DataSize = QWORD
         List(
@@ -295,6 +331,18 @@ object prebuiltGenerator {
             IPop(Reg(BASE_PTR_REG)),
             IRet
         )
+
+    /* Instruction set that appears at the end of each print call. */
+    val printEnd: List[Instr] =
+        given DataSize = QWORD
+        List(
+            IMov(Reg(SYSTEM_CALL_REG), Imm(PRINT_SYSTEM_CALL))(using BYTE),
+            ICall(PRINT_CALL),
+            IMov(Reg(FIRST_PARAM_REG), Imm(FLUSH_ALL)),
+            ICall(FLUSH_CALL)
+        )
+    
+    /* Instruction set that appears before an exit call. */
     def errorExitInstrs(label: Label): List[Instr] = 
         given DataSize = QWORD
         List(
@@ -304,37 +352,35 @@ object prebuiltGenerator {
             IMov(Reg(FIRST_PARAM_REG), Imm(ERROR_EXIT_CODE))(using BYTE),
             ICall("exit@plt")
         )
+    
+    /* Instruction set that appears around a read call. */
     def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
-            ISub(Reg(STACK_PTR_REG), Imm(16)),
+            ISub(Reg(STACK_PTR_REG), Imm(twoPTRS)),
             IMov(Mem(STACK_PTR_REG), Reg(FIRST_PARAM_REG))(using size),
             ILea(Reg(SECOND_PARAM_REG), Mem(STACK_PTR_REG, NO_OFFSET)),
             ILea(Reg(FIRST_PARAM_REG), Mem(Label(label))),
             IMov(Reg(SYSTEM_CALL_REG), Imm(READ_SYSTEM_CALL))(using BYTE),
             ICall("scanf@plt"),
             IMov(Reg(RETURN_REG), Mem(STACK_PTR_REG))(using size),
-            IAdd(Reg(STACK_PTR_REG), Imm(16))
+            IAdd(Reg(STACK_PTR_REG), Imm(twoPTRS))
         ) ++ functionEnd
+    
+    /* Instruction set for any print block. */
     def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
             IMov(Reg(SECOND_PARAM_REG), Reg(FIRST_PARAM_REG))(using size),
             ILea(Reg(FIRST_PARAM_REG), Mem(Label(label))),
-            IMov(Reg(SYSTEM_CALL_REG), Imm(PRINT_SYSTEM_CALL))(using BYTE),
-            ICall(PRINT_CALL),
-            IMov(Reg(FIRST_PARAM_REG), Imm(FLUSH_ALL)),
-            ICall(FLUSH_CALL)
-        ) ++ functionEnd
+        ) ++ printEnd ++ functionEnd
+    
+    /* Instruction set for a prints. */
     def printsBlock(roData: RoData): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
             IMov(Reg(THIRD_PARAM_REG), Reg(FIRST_PARAM_REG)),
             IMov(Reg(SECOND_PARAM_REG), Mem(FIRST_PARAM_REG, -(roData.str.length)))(using DWORD),
-            ILea(Reg(FIRST_PARAM_REG), Mem(roData.label)),
-            IMov(Reg(SYSTEM_CALL_REG), Imm(PRINT_SYSTEM_CALL))(using BYTE),
-            ICall(PRINT_CALL),
-            IMov(Reg(FIRST_PARAM_REG), Imm(FLUSH_ALL)),
-            ICall(FLUSH_CALL)
-        ) ++ functionEnd
+            ILea(Reg(FIRST_PARAM_REG), Mem(roData.label)),    
+        ) ++ printEnd ++ functionEnd
 }
