@@ -101,7 +101,7 @@ case object IMov {
     def apply(dest: Reg, opR: DestOp, cond: JumpCond)(using size: DataSize): IMov = new IMov(dest, opR, Some(cond))
 }
 
-
+/* 'Shrink' 64 bit sizes down to 32 leaving all other sizes unchanged. */
 private def to32Bit(size: DataSize): DataSize = size match
     case QWORD => DWORD
     case _ => size

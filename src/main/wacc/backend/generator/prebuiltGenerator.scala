@@ -5,7 +5,6 @@ import scala.collection.mutable.Set
 import wacc.backend.ir._
 import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
-import wacc.backend.generator.{RETURN_REG, TEMP_REG}
 
 final val FIRST_LABEL = 0
 final val SECOND_LABEL = 1
