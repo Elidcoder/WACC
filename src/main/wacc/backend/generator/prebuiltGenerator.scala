@@ -102,6 +102,21 @@ object prebuiltGenerator {
         strs.zipWithIndex.map { case (str, index) => 
             RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
         }
+    val alignStack: Instr = IAnd(Reg(RSP), Imm(-16))(using QWORD)
+    private val functionStart: List[Instr] = 
+        given DataSize = QWORD
+        List(
+            IPush(Reg(RBP)),
+            IMov(Reg(RBP), Reg(RSP)),
+            alignStack
+        )
+    private val functionEnd: List[Instr] =
+        given DataSize = QWORD
+        List(
+            IMov(Reg(RSP), Reg(RBP)),
+            IPop(Reg(RBP)),
+            IRet
+        )
     private val outOfBoundsRoData: List[RoData] = 
         generateRoData(PbOutOfBounds.labelString, List("fatal error: array index %d out of bounds\\n"))
     val outOfBoundsBlock = 
@@ -110,7 +125,7 @@ object prebuiltGenerator {
             Label(PbOutOfBounds.labelString),
             Some(outOfBoundsRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(outOfBoundsRoData(0).label)),
                 ICall(PbPrint(StringT()).labelString),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
@@ -119,13 +134,13 @@ object prebuiltGenerator {
         )
     private val errBadCharRoData: List[RoData] = 
         generateRoData(PbErrBadChar.labelString, List("fatal error: int %d is not ascii character 0-127 \\n"))
-    val errBadCharBlock = 
+    private val errBadCharBlock = 
         given DataSize = QWORD
         Block (
             Label(PbErrBadChar.labelString),
             Some(errBadCharRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(errBadCharRoData(0).label)),
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
@@ -143,7 +158,7 @@ object prebuiltGenerator {
             Label(PbErrNull.labelString),
             Some(errNullRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(errNullRoData(0).label)),
                 ICall(PbPrint(StringT()).labelString),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
@@ -158,7 +173,7 @@ object prebuiltGenerator {
             Label(PbErrOutOfMemory.labelString),
             Some(errOutOfMemoryRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(errOutOfMemoryRoData(0).label)),
                 ICall(PbPrint(StringT()).labelString),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
@@ -170,32 +185,19 @@ object prebuiltGenerator {
         Block (
             Label(PbMalloc.labelString),
             None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
+            functionStart ++ List(
                 ICall("malloc@plt"),
                 ICmp(Reg(RAX), Imm(0)),
-                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E)
+            ) ++ functionEnd
         )
-    val exitBlock = 
-        given DataSize = QWORD
+    private val exitBlock = 
         Block (
             Label(PbExit.labelString),
             None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
-                ICall("exit@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+            functionStart ++ List(
+                ICall("exit@plt")
+            ) ++ functionEnd
         )
     private val errOverflowRoData: List[RoData] = 
         generateRoData(PbErrOverflow.labelString, List("fatal error: integer overflow or underflow occurred\\n"))
@@ -205,7 +207,7 @@ object prebuiltGenerator {
             Label(PbErrOverflow.labelString),
             Some(errOverflowRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(errOverflowRoData(0).label)),
                 ICall(PbPrint(StringT()).labelString),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
@@ -220,7 +222,7 @@ object prebuiltGenerator {
             Label(PbDivZero.labelString),
             Some(divZeroRoData),
             List(
-                IAnd(Reg(RSP), Imm(-16)),
+                alignStack,
                 ILea(Reg(RDI), Mem(divZeroRoData(0).label)),
                 ICall(PbPrint(StringT()).labelString),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
@@ -229,10 +231,7 @@ object prebuiltGenerator {
         )
     private def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
-        List(
-            IPush(Reg(RBP)),
-            IMov(Reg(RBP), Reg(RSP)),
-            IAnd(Reg(RSP), Imm(-16)),
+        functionStart ++ List(
             ISub(Reg(RSP), Imm(16)),
             IMov(Mem(RSP), Reg(RDI))(using size),
             ILea(Reg(RSI), Mem(RSP, 0)),
@@ -240,11 +239,8 @@ object prebuiltGenerator {
             IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("scanf@plt"),
             IMov(Reg(RAX), Mem(RSP))(using size),
-            IAdd(Reg(RSP), Imm(16)),
-            IMov(Reg(RSP), Reg(RBP)),
-            IPop(Reg(RBP)),
-            IRet
-        )
+            IAdd(Reg(RSP), Imm(16))
+        ) ++ functionEnd
     val readcBlock = 
         Block (
             Label("_readc"),
@@ -257,33 +253,16 @@ object prebuiltGenerator {
             Some(List(RoData(2, "%d", Label(".L._readi_str0")))),
             readBlock(DWORD, ".L._readi_str0")
         )
-    // private val printEnd = 
-    //     given DataSize = QWORD
-    //     List(
-    //         IMov(Reg(RAX), Imm(0))(using size = BYTE),
-    //         ICall("puts@plt"),
-    //         IMov(Reg(RDI), Imm(0)),
-    //         ICall("fflush@plt"),
-    //         IMov(Reg(RSP), Reg(RBP)),
-    //         IPop(Reg(RBP)),
-    //         IRet
-    //     )
     private def genericPrintBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
-        List(
-            IPush(Reg(RBP)),
-            IMov(Reg(RBP), Reg(RSP)),
-            IAnd(Reg(RSP), Imm(-16)),
+        functionStart ++ List(
             IMov(Reg(RSI), Reg(RDI))(using size),
             ILea(Reg(RDI), Mem(Label(label))),
             IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("printf@plt"),
             IMov(Reg(RDI), Imm(0)),
-            ICall("fflush@plt"),
-            IMov(Reg(RSP), Reg(RBP)),
-            IPop(Reg(RBP)),
-            IRet
-        )
+            ICall("fflush@plt")
+        ) ++ functionEnd
     val printcBlock: Block = Block (
         Label("_printc"),
         Some(List(RoData(2, "%c", Label(".L._printc_str0")))),
@@ -308,10 +287,7 @@ object prebuiltGenerator {
                 RoData(4, "true", Label(".L._printb_str1")),
                 RoData(4, "%.*s", Label(".L._printb_str2"))
             )),
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
+            functionStart ++ List(
                 ICmp(Reg(RDI), Imm(0))(using BYTE),
                 Jmp(Label(".L_printb0"), JumpCond.NE),
                 ILea(Reg(RDX), Mem(Label(".L._printb_str0"))),
@@ -324,82 +300,54 @@ object prebuiltGenerator {
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
-                ICall("fflush@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+                ICall("fflush@plt")
+            ) ++ functionEnd
         )
     val printsBlock: Block = 
         given DataSize = QWORD
         Block (
             Label("_prints"),
             Some(List(RoData(4, "%.*s", Label(".L._prints_str0")))),
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
+            functionStart ++ List(
                 IMov(Reg(RDX), Reg(RDI)),
                 IMov(Reg(RSI), Mem(RDI, -4))(using DWORD),
                 ILea(Reg(RDI), Mem(Label(".L._prints_str0"))),
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
-                ICall("fflush@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+                ICall("fflush@plt")
+            ) ++ functionEnd
         )
     val printlnBlock = 
         given DataSize = QWORD
         Block (
             Label("_println"),
             Some(List(RoData(0, "", Label(".L._println_str0")))),
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
+            functionStart ++ List(
                 ILea(Reg(RDI), Mem(Label(".L._println_str0"))),
                 ICall("puts@plt"),
                 IMov(Reg(RDI), Imm(0)),
-                ICall("fflush@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+                ICall("fflush@plt")
+            ) ++ functionEnd
         )
     val freePairBlock = 
         given DataSize = QWORD
         Block (
             Label("_freepair"),
             None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
+            functionStart ++ List(
                 ICmp(Reg(RDI), Imm(0)),
                 Jmp(Label(PbErrNull.labelString), JumpCond.E),
-                ICall("free@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+                ICall("free@plt")
+            ) ++ functionEnd
         )
     val freeBlock = 
-        given DataSize = QWORD
         Block (
             Label("_free"),
             None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
-                ICall("free@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
+            functionStart ++ List(
+                ICall("free@plt")
+            ) ++ functionEnd
         )
     def genericArrRefBlock(size: DataSize): Block = 
         given DataSize = QWORD
