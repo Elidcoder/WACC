@@ -42,7 +42,7 @@ def pipeline(file: File): Int = {
                         new FileWriter(assFile)
 
                     formatBlocks(
-                        generator.generate(referencer.reference(finalTree)),
+                        generator.generate(finalTree)(using referencer.reference(finalTree)),
                         writer
                     )
                     /* Exit with error code 0 if compilation succeeds */

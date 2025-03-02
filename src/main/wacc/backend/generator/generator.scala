@@ -13,8 +13,7 @@ import wacc.backend.referencing.referencer.getTypeSize
 type InstrBuilder = Builder[Instr, List[Instr]]
 
 object generator {
-    def generate(pair: (Program[QualifiedName, KnownType], Context)): List[Block] = {
-        val (prog, ctx) = pair
+    def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
         given Context = ctx
         given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         given DataSize = QWORD

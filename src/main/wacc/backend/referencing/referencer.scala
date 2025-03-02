@@ -30,7 +30,7 @@ object referencer {
     }
 
     /* Reference the variables used in a program. */
-    def reference(prog: Program[QualifiedName, KnownType]): (Program[QualifiedName, KnownType], Context) = {
+    def reference(prog: Program[QualifiedName, KnownType]): Context = {
         given ctx: Context = new Context()
         given mainName:QualifiedName = ctx.mainName
 
@@ -41,7 +41,7 @@ object referencer {
         reference(prog.stmts)
 
         /* Return a filled in context and prog to chain with generate. */
-        (prog, ctx)
+        ctx
     }
     
     /* Reference the variables used in a function as well as its parameters. */
