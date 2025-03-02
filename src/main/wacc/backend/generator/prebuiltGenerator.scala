@@ -6,154 +6,31 @@ import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
 
 sealed trait Prebuilt {
     def labelString: String
-    def generateRoData(strs: List[String]): List[RoData] = 
-        strs.zipWithIndex.map { case (str, index) => 
-            RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
-        }
 }
 
 case object PbOutOfBounds extends Prebuilt {
     def labelString = "_errOutOfBounds"
-    val roData = generateRoData(List("fatal error: array index %d out of bounds\\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case object PbErrBadChar extends Prebuilt {
     def labelString = "_errBadChar"
-    val roData = generateRoData(List("fatal error: int %d is not ascii character 0-127 \\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                IMov(Reg(RAX), Imm(0))(using BYTE),
-                ICall("printf@plt"),
-                IMov(Reg(RDI), Imm(0)),
-                ICall("fflush@plt"),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case object PbErrNull extends Prebuilt {
     def labelString = "_errNull"
-    val roData = generateRoData(List("fatal error: null pair dereferenced or freed\\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case object PbErrOutOfMemory extends Prebuilt {
     def labelString = "_errOutOfMemory"
-    val roData = generateRoData(List("fatal error: out of memory\\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case object PbMalloc extends Prebuilt {
     def labelString = "_malloc"
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
-                ICall("malloc@plt"),
-                ICmp(Reg(RAX), Imm(0)),
-                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
-        )
 }
 case object PbExit extends Prebuilt{
     def labelString = "_exit"
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            None,
-            List(
-                IPush(Reg(RBP)),
-                IMov(Reg(RBP), Reg(RSP)),
-                IAnd(Reg(RSP), Imm(-16)),
-                ICall("exit@plt"),
-                IMov(Reg(RSP), Reg(RBP)),
-                IPop(Reg(RBP)),
-                IRet
-            )
-        )
 }
 case object PbErrOverflow extends Prebuilt{
     def labelString = "_errOverflow"
-    val roData = generateRoData(List("fatal error: integer overflow or underflow occurred\\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case object PbDivZero extends Prebuilt{
     def labelString = "_errDivZero"
-    val roData = generateRoData(List("fatal error: division or modulo by zero\\n"))
-    val block = 
-        given DataSize = QWORD
-        Block (
-            Label(labelString),
-            Some(roData),
-            List(
-                IAnd(Reg(RSP), Imm(-16)),
-                ILea(Reg(RDI), Mem(roData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
-        )
 }
 case class PbPrint(varType: KnownType) extends Prebuilt{
     def labelString = varType match {
@@ -190,10 +67,10 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
 
 object prebuiltGenerator {
     def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = prebuilt match {
-        case PbMalloc => PbMalloc.block :: generatePrebuiltBlock(PbErrOutOfMemory) ++ generatePrebuiltBlock(PbPrint(StringT()))
-        case PbExit => List(PbExit.block)
-        case PbDivZero => PbDivZero.block :: generatePrebuiltBlock(PbPrint(StringT()))
-        case PbErrOverflow => PbErrOverflow.block :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbMalloc => mallocBlock :: generatePrebuiltBlock(PbErrOutOfMemory) ++ generatePrebuiltBlock(PbPrint(StringT()))
+        case PbExit => List(exitBlock)
+        case PbDivZero => divZeroBlock :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbErrOverflow => errOverflowBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbPrint(varType) => varType match {
             case ArrayT(CharT()) => List(printsBlock)
             case CharT() => List(printcBlock)
@@ -215,11 +92,141 @@ object prebuiltGenerator {
             case IntT() => List(readiBlock)
             case _      => List()
         }
-        case PbErrNull => PbErrNull.block :: generatePrebuiltBlock(PbPrint(StringT()))
+        case PbErrNull => errNullBlock :: generatePrebuiltBlock(PbPrint(StringT()))
         case PbArrRef(size) => genericArrRefBlock(size) :: generatePrebuiltBlock(PbOutOfBounds)
-        case PbOutOfBounds => List(PbOutOfBounds.block)
-        case PbErrBadChar => List(PbErrBadChar.block)
+        case PbOutOfBounds => List(outOfBoundsBlock)
+        case PbErrOutOfMemory => List(errOutOfMemoryBlock)
+        case PbErrBadChar => List(errBadCharBlock)
     }
+    def generateRoData(labelString: String, strs: List[String]): List[RoData] = 
+        strs.zipWithIndex.map { case (str, index) => 
+            RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
+        }
+    private val outOfBoundsRoData: List[RoData] = 
+        generateRoData(PbOutOfBounds.labelString, List("fatal error: array index %d out of bounds\\n"))
+    val outOfBoundsBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbOutOfBounds.labelString),
+            Some(outOfBoundsRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(outOfBoundsRoData(0).label)),
+                ICall(PbPrint(StringT()).labelString),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
+    private val errBadCharRoData: List[RoData] = 
+        generateRoData(PbErrBadChar.labelString, List("fatal error: int %d is not ascii character 0-127 \\n"))
+    val errBadCharBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbErrBadChar.labelString),
+            Some(errBadCharRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(errBadCharRoData(0).label)),
+                IMov(Reg(RAX), Imm(0))(using BYTE),
+                ICall("printf@plt"),
+                IMov(Reg(RDI), Imm(0)),
+                ICall("fflush@plt"),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
+    private val errNullRoData: List[RoData] = 
+        generateRoData(PbErrNull.labelString, List("fatal error: null pair dereferenced or freed\\n"))
+    val errNullBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbErrNull.labelString),
+            Some(errNullRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(errNullRoData(0).label)),
+                ICall(PbPrint(StringT()).labelString),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
+    private val errOutOfMemoryRoData: List[RoData] = 
+        generateRoData(PbErrOutOfMemory.labelString, List("fatal error: out of memory\\n"))
+    val errOutOfMemoryBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbErrOutOfMemory.labelString),
+            Some(errOutOfMemoryRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(errOutOfMemoryRoData(0).label)),
+                ICall(PbPrint(StringT()).labelString),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
+    val mallocBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbMalloc.labelString),
+            None,
+            List(
+                IPush(Reg(RBP)),
+                IMov(Reg(RBP), Reg(RSP)),
+                IAnd(Reg(RSP), Imm(-16)),
+                ICall("malloc@plt"),
+                ICmp(Reg(RAX), Imm(0)),
+                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E),
+                IMov(Reg(RSP), Reg(RBP)),
+                IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    val exitBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbExit.labelString),
+            None,
+            List(
+                IPush(Reg(RBP)),
+                IMov(Reg(RBP), Reg(RSP)),
+                IAnd(Reg(RSP), Imm(-16)),
+                ICall("exit@plt"),
+                IMov(Reg(RSP), Reg(RBP)),
+                IPop(Reg(RBP)),
+                IRet
+            )
+        )
+    private val errOverflowRoData: List[RoData] = 
+        generateRoData(PbErrOverflow.labelString, List("fatal error: integer overflow or underflow occurred\\n"))
+    val errOverflowBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbErrOverflow.labelString),
+            Some(errOverflowRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(errOverflowRoData(0).label)),
+                ICall(PbPrint(StringT()).labelString),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
+    private val divZeroRoData: List[RoData] = 
+        generateRoData(PbDivZero.labelString, List("fatal error: division or modulo by zero\\n"))
+    val divZeroBlock = 
+        given DataSize = QWORD
+        Block (
+            Label(PbDivZero.labelString),
+            Some(divZeroRoData),
+            List(
+                IAnd(Reg(RSP), Imm(-16)),
+                ILea(Reg(RDI), Mem(divZeroRoData(0).label)),
+                ICall(PbPrint(StringT()).labelString),
+                IMov(Reg(RDI), Imm(-1))(using BYTE),
+                ICall("exit@plt")
+            )
+        )
     private def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         List(
@@ -232,7 +239,7 @@ object prebuiltGenerator {
             ILea(Reg(RDI), Mem(Label(label))),
             IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("scanf@plt"),
-            IMov(Reg(RAX), Mem(RSP))(using size = size),
+            IMov(Reg(RAX), Mem(RSP))(using size),
             IAdd(Reg(RSP), Imm(16)),
             IMov(Reg(RSP), Reg(RBP)),
             IPop(Reg(RBP)),
@@ -267,9 +274,9 @@ object prebuiltGenerator {
             IPush(Reg(RBP)),
             IMov(Reg(RBP), Reg(RSP)),
             IAnd(Reg(RSP), Imm(-16)),
-            IMov(Reg(RSI), Reg(RDI))(using size = size),
+            IMov(Reg(RSI), Reg(RDI))(using size),
             ILea(Reg(RDI), Mem(Label(label))),
-            IMov(Reg(RAX), Imm(0))(using size = BYTE),
+            IMov(Reg(RAX), Imm(0))(using BYTE),
             ICall("printf@plt"),
             IMov(Reg(RDI), Imm(0)),
             ICall("fflush@plt"),
@@ -305,7 +312,7 @@ object prebuiltGenerator {
                 IPush(Reg(RBP)),
                 IMov(Reg(RBP), Reg(RSP)),
                 IAnd(Reg(RSP), Imm(-16)),
-                ICmp(Reg(RDI), Imm(0))(using size = BYTE),
+                ICmp(Reg(RDI), Imm(0))(using BYTE),
                 Jmp(Label(".L_printb0"), JumpCond.NE),
                 ILea(Reg(RDX), Mem(Label(".L._printb_str0"))),
                 Jmp(Label(".L_printb1")),
@@ -314,7 +321,7 @@ object prebuiltGenerator {
                 Label(".L_printb1"),
                 IMov(Reg(RSI), Mem(RDX, -4)),
                 ILea(Reg(RDI), Mem(Label(".L._printb_str2"))),
-                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt"),
@@ -333,9 +340,9 @@ object prebuiltGenerator {
                 IMov(Reg(RBP), Reg(RSP)),
                 IAnd(Reg(RSP), Imm(-16)),
                 IMov(Reg(RDX), Reg(RDI)),
-                IMov(Reg(RSI), Mem(RDI, -4))(using size = DWORD),
+                IMov(Reg(RSI), Mem(RDI, -4))(using DWORD),
                 ILea(Reg(RDI), Mem(Label(".L._prints_str0"))),
-                IMov(Reg(RAX), Imm(0))(using size = BYTE),
+                IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
                 IMov(Reg(RDI), Imm(0)),
                 ICall("fflush@plt"),
@@ -372,7 +379,7 @@ object prebuiltGenerator {
                 IMov(Reg(RBP), Reg(RSP)),
                 IAnd(Reg(RSP), Imm(-16)),
                 ICmp(Reg(RDI), Imm(0)),
-                Jmp(Label("_errNull"), JumpCond.E),
+                Jmp(Label(PbErrNull.labelString), JumpCond.E),
                 ICall("free@plt"),
                 IMov(Reg(RSP), Reg(RBP)),
                 IPop(Reg(RBP)),
@@ -403,11 +410,11 @@ object prebuiltGenerator {
                 IPush(Reg(RBX)),
                 ITest(Reg(R10), Reg(R10))(using DWORD),
                 IMov(Reg(RSI), Reg(R10), JumpCond.L),
-                Jmp(Label("_errOutOfBounds"), JumpCond.L),
+                Jmp(Label(PbOutOfBounds.labelString), JumpCond.L),
                 IMov(Reg(RBX), Mem(R9, -4)),
                 ICmp(Reg(R10), Reg(RBX))(using DWORD),
                 IMov(Reg(RSI), Reg(R10), JumpCond.GE),
-                Jmp(Label("_errOutOfBounds"), JumpCond.GE),
+                Jmp(Label(PbOutOfBounds.labelString), JumpCond.GE),
                 ILea(Reg(R9), Mem(R9, R10, size)),
                 IPop(Reg(RBX)),
                 IRet
