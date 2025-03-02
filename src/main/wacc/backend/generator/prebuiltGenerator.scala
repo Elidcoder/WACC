@@ -117,20 +117,22 @@ object prebuiltGenerator {
             IPop(Reg(RBP)),
             IRet
         )
+    private def errorExitInstrs(label: Label): List[Instr] = 
+        given DataSize = QWORD
+        List(
+            alignStack,
+            ILea(Reg(RDI), Mem(label)),
+            ICall(PbPrint(StringT()).labelString),
+            IMov(Reg(RDI), Imm(-1))(using BYTE),
+            ICall("exit@plt")
+        )
     private val outOfBoundsRoData: List[RoData] = 
         generateRoData(PbOutOfBounds.labelString, List("fatal error: array index %d out of bounds\\n"))
     val outOfBoundsBlock = 
-        given DataSize = QWORD
         Block (
             Label(PbOutOfBounds.labelString),
             Some(outOfBoundsRoData),
-            List(
-                alignStack,
-                ILea(Reg(RDI), Mem(outOfBoundsRoData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
+            errorExitInstrs(outOfBoundsRoData(0).label)
         )
     private val errBadCharRoData: List[RoData] = 
         generateRoData(PbErrBadChar.labelString, List("fatal error: int %d is not ascii character 0-127 \\n"))
@@ -139,8 +141,7 @@ object prebuiltGenerator {
         Block (
             Label(PbErrBadChar.labelString),
             Some(errBadCharRoData),
-            List(
-                alignStack,
+            functionStart ++ List(
                 ILea(Reg(RDI), Mem(errBadCharRoData(0).label)),
                 IMov(Reg(RAX), Imm(0))(using BYTE),
                 ICall("printf@plt"),
@@ -148,37 +149,23 @@ object prebuiltGenerator {
                 ICall("fflush@plt"),
                 IMov(Reg(RDI), Imm(-1))(using BYTE),
                 ICall("exit@plt")
-            )
+            ) ++ functionEnd
         )
     private val errNullRoData: List[RoData] = 
         generateRoData(PbErrNull.labelString, List("fatal error: null pair dereferenced or freed\\n"))
     val errNullBlock = 
-        given DataSize = QWORD
         Block (
             Label(PbErrNull.labelString),
             Some(errNullRoData),
-            List(
-                alignStack,
-                ILea(Reg(RDI), Mem(errNullRoData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
+            errorExitInstrs(errNullRoData(0).label)
         )
     private val errOutOfMemoryRoData: List[RoData] = 
         generateRoData(PbErrOutOfMemory.labelString, List("fatal error: out of memory\\n"))
     val errOutOfMemoryBlock = 
-        given DataSize = QWORD
         Block (
             Label(PbErrOutOfMemory.labelString),
             Some(errOutOfMemoryRoData),
-            List(
-                alignStack,
-                ILea(Reg(RDI), Mem(errOutOfMemoryRoData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
+            errorExitInstrs(errOutOfMemoryRoData(0).label)
         )
     val mallocBlock = 
         given DataSize = QWORD
@@ -202,32 +189,18 @@ object prebuiltGenerator {
     private val errOverflowRoData: List[RoData] = 
         generateRoData(PbErrOverflow.labelString, List("fatal error: integer overflow or underflow occurred\\n"))
     val errOverflowBlock = 
-        given DataSize = QWORD
         Block (
             Label(PbErrOverflow.labelString),
             Some(errOverflowRoData),
-            List(
-                alignStack,
-                ILea(Reg(RDI), Mem(errOverflowRoData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
+            errorExitInstrs(errOverflowRoData(0).label)
         )
     private val divZeroRoData: List[RoData] = 
         generateRoData(PbDivZero.labelString, List("fatal error: division or modulo by zero\\n"))
     val divZeroBlock = 
-        given DataSize = QWORD
         Block (
             Label(PbDivZero.labelString),
             Some(divZeroRoData),
-            List(
-                alignStack,
-                ILea(Reg(RDI), Mem(divZeroRoData(0).label)),
-                ICall(PbPrint(StringT()).labelString),
-                IMov(Reg(RDI), Imm(-1))(using BYTE),
-                ICall("exit@plt")
-            )
+            errorExitInstrs(divZeroRoData(0).label)
         )
     private def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
