@@ -38,7 +38,7 @@ class Context() {
     
     private val strRoData: Map[String, RoData] = Map.empty
     def addRoData(str: String): RoData = strRoData.get(str).getOrElse({
-        val ro = RoData(str.size, str, nextStringLabel())
+        val ro = RoData(str, nextStringLabel())
         strRoData.put(str, ro)
         ro
     })
