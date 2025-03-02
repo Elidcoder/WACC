@@ -14,22 +14,26 @@ type InstrBuilder = Builder[Instr, List[Instr]]
 
 object generator {
     def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
+        given Context = ctx
         given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         given DataSize = QWORD
         val blockBuilder: Set[Block] = Set()
         val mainOffset = ctx.getFuncOff(ctx.mainName)
+
         generateFuncStart(mainOffset)
         generateStmts(prog.stmts)
         if mainOffset != 0 then
-            mainBuilder += IAdd (Reg (STACK_PTR_REG), Imm (mainOffset))
+            mainBuilder += IAdd(Reg(STACK_PTR_REG), Imm(mainOffset))
         mainBuilder
-            += IMov (Reg (RETURN_REG), Imm (0))
-            += IPop (Reg (BASE_PTR_REG))
+            += IMov(Reg(RETURN_REG), Imm(0))
+            += IPop(Reg(BASE_PTR_REG))
             += IRet
+
         prog.funcs.foreach { func => blockBuilder += generate(func) }
-        ctx.getPrebuilts().foreach { prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder) }
-        val mainBlock = Block(Label (ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
-        blockBuilder += mainBlock 
+        ctx.getPrebuilts().foreach { prebuilt => prebuiltGenerator.generatePrebuiltBlock(prebuilt)(using blockBuilder) }
+
+        val mainBlock = Block(Label(ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
+        blockBuilder += mainBlock
         blockBuilder.toList
     }
     
