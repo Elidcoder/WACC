@@ -1,5 +1,7 @@
 package wacc.backend.generator.prebuilts
 
+import scala.collection.mutable.Set
+
 import wacc.backend.ir._
 import wacc.ast.KnownType
 import wacc.ast.{CharT, StringT, IntT, BoolT, ArrayT, PairT}
@@ -268,8 +270,9 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
 }
 
 object prebuiltGenerator {
-    def generatePrebuiltBlock(prebuilt: Prebuilt): List[Block] = 
-        val next: List[Block] = prebuilt match {
+    def generatePrebuiltBlock(prebuilt: Prebuilt)(using builder: Set[Block]): Unit = 
+        given Set[Block] = builder
+        prebuilt match {
             case (PbErrNull|PbErrOutOfMemory|PbErrOverflow|PbDivZero) => generatePrebuiltBlock(PbPrint(StringT()))
             case PbMalloc           => generatePrebuiltBlock(PbErrOutOfMemory)
             case PbPrintln(varType) => generatePrebuiltBlock(PbPrint(varType))
@@ -277,7 +280,7 @@ object prebuiltGenerator {
             case PbArrRef(size)     => generatePrebuiltBlock(PbOutOfBounds)
             case _ => List.empty
         }
-        prebuilt.block :: next
+        builder += prebuilt.block
     val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-16))(using QWORD)
     val functionStart: List[Instr] = 
         given DataSize = QWORD

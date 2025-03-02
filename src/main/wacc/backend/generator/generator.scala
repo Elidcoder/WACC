@@ -22,7 +22,7 @@ final val REMAINDER_REG = RDX
 object generator {
     def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
         given DataSize = QWORD
-        val blockBuilder = List.newBuilder[Block]
+        val blockBuilder: Set[Block] = Set()
         given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         generateFuncStart(ctx.mainOffset)
         generateStmts(prog.stmts)
@@ -33,11 +33,10 @@ object generator {
             += IPop (Reg (BASE_PTR_REG))
             += IRet
         prog.funcs.foreach { func => blockBuilder += generate(func) }
-        val prebuilts: Set[Block] = Set()
-        ctx.getPrebuilts().foreach { prebuilt => prebuilts ++= prebuiltGenerator.generatePrebuiltBlock(prebuilt) }
-        blockBuilder ++= prebuilts
+        ctx.getPrebuilts().foreach { prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder) }
         val mainBlock = Block(Label ("main"), Some(ctx.getAllRodata()), mainBuilder.result())
-        mainBlock :: blockBuilder.result()
+        blockBuilder += mainBlock 
+        blockBuilder.toList
     }
     
     def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
