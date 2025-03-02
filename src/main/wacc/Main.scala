@@ -7,7 +7,7 @@ import wacc.syntax.lexer.lexErrBuilder
 import wacc.semantic.typecheck.typechecker
 import wacc.backend.generator.generator
 import wacc.backend.referencing.referencer
-import wacc.backend.formatter.formatBlocks
+import wacc.backend.formatter.formatter.formatBlocks
 
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
