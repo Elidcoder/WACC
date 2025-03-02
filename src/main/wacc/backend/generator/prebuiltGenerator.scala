@@ -29,7 +29,7 @@ sealed trait Prebuilt {
     val block: Block
     def generateRoData(strs: List[String]): List[RoData] = 
         strs.zipWithIndex.map { case (str, index) => 
-            RoData(str.length, str, Label(s".L.${labelString}_str${index}"))
+            RoData(str, Label(s".L.${labelString}_str${index}"))
         }
 }
 
@@ -190,7 +190,7 @@ case class PbPrintln(varType: KnownType) extends Prebuilt{
     def labelString = PbPrint(varType).labelString
     val label: String = "_println"
     private val roData: List[RoData] = 
-        List(RoData(0, "", Label(s".L.${label}_str0")))
+        List(RoData("", Label(s".L.${label}_str0")))
     val block = 
         given DataSize = QWORD
         Block (

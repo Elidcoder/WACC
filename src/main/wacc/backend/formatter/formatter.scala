@@ -26,7 +26,7 @@ private def format(block: Block)(using wr: BufferedWriter): Unit = {
 }
 
 private def format(roData: RoData)(using wr: BufferedWriter): Unit = {
-    writeIndentedLine(s".int ${roData.size}")
+    writeIndentedLine(s".int ${roData.str.length}")
     format(roData.label)
     writeIndentedLine(s".asciz \"${roData.str}\"")
 }
