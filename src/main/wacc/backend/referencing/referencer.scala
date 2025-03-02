@@ -40,7 +40,7 @@ object referencer {
         /* Reference the main function. */
         reference(prog.stmts)
 
-        /* Return a filled in context and prog to chain with generate. */
+        /* Return a filled in context. */
         ctx
     }
     
