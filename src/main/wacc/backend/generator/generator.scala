@@ -43,17 +43,19 @@ object generator {
         blockBuilder += mainBlock
         blockBuilder.toList
     }
+
+    private def scrambleFuncName(name: QualifiedName): String = s"wacc_${name.oldName}"
     
     /* Generate the code for a function. */
-    def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
+    private def generate(func: Func[QualifiedName, KnownType])(using ctx: Context): Block = {
         given builder: InstrBuilder = List.newBuilder[Instr]
         generateFuncStart(ctx.getFuncOff(func.id.name))
         generateStmts(func.stmts)
-        Block(Label (s"wacc_${func.id.name.oldName}"), None, builder.result())
+        Block(Label (scrambleFuncName(func.id.name)), None, builder.result())
     }
 
     /* Generate the starting part of a function's code (setup). */
-    def generateFuncStart(offset: Int)(using builder: InstrBuilder) = {
+    private def generateFuncStart(offset: Int)(using builder: InstrBuilder) = {
         given DataSize = QWORD
         builder
             += IPush (Reg (BASE_PTR_REG))
@@ -63,7 +65,7 @@ object generator {
     }
 
     /* Generate an rval's code. */
-    def generate(rVal: RValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = 
+    private def generate(rVal: RValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = 
         given DataSize = QWORD
         rVal match {
             /* Delegate if it is an expr. */
@@ -122,12 +124,12 @@ object generator {
                     builder += IMov (Mem (STACK_PTR_REG, offset), Reg (RETURN_REG))(using size)
                 )
                 builder 
-                    += ICall (s"wacc_${id.name.oldName}")
+                    += ICall (scrambleFuncName(id.name))
                     += IAdd (Reg (STACK_PTR_REG), Imm (ctx.getFuncParamOff(id.name)))
         }
     
     /* Add instructions to load a pair element from an lval ensuring it is not null.*/
-    def loadPairElem(lVal: LValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
+    private def loadPairElem(lVal: LValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = QWORD
         val label = ctx.addPrebuilt(PbErrNull)
         val lValOp = findOp(lVal)
@@ -138,7 +140,7 @@ object generator {
     }
 
     /* Determines the DestOp (destination/location) of a given lvalue. */
-    def findOp(lVal: LValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): DestOp = {
+    private def findOp(lVal: LValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): DestOp = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
             case ArrayElem(id, exprs) => 
@@ -153,7 +155,6 @@ object generator {
                             += IMov (Reg (ARR_REF_PARAM_REG), Reg (RETURN_REG))(using DWORD)
                             += IPop (Reg (ARR_REF_RETURN_REG))
                             += ICall (label)
-                            += IMov (Reg (RETURN_REG), Reg (ARR_REF_RETURN_REG))(using size)
                         Mem(ARR_REF_RETURN_REG)
                     case Nil => findOp(id)
             case First(lVal) => 
@@ -166,7 +167,7 @@ object generator {
     }
 
     /* Generates code for a binary arithmetic operation by evaluating both sides and then applying the 'instruction'. */
-    def generateAddSubMul(
+    private def generateAddSubMul(
         left: Expr[QualifiedName, KnownType], 
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
@@ -183,7 +184,7 @@ object generator {
     }
 
     /* Generate code for division or modulo operation, including a zero check. */
-    def generateDivMod(
+    private def generateDivMod(
         left: Expr[QualifiedName, KnownType], 
         right: Expr[QualifiedName, KnownType]
     )(using ctx: Context, builder: InstrBuilder): Unit = {
@@ -200,7 +201,7 @@ object generator {
     }
 
     /* Generate the code for a condition as well as both sides, correctly placing the jump. */
-    def generateBinCond(
+    private def generateBinCond(
         left: Expr[QualifiedName, KnownType],
         right: Expr[QualifiedName, KnownType],
         cond: JumpCond
@@ -219,7 +220,7 @@ object generator {
     }
 
     /* Generate the code for an expression. */
-    def generate(expr: Expr[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
+    private def generate(expr: Expr[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = DWORD
         expr match {
             /* Generate code for a binary arithmetic operator. */
@@ -346,7 +347,7 @@ object generator {
     }
 
     /* Generate the code for each element in a nested array as well as some joining code. */
-    def generateNestedArrayElem(
+    private def generateNestedArrayElem(
         id: Ident[QualifiedName, KnownType],
         exprs: List[Expr[QualifiedName, KnownType]]
     )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
@@ -365,7 +366,7 @@ object generator {
     }
 
     /* Generate the code for a statment. */
-    def generate(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
+    private def generate(stmt: Stmt[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = QWORD
         stmt match {
             case Skip()      => ()
@@ -478,6 +479,6 @@ object generator {
     }
 
     /* Generate every statement in the list. */
-    def generateStmts(stmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, builder: InstrBuilder): Unit 
+    private def generateStmts(stmts: List[Stmt[QualifiedName, KnownType]])(using ctx: Context, builder: InstrBuilder): Unit 
         = stmts.foreach(generate)
 }
