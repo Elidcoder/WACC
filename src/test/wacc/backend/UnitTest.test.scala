@@ -1,13 +1,15 @@
 package wacc.backend.referencing
 
-import wacc.backend.Context
-import wacc.semantic.QualifiedName
 import wacc.ast._
 import wacc.backend.ir._
+import wacc.backend.Context
+import wacc.semantic.QualifiedName
+import wacc.backend.referencing.referencer.getTypeSize
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
-import wacc.backend.referencing.referencer.getTypeSize
+
+case class WaccBaccErr(msg: String) extends Exception
 
 class BackEndUnitTest extends AnyFlatSpec {
     given pos: Pos   = Pos(0,0)
@@ -42,11 +44,12 @@ class BackEndUnitTest extends AnyFlatSpec {
         try {
             context.getVarRef(varName.name) match {
                 case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
-                case _ => fail("Reference was badly formatted")
+                case _ => throw WaccBaccErr("Reference was badly formatted")
             }
         }
         catch {
-            _ => fail("Variable was not added to context correctly.")
+            case WaccBaccErr(msg) => fail(msg)
+            case _ => fail("Variable was not added to context correctly.")
         }
     }
 
@@ -67,15 +70,16 @@ class BackEndUnitTest extends AnyFlatSpec {
         try {
             context.getVarRef(var1.name) match {
                 case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
-                case _ => fail("Var1 reference was badly formatted") 
+                case _ => throw WaccBaccErr("Var1 reference was badly formatted") 
             }
             context.getVarRef(var2.name) match {
                 case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-2 * getTypeSize(intType).bytes)
-                case _ => fail("Var2 reference was badly formatted") 
+                case _ => throw WaccBaccErr("Var2 reference was badly formatted") 
             }
         }
         catch {
-            _ => fail("Variables were not both added to context.")
+            case WaccBaccErr(msg) => fail(msg)
+            case _ => fail("Variables were not both added to context.")
         }
     }
 
@@ -107,26 +111,27 @@ class BackEndUnitTest extends AnyFlatSpec {
                         var curOff = -getTypeSize(intType).bytes
                         context.getVarRef(var1.name) match {
                             case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
-                            case _ => fail("Var1 reference was badly formatted") 
+                            case _ => throw WaccBaccErr("Var1 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(charType).bytes
                         context.getVarRef(var2.name) match {
                             case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
-                            case _ => fail("Var2 reference was badly formatted") 
+                            case _ => throw WaccBaccErr("Var2 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(boolType).bytes
                         context.getVarRef(var3.name) match {
                             case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
-                            case _ => fail("Var3 reference was badly formatted") 
+                            case _ => throw WaccBaccErr("Var3 reference was badly formatted") 
                         }
                         curOff -= getTypeSize(strType).bytes
                         context.getVarRef(var4.name) match {
                             case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe curOff
-                            case _ => fail("Var4 reference was badly formatted") 
+                            case _ => throw WaccBaccErr("Var4 reference was badly formatted") 
                         }
                     }
                     catch {
-                        _ => fail("Variables were not both added to context.")
+                        case WaccBaccErr(msg) => fail(msg)
+                        case _ => fail("Variables were not both added to context.")
                     }
                 }
             }
@@ -148,50 +153,53 @@ class BackEndUnitTest extends AnyFlatSpec {
         try {
             context.getVarRef(var1.name) match {
                 case Mem(BASE_PTR_REG, None, Some(Left(offset))) => offset shouldBe (-getTypeSize(intType).bytes)
-                case _ => fail("Reference was badly formatted from if-else statement") 
+                case _ => throw WaccBaccErr("Reference was badly formatted from if-else statement") 
             }
         }
         catch {
-            _ => fail("Variable was not added to context.")
+            case WaccBaccErr(msg) => fail(msg)
+            case _ => fail("Variable was not added to context.")
         }
     }
 
     /* Test for referencing function parameters */
-    // it should "correctly reference function parameters with stack" in {
-    //     given KnownType = boolType
+    it should "correctly reference function parameters with stack" in {
+        given KnownType = boolType
 
-    //     /* Create a function id, bool var and turn the var into a parameter. */
-    //     val funcID = Ident[QualifiedName, KnownType](QualifiedName("testFunc", 1))
-    //     val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 2))
-    //     val param1 = Param[QualifiedName, KnownType](intType, var1)(pos)
+        /* Create a function id, bool var and turn the var into a parameter. */
+        val funcID = Ident[QualifiedName, KnownType](QualifiedName("testFunc", 1))
+        val var1 = Ident[QualifiedName, KnownType](QualifiedName("var1", 2))
+        val param1 = Param[QualifiedName, KnownType](intType, var1)(pos)
         
-    //     /* Create another var and turn it into a parameter. */
-    //     val var2 = Ident[QualifiedName, KnownType](QualifiedName("var2", 3))
-    //     val param2 = Param[QualifiedName, KnownType](intType, var2)(pos)
+        /* Create another var and turn it into a parameter. */
+        val var2 = Ident[QualifiedName, KnownType](QualifiedName("var2", 3))
+        val param2 = Param[QualifiedName, KnownType](intType, var2)(pos)
         
 
-    //     /* Create a function using the params and reference it. */
-    //     val func = Func[QualifiedName, KnownType](
-    //         boolType,
-    //         funcID,
-    //         List(param1, param2),
-    //         List.empty
-    //     )(pos)
-    //     referencer.reference(func)(using context)
+        /* Create a function using the params and reference it. */
+        val func = Func[QualifiedName, KnownType](
+            boolType,
+            funcID,
+            List(param1, param2),
+            List.empty
+        )(pos)
+        referencer.reference(func)(using context)
 
-    //     /* Check parameters have been added to the context to correct registers */
-    //     try {
-    //         context.getVarRef(param1.paramId.name) match {
-    //             case Mem(RAX, off) => off shouldBe 16
-    //             case _ => fail("Param1 reference was badly formatted") 
-    //         }
-    //         context.getVarRef(param2.paramId.name) match {
-    //             case Mem(RAX, off) => off shouldBe 20
-    //             case _ => fail("Param2 reference was badly formatted") 
-    //         }
-    //     }
-    //     catch {
-    //         _ => fail("Parameters were not both added to context.")
-    //     }
-    // }
+        /* Check parameters have been added in reverse to context with correct offsets */
+        try {
+            val stackAlignment = 16
+            context.getVarRef(param1.paramId.name) match {
+                case Mem(BASE_PTR_REG, None, Some (Left (offset))) => offset shouldBe (stackAlignment + BYTE.bytes)
+                case _ => throw WaccBaccErr("Param1 reference was badly formatted in context") 
+            }
+            context.getVarRef(param2.paramId.name) match {
+                case Mem(BASE_PTR_REG, None, Some (Left (offset))) => offset shouldBe (stackAlignment)
+                case _ => throw WaccBaccErr("Param2 reference was badly formatted in context") 
+            }
+        }
+        catch {
+            case WaccBaccErr(msg) => fail(msg)
+            case _ => fail("Parameters were not both added to context.")
+        }
+    }
 }

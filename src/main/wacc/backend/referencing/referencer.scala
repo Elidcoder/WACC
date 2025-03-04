@@ -8,7 +8,7 @@ import wacc.backend.ir._
 
 object referencer {
     /* Stores the initial offset for any function due to the initial operations. */
-    private val INITIAL_PARAM_OFF = 2 * QWORD.bytes
+    protected [referencing] val INITIAL_PARAM_OFF = 2 * QWORD.bytes
 
     /* Returns the dataSize matching a given type, 
      * we have a static guarantee from frontend _ never occurs. */
