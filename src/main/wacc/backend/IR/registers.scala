@@ -35,18 +35,25 @@ case object RIP extends Register
 final val SYSTEM_CALL_REG  = RAX
 final val BASE_PTR_REG     = RBP
 final val STACK_PTR_REG    = RSP
-final val BASE_MEMORY_REG  = RBX
+
+final val RETURN_REG       = RAX
+
 final val FIRST_PARAM_REG  = RDI
 final val SECOND_PARAM_REG = RSI
 final val THIRD_PARAM_REG  = RDX
 final val FOURTH_PARAM_REG = RCX
 final val FIFTH_PARAM_REG  = R8
 final val SIXTH_PARAM_REG  = R9
-final val RETURN_REG       = RAX
+
 final val TEMP_REG         = R10
-final val MALLOC_REG       = R11
-final val PAIR_ELEM_REG    = RBX //TODO(change and check)
 final val REMAINDER_REG    = RDX
+
+final val MALLOC_REG       = R11
+final val PAIR_ELEM_REG    = R12
+
+final val ARR_REF_RETURN_REG = R9
+final val ARR_REF_PARAM_REG  = R10
+final val ARR_REF_TEMP_REG   = RBX
 
 /* Define the data sizes. */
 sealed trait DataSize {
