@@ -1,12 +1,13 @@
 package wacc.backend
 
 import scala.collection.mutable.{Map, Set}
-import scala.collection.immutable._
 import wacc.backend.ir.{Label, DestOp, RoData}
-import wacc.backend.generator.prebuilts.Prebuilt
+import wacc.backend.generator.Prebuilt
 import wacc.semantic.QualifiedName
 
 class Context() {
+    private val MAIN_UID = -1
+
     /* Create a unique label for a string. */
     private var stringUID: Int = 0
     def nextStringLabel(): Label = {
@@ -33,7 +34,7 @@ class Context() {
         _.fold(Some(offsetInc)){curOff => Some(curOff + offsetInc)} 
     )
     def getFuncOff(funcName: QualifiedName): Int = funcOffsets.getOrElseUpdate(funcName, 0)
-    val mainName:QualifiedName = QualifiedName("main", -1)
+    val mainName:QualifiedName = QualifiedName("main", MAIN_UID)
 
     /* A map along with helper functions storing the offsets of the parameters of each function in the program */
     private val funcParamOffsets: Map[QualifiedName, Int] = Map.empty

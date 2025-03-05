@@ -1,4 +1,4 @@
-package wacc.backend.generator.prebuilts
+package wacc.backend.generator
 
 import scala.collection.mutable.Set
 
@@ -13,10 +13,6 @@ final val READ_SYSTEM_CALL = 0
 final val PRINT_SYSTEM_CALL = 0
 final val ERROR_EXIT_CODE = -1
 final val FLUSH_ALL = 0
-final val MALLOC_FAIL = 0
-final val FALSE = 0
-final val NULL = 0
-final val NO_OFFSET = 0
 final val ARRAY_LENGTH_SIZE = 4
 final val PRINT_CALL = "printf@plt"
 final val EXIT_CALL = "exit@plt"
@@ -107,7 +103,7 @@ case object PbMalloc extends Prebuilt {
             None,
             prebuiltGenerator.functionStart ++ List(
                 ICall(MALLOC_CALL),
-                ICmp(Reg(RETURN_REG), Imm(MALLOC_FAIL)),
+                ICmp(Reg(RETURN_REG), Imm(NULL)),
                 Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E)
             ) ++ prebuiltGenerator.functionEnd
         )
@@ -280,16 +276,16 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
             Label(labelString),
             None,
             List(
-                IPush(Reg(BASE_MEMORY_REG)),
-                ITest(Reg(TEMP_REG), Reg(TEMP_REG))(using DWORD),
-                IMov(Reg(SECOND_PARAM_REG), Reg(TEMP_REG), JumpCond.L),
+                IPush(Reg(ARR_REF_TEMP_REG)),
+                ITest(Reg(ARR_REF_PARAM_REG), Reg(ARR_REF_PARAM_REG))(using DWORD),
+                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.L),
                 Jmp(Label(PbOutOfBounds.labelString), JumpCond.L),
-                IMov(Reg(BASE_MEMORY_REG), Mem(SIXTH_PARAM_REG, -ARRAY_LENGTH_SIZE)),
-                ICmp(Reg(TEMP_REG), Reg(BASE_MEMORY_REG))(using DWORD),
-                IMov(Reg(SECOND_PARAM_REG), Reg(TEMP_REG), JumpCond.GE),
+                IMov(Reg(ARR_REF_TEMP_REG), Mem(ARR_REF_RETURN_REG, -ARRAY_LENGTH_SIZE)),
+                ICmp(Reg(ARR_REF_PARAM_REG), Reg(ARR_REF_TEMP_REG))(using DWORD),
+                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.GE),
                 Jmp(Label(PbOutOfBounds.labelString), JumpCond.GE),
-                ILea(Reg(SIXTH_PARAM_REG), Mem(SIXTH_PARAM_REG, TEMP_REG, size)),
-                IPop(Reg(BASE_MEMORY_REG)),
+                ILea(Reg(ARR_REF_RETURN_REG), Mem(ARR_REF_RETURN_REG, ARR_REF_PARAM_REG, size)),
+                IPop(Reg(ARR_REF_TEMP_REG)),
                 IRet
             )
         )
@@ -311,8 +307,8 @@ object prebuiltGenerator {
         builder += prebuilt.block
     
     /* Instruction to align the stack after a function call. */
-    val twoPTRS = 2 * QWORD.bytes
-    val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-twoPTRS))(using QWORD)
+    val STACK_ALIGNMENT = 16
+    val alignStack: Instr = IAnd(Reg(STACK_PTR_REG), Imm(-STACK_ALIGNMENT))(using QWORD)
 
     /* Instruction set that appears at the start of each function. */
     val functionStart: List[Instr] = 
@@ -357,14 +353,14 @@ object prebuiltGenerator {
     def readBlock(size: DataSize, label: String): List[Instr] = 
         given DataSize = QWORD
         functionStart ++ List(
-            ISub(Reg(STACK_PTR_REG), Imm(twoPTRS)),
+            ISub(Reg(STACK_PTR_REG), Imm(STACK_ALIGNMENT)),
             IMov(Mem(STACK_PTR_REG), Reg(FIRST_PARAM_REG))(using size),
-            ILea(Reg(SECOND_PARAM_REG), Mem(STACK_PTR_REG, NO_OFFSET)),
+            ILea(Reg(SECOND_PARAM_REG), Mem(STACK_PTR_REG)),
             ILea(Reg(FIRST_PARAM_REG), Mem(Label(label))),
             IMov(Reg(SYSTEM_CALL_REG), Imm(READ_SYSTEM_CALL))(using BYTE),
             ICall("scanf@plt"),
             IMov(Reg(RETURN_REG), Mem(STACK_PTR_REG))(using size),
-            IAdd(Reg(STACK_PTR_REG), Imm(twoPTRS))
+            IAdd(Reg(STACK_PTR_REG), Imm(STACK_ALIGNMENT))
         ) ++ functionEnd
     
     /* Instruction set for any print block. */

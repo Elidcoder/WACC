@@ -12,7 +12,7 @@ import wacc.backend.formatter.formatter.formatBlocks
 import parsley.{Failure, Success}
 import parsley.errors.ErrorBuilder
 
-import java.io.{File, Writer, FileWriter}
+import java.io.{File, FileWriter}
 
 final val CODE_SUCCESS      = 0
 final val CODE_SYNTAX_ERR   = 100
@@ -36,10 +36,7 @@ def pipeline(file: File): Int = {
                 case Right(value) => 
                     val finalTree = value.get
 
-                    val writer: Writer = 
-                        val assFile = new File(getAssFileName(file.getName()))
-                        assFile.createNewFile()
-                        new FileWriter(assFile)
+                    val writer = new FileWriter(getAssFile(file))
 
                     formatBlocks(
                         generator.generate(finalTree)(using referencer.reference(finalTree)),
@@ -54,12 +51,9 @@ def pipeline(file: File): Int = {
             CODE_SYNTAX_ERR
 }
 
-private def getAssFileName(filePath: String): String = {
-    val lastDotIndex = filePath.lastIndexOf(".")
-    if (lastDotIndex != -1)
-        filePath.substring(0, lastDotIndex) + ".s"
-    else
-        filePath + ".s"
+private def getAssFile(file: File): File = {
+    val baseName = file.getName.stripSuffix(".wacc")
+    new File(s"./${baseName}.s")
 }
 
 def main(args: Array[String]): Unit = {
@@ -67,7 +61,6 @@ def main(args: Array[String]): Unit = {
         /* Ensure that the filepath is given and the file created is valid. */
         case Some(filePath) => 
             val file = new File(filePath)
-            assert(file.exists())
 
             /* Run the compiler on the file, exiting with the matching output code. */
             sys.exit(pipeline(file))

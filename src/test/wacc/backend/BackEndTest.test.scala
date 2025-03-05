@@ -54,18 +54,6 @@ class BackEndIntegrationTest extends AnyFlatSpec with ConditionalTest {
                     inputStream = new ByteArrayInputStream(inputStr.getBytes(StandardCharsets.UTF_8))
                 } yield Process(exec) #< inputStream ! processLogger)
                 .getOrElse(Process(exec) ! processLogger)
-
-                /* Prints for debugging */
-                println(
-                    s"""--------------------------------------------------
-                        |[DEBUG] Input provided: ${inputOpt.getOrElse("NONE")}
-                        |[DEBUG] Expected output:
-                        |${expectedOutputOpt.map(_.trim.split("\n").map("    " + _).mkString("\n")).getOrElse("NONE")}
-                        |[DEBUG] Expected exit: ${expectedExitOpt.getOrElse("NONE")}
-                        |[DEBUG] Actual output:
-                        |${if (outputBuilder.toString.trim.isEmpty) "NONE" else outputBuilder.toString.trim.split("\n").map("    " + _).mkString("\n")}
-                        |[DEBUG] Actual exit: ${if (actualExit == 0 && expectedExitOpt.isEmpty) "NONE" else actualExit.toString}
-                    """.stripMargin)
                 
                 actualExit.shouldBe(expectedExitOpt.getOrElse(0))
                 if (expectedOutputOpt.getOrElse("").contains("#runtime_error#")) {
