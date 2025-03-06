@@ -1,10 +1,9 @@
 package wacc.backend.referencing
 
-import wacc.backend.Context
-import wacc.semantic.QualifiedName
-
 import wacc.ast._
 import wacc.backend.ir._
+import wacc.backend.Context
+import wacc.semantic.QualifiedName
 
 object referencer {
     /* Stores the initial offset for any function due to the initial operations. */
@@ -68,12 +67,12 @@ object referencer {
         case NewAss(_, id, rval) => addVarToContext(id)
 
         /* Check nested statements. */
+        case While(_, subStmts)        => reference(subStmts)
+        case Nest(subStmts)            => reference(subStmts)
         case If(_, ifStmts, elseStmts) => {
             reference(ifStmts)
             reference(elseStmts)
         }
-        case While(_, subStmts) => reference(subStmts)
-        case Nest(subStmts)     => reference(subStmts)
 
         case _ => {}
     }

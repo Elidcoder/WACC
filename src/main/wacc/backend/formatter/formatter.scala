@@ -1,7 +1,8 @@
 package wacc.backend.formatter
 
-import java.io.{Writer, BufferedWriter}
 import wacc.backend.ir._
+
+import java.io.{Writer, BufferedWriter}
 
 object formatter {
     /* Output the standard headings for x86 64, control the writer and format the blocks. */
@@ -55,13 +56,15 @@ object formatter {
             case ILea(dest, opR)  => formatBinInstr(dest, opR, "lea")
             case IAnd(dest, opR)  => formatBinInstr(dest, opR, "and")
             case ITest(dest, opR) => formatBinInstr(dest, opR, "test")
-            case IMov(dest, source, con) => 
+            case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size)}")
+            case IMov(dest, source, con) => {
                 val instr = con.fold("mov")(cond => "cmov" + format(cond))
                 formatBinInstr(dest, source, instr)
-            case Jmp(label, con) => 
+            }
+            case Jmp(label, con) => {
                 val instr = con.fold("jmp")(cond => "j" + format(cond))
                 writeIndentedLine(s"$instr ${label.name}")
-            case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size = size)}")
+            }
         }
 
     /* Format a unary instruction. */
