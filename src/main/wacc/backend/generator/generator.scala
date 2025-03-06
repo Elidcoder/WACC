@@ -136,7 +136,7 @@ object generator {
         builder
             += IMov (Reg (PAIR_ELEM_REG), lValOp)
             += ICmp (Reg (PAIR_ELEM_REG), Imm (NULL))
-            += Jmp (Label (label), JumpCond.E)
+            += Jmp (Label (label), JumpCond.Eq)
     }
 
     /* Determines the DestOp (destination/location) of a given lvalue. */
@@ -180,7 +180,7 @@ object generator {
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
-            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
+            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.Overflow)
     }
 
     /* Generate code for division or modulo operation, including a zero check. */
@@ -195,7 +195,7 @@ object generator {
         builder
             += IPop (Reg (TEMP_REG))
             += ICmp (Reg (TEMP_REG), Imm (FALSE))
-            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.E)
+            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.Eq)
             += ICdq
             += IDiv (Reg (TEMP_REG))
     }
@@ -234,35 +234,35 @@ object generator {
             }
 
             /* Generate code for a binary comparison operator. */
-            case Eq(left, right)        => generateBinCond(left, right, JumpCond.E)
-            case NotEq(left, right)     => generateBinCond(left, right, JumpCond.NE)
-            case Greater(left, right)   => generateBinCond(left, right, JumpCond.G)
-            case GreaterEq(left, right) => generateBinCond(left, right, JumpCond.GE)
-            case Less(left, right)      => generateBinCond(left, right, JumpCond.L)
-            case LessEq(left, right)    => generateBinCond(left, right, JumpCond.LE)
+            case Eq(left, right)        => generateBinCond(left, right, JumpCond.Eq)
+            case NotEq(left, right)     => generateBinCond(left, right, JumpCond.NotEq)
+            case Greater(left, right)   => generateBinCond(left, right, JumpCond.Gr)
+            case GreaterEq(left, right) => generateBinCond(left, right, JumpCond.GrEq)
+            case Less(left, right)      => generateBinCond(left, right, JumpCond.Less)
+            case LessEq(left, right)    => generateBinCond(left, right, JumpCond.LessEq)
             case And(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (afterLabel, JumpCond.NE)
+                    += Jmp (afterLabel, JumpCond.NotEq)
                 generate(right)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
                     += afterLabel
-                    += ISet (Reg (RETURN_REG), JumpCond.E)
+                    += ISet (Reg (RETURN_REG), JumpCond.Eq)
             }
             case Or(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (afterLabel, JumpCond.E)
+                    += Jmp (afterLabel, JumpCond.Eq)
                 generate(right)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
                     += afterLabel
-                    += ISet (Reg (RETURN_REG), JumpCond.E)
+                    += ISet (Reg (RETURN_REG), JumpCond.Eq)
             }
 
             /* Generate code for a unary operator. */
@@ -276,20 +276,20 @@ object generator {
                 generate(expr)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += ISet (Reg (RETURN_REG), JumpCond.NE)
+                    += ISet (Reg (RETURN_REG), JumpCond.NotEq)
             case Neg(expr) => {
                 generate(expr)
                 builder 
                 += INeg (Reg (RETURN_REG))
-                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
+                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.Overflow)
             }
             case Chr(expr) => {
                 val label = ctx.addPrebuilt(PbErrBadChar)
                 generate(expr)
                 builder
                     += ITest (Reg (RETURN_REG), Imm (ASCII_OVERFLOW_MASK))
-                    += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
-                    += Jmp (Label (label), JumpCond.NE)
+                    += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NotEq)
+                    += Jmp (Label (label), JumpCond.NotEq)
             }
 
             /* Generate code for an identifier. */
@@ -453,7 +453,7 @@ object generator {
                 generate(cond)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (ifLabel, JumpCond.E)
+                    += Jmp (ifLabel, JumpCond.Eq)
                 generateStmts(elseStmts)
                 builder
                     += Jmp (endLabel)
@@ -473,7 +473,7 @@ object generator {
                 generate(cond)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (bodyLabel, JumpCond.E)
+                    += Jmp (bodyLabel, JumpCond.Eq)
             }
         }
     }

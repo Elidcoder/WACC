@@ -104,7 +104,7 @@ case object PbMalloc extends Prebuilt {
             prebuiltGenerator.functionStart ++ List(
                 ICall(MALLOC_CALL),
                 ICmp(Reg(RETURN_REG), Imm(NULL)),
-                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.E)
+                Jmp(Label(PbErrOutOfMemory.labelString), JumpCond.Eq)
             ) ++ prebuiltGenerator.functionEnd
         )
 }
@@ -185,7 +185,7 @@ case class PbPrint(varType: KnownType) extends Prebuilt{
                 Some(roData),
                 prebuiltGenerator.functionStart ++ List(
                     ICmp(Reg(FIRST_PARAM_REG), Imm(FALSE))(using BYTE),
-                    Jmp(Label(jmpLabels(FIRST_LABEL)), JumpCond.NE),
+                    Jmp(Label(jmpLabels(FIRST_LABEL)), JumpCond.NotEq),
                     ILea(Reg(THIRD_PARAM_REG), Mem(roData(FIRST_LABEL).label)),
                     Jmp(Label(jmpLabels(SECOND_LABEL))),
                     Label(jmpLabels(FIRST_LABEL)),
@@ -239,7 +239,7 @@ case class PbFree(varType: KnownType) extends Prebuilt{
         case PairT(_,_) => 
                 List(
                     ICmp(Reg(FIRST_PARAM_REG), Imm(NULL)),
-                    Jmp(Label(PbErrNull.labelString), JumpCond.E),
+                    Jmp(Label(PbErrNull.labelString), JumpCond.Eq),
                     ICall(FREE_CALL)
                 )
         case _ => List()
@@ -278,12 +278,12 @@ case class PbArrRef(size: DataSize) extends Prebuilt {
             List(
                 IPush(Reg(ARR_REF_TEMP_REG)),
                 ITest(Reg(ARR_REF_PARAM_REG), Reg(ARR_REF_PARAM_REG))(using DWORD),
-                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.L),
-                Jmp(Label(PbOutOfBounds.labelString), JumpCond.L),
+                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.Less),
+                Jmp(Label(PbOutOfBounds.labelString), JumpCond.Less),
                 IMov(Reg(ARR_REF_TEMP_REG), Mem(ARR_REF_RETURN_REG, -ARRAY_LENGTH_SIZE)),
                 ICmp(Reg(ARR_REF_PARAM_REG), Reg(ARR_REF_TEMP_REG))(using DWORD),
-                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.GE),
-                Jmp(Label(PbOutOfBounds.labelString), JumpCond.GE),
+                IMov(Reg(SECOND_PARAM_REG), Reg(ARR_REF_PARAM_REG), JumpCond.GrEq),
+                Jmp(Label(PbOutOfBounds.labelString), JumpCond.GrEq),
                 ILea(Reg(ARR_REF_RETURN_REG), Mem(ARR_REF_RETURN_REG, ARR_REF_PARAM_REG, size)),
                 IPop(Reg(ARR_REF_TEMP_REG)),
                 IRet

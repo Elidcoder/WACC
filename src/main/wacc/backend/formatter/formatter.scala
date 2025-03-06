@@ -47,7 +47,7 @@ object formatter {
             case IPop(dest)       => formatUnInstr(dest, "pop")
             case INeg(dest)       => formatUnInstr(dest, "neg")
             case IDiv(dest)       => formatUnInstr(dest, "idiv")
-            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.getOrElse("").toString.toLowerCase}")
+            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.fold("")(format)}")
             case IAdd(dest, opR)  => formatBinInstr(dest, opR, "add")
             case ISub(dest, opR)  => formatBinInstr(dest, opR, "sub")
             case IMul(dest, opR)  => formatBinInstr(dest, opR, "imul")
@@ -56,10 +56,10 @@ object formatter {
             case IAnd(dest, opR)  => formatBinInstr(dest, opR, "and")
             case ITest(dest, opR) => formatBinInstr(dest, opR, "test")
             case IMov(dest, source, con) => 
-                val instr = con.fold("mov")(cond => s"cmov${cond.toString.toLowerCase}")
+                val instr = con.fold("mov")(cond => "cmov" + format(cond))
                 formatBinInstr(dest, source, instr)
             case Jmp(label, con) => 
-                val instr = con.fold("jmp")(cond => s"j${cond.toString.toLowerCase}")
+                val instr = con.fold("jmp")(cond => "j" + format(cond))
                 writeIndentedLine(s"$instr ${label.name}")
             case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size = size)}")
         }
@@ -147,6 +147,16 @@ object formatter {
         case R14 => formatNumbReg("r14") 
         case R15 => formatNumbReg("r15") 
         case RIP => "rip"
+    }
+
+    private def format(cond: JumpCond): String = cond match {
+        case JumpCond.Eq  => "e"
+        case JumpCond.NotEq => "ne"
+        case JumpCond.Less  => "l"
+        case JumpCond.LessEq => "le"
+        case JumpCond.Gr  => "g"
+        case JumpCond.GrEq => "ge"
+        case JumpCond.Overflow => "o"
     }
 
     /* Write a line to the writer (automatically adds the newline). */

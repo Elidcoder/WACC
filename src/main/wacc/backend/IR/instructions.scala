@@ -9,7 +9,7 @@ sealed trait Instr {
 }
 
 enum JumpCond {
-    case E, NE, G, GE, L, LE, O
+    case Eq, NotEq, Gr, GrEq, Less, LessEq, Overflow
 }
 
 case class Reg(reg: Register) extends DestOp, SourceOp
