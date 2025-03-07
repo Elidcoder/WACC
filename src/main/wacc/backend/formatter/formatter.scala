@@ -48,7 +48,7 @@ object formatter {
             case IPop(dest)       => formatUnInstr(dest, "pop")
             case INeg(dest)       => formatUnInstr(dest, "neg")
             case IDiv(dest)       => formatUnInstr(dest, "idiv")
-            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.fold("")(format)}")
+            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.fold("")(_.name)}")
             case IAdd(dest, opR)  => formatBinInstr(dest, opR, "add")
             case ISub(dest, opR)  => formatBinInstr(dest, opR, "sub")
             case IMul(dest, opR)  => formatBinInstr(dest, opR, "imul")
@@ -58,11 +58,11 @@ object formatter {
             case ITest(dest, opR) => formatBinInstr(dest, opR, "test")
             case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size)}")
             case IMov(dest, source, con) => {
-                val instr = con.fold("mov")(cond => "cmov" + format(cond))
+                val instr = con.fold("mov")(cond => "cmov" + cond.name)
                 formatBinInstr(dest, source, instr)
             }
             case Jmp(label, con) => {
-                val instr = con.fold("jmp")(cond => "j" + format(cond))
+                val instr = con.fold("jmp")(cond => "j" + cond.name)
                 writeIndentedLine(s"$instr ${label.name}")
             }
         }
@@ -150,16 +150,6 @@ object formatter {
         case R14 => formatNumbReg("r14") 
         case R15 => formatNumbReg("r15") 
         case RIP => "rip"
-    }
-
-    private def format(cond: JumpCond): String = cond match {
-        case JumpCond.Eq  => "e"
-        case JumpCond.NotEq => "ne"
-        case JumpCond.Less  => "l"
-        case JumpCond.LessEq => "le"
-        case JumpCond.Gr  => "g"
-        case JumpCond.GrEq => "ge"
-        case JumpCond.Overflow => "o"
     }
 
     /* Write a line to the writer (automatically adds the newline). */
