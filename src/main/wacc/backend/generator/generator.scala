@@ -175,13 +175,11 @@ object generator {
         right: Expr[QualifiedName, KnownType], 
         apply: (Reg, Reg) => Instr
     )(using ctx: Context, builder: InstrBuilder): Unit = {
-        generate(left) 
+        generate(right) 
         builder += IPush (Reg (RETURN_REG)) 
-        generate(right)
+        generate(left)
         builder
-            += IPush (Reg (RETURN_REG)) 
             += IPop (Reg (TEMP_REG))
-            += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
             += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.Overflow)
     }
@@ -210,16 +208,13 @@ object generator {
         cond: JumpCond
     )(using ctx: Context, builder: InstrBuilder): Unit = {
         given DataSize = DWORD
-        generate(left) 
+        generate(right) 
         builder += IPush (Reg (RETURN_REG)) 
-        generate(right)
+        generate(left)
         builder 
-            += IPush (Reg (RETURN_REG))
             += IPop (Reg (TEMP_REG))
-            += IPop (Reg (RETURN_REG))
             += ICmp (Reg (RETURN_REG), Reg (TEMP_REG))
             += ISet (Reg (RETURN_REG), cond)
-            += ICmp (Reg (RETURN_REG), Imm (TRUE))(using BYTE)
     }
 
     /* Generate the code for an expression. */
