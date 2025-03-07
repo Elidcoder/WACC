@@ -39,8 +39,7 @@ object generator {
         prog.funcs.foreach(blockBuilder += generate(_))
         ctx.getPrebuilts().foreach(prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder))
         val mainBlock = Block(Label(ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
-        blockBuilder += mainBlock
-        blockBuilder.toList
+        mainBlock :: blockBuilder.toList
     }
     
     /* Generate the function label's string following the WACC convention. */
