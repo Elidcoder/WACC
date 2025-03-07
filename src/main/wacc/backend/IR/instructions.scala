@@ -1,13 +1,19 @@
 package wacc.backend.ir
 
+/* Trait for all operands. */
 sealed trait Operand
+/* Trait for destination operands. */
 sealed trait DestOp extends Operand
+/* Trait for source operands. */
 sealed trait SourceOp extends Operand
 
+/* Trait for all instructions.
+ * all must have a size: BYTE, WORD, DWORD or QWORD */
 sealed trait Instr {
     def size: DataSize
 }
 
+/* Enum representing the condition type on a jump. */
 enum JumpCond(val name: String) {
     case Eq extends JumpCond("e")
     case NotEq extends JumpCond("ne")
@@ -18,23 +24,30 @@ enum JumpCond(val name: String) {
     case Overflow extends JumpCond("o")
 }
 
+/* A register as a destination or source. */
 case class Reg(reg: Register) extends DestOp, SourceOp
+/* An immediate value as a source. */
 case class Imm(value: Int)    extends SourceOp
 
+/* A memory destination containing the base register,  
+ * an optional index containing the register and its datasize and,
+ * an optional offset which is either an integer or a label. */
 case class Mem private (
     reg: Register, 
     index: Option[(Register, DataSize)], 
     offset: Option[Either[Int, Label]]
 ) extends DestOp
 
+/* Object providing additional construction options for the memory class. */
 case object Mem {
     def apply(reg: Register): Mem = new Mem(reg, None, None)
-    def apply (reg: Register, offset: Int): Mem = new Mem(reg, None, Some(Left(offset)))
+    def apply(reg: Register, offset: Int): Mem = new Mem(reg, None, Some(Left(offset)))
     def apply(reg: Register, index: Register, scale: DataSize): Mem = new Mem(reg, Some((index, scale)), None)
     def apply(reg: Register, index: Register, scale: DataSize, offset: Int): Mem = new Mem(reg, Some((index, scale)), Some(Left(offset)))
     def apply(label: Label): Mem = new Mem(RIP, None, Some(Right(label)))
 }
 
+/* All Instr with fixed sizes created with correct size. */
 case object IRet extends Instr {
     val size = QWORD
 }
@@ -60,19 +73,20 @@ case class ISet private (dest: Reg, cond: Option[JumpCond]) extends Instr {
     val size = BYTE
 }
 
+/* Variable size instructions which instead take datasize(small) implicitly. */
 case class INeg(dest: DestOp)(using val size: DataSize) extends Instr
 case class IDiv(dest: Reg)(using val size: DataSize) extends Instr
 case class ILea(dest: Reg, target: Mem)(using val size: DataSize) extends Instr
 case class ITest(dest: DestOp, opR: SourceOp)(using val size: DataSize) extends Instr
 case class IMul(dest: Reg, opR: DestOp)(using val size: DataSize) extends Instr
-case class IMovzx(dest: Reg, source: SourceOp, smallSize: DataSizeSmall)(using val size: DataSize) extends Instr
 case class IAnd private (dest: DestOp, opR: Operand)(using val size: DataSize) extends Instr
 case class IAdd private (dest: DestOp, opR: Operand)(using val size: DataSize) extends Instr
 case class ISub private (dest: DestOp, opR: Operand)(using val size: DataSize) extends Instr
 case class ICmp private (dest: DestOp, opR: Operand)(using val size: DataSize) extends Instr
 case class IMov private (dest: DestOp, source: Operand, cond: Option[JumpCond])(using val size: DataSize) extends Instr
+case class IMovzx(dest: Reg, source: SourceOp, smallSize: DataSizeSmall)(using val size: DataSize) extends Instr
 
-
+/* Objects providing additional construction options for instructions with variants. */
 case object Jmp {
     def apply(label: Label): Jmp = new Jmp(label, None)
     def apply(label: Label, cond: JumpCond): Jmp = new Jmp(label, Some(cond))

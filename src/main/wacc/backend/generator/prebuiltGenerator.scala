@@ -27,9 +27,9 @@ sealed trait Prebuilt {
     def labelString: String
     val block: Block
     def generateRoData(strs: List[String]): List[RoData] = 
-        strs.zipWithIndex.map { case (str, index) => 
+        strs.zipWithIndex.map ( (str, index) => 
             RoData(str, Label(s".L.${labelString}_str${index}"))
-        }
+        )
 }
 
 /* Prebuilt section for out of bounds errors in array indexing. */
@@ -37,12 +37,11 @@ case object PbOutOfBounds extends Prebuilt {
     def labelString = "_errOutOfBounds"
     private val roData: List[RoData] = 
         generateRoData(List("fatal error: array index %d out of bounds\\n"))
-    val block = 
-        Block (
-            Label(labelString),
-            Some(roData),
-            prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
-        )
+    val block = Block (
+        Label(labelString),
+        Some(roData),
+        prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
+    )
 }
 
 /* Prebuilt section for a invalid char. */
@@ -72,12 +71,11 @@ case object PbErrNull extends Prebuilt {
     def labelString = "_errNull"
     private val roData: List[RoData] = 
         generateRoData(List("fatal error: null pair dereferenced or freed\\n"))
-    val block = 
-        Block (
-            Label(labelString),
-            Some(roData),
-            prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
-        )
+    val block = Block (
+        Label(labelString),
+        Some(roData),
+        prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
+    )
 }
 
 /* Prebuilt section for malloc failing due to insufficient memory. */
@@ -85,12 +83,11 @@ case object PbErrOutOfMemory extends Prebuilt {
     def labelString = "_errOutOfMemory"
     private val roData: List[RoData] = 
         generateRoData(List("fatal error: out of memory\\n"))
-    val block = 
-        Block (
-            Label(labelString),
-            Some(roData),
-            prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
-        )
+    val block = Block (
+        Label(labelString),
+        Some(roData),
+        prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
+    )
 }
 
 /* Prebuilt section for malloc calls. */
@@ -112,14 +109,13 @@ case object PbMalloc extends Prebuilt {
 /* Prebuilt section for exit calls. */
 case object PbExit extends Prebuilt{
     def labelString = "_exit"
-    val block = 
-        Block (
-            Label(labelString),
-            None,
-            prebuiltGenerator.functionStart ++ List(
-                ICall(EXIT_CALL)
-            ) ++ prebuiltGenerator.functionEnd
-        )
+    val block = Block (
+        Label(labelString),
+        None,
+        prebuiltGenerator.functionStart ++ List(
+            ICall(EXIT_CALL)
+        ) ++ prebuiltGenerator.functionEnd
+    )
 }
 
 /* Prebuilt section for over or under flowing in integer calculations. */
@@ -127,12 +123,11 @@ case object PbErrOverflow extends Prebuilt{
     def labelString = "_errOverflow"
     private val roData: List[RoData] = 
         generateRoData(List("fatal error: integer overflow or underflow occurred\\n"))
-    val block = 
-        Block (
-            Label(labelString),
-            Some(roData),
-            prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
-        )
+    val block = Block (
+        Label(labelString),
+        Some(roData),
+        prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
+    )
 }
 
 /* Prebuilt section for a 0 denominator in division. */
@@ -140,12 +135,11 @@ case object PbDivZero extends Prebuilt{
     def labelString = "_errDivZero"
     private val roData: List[RoData] = 
         generateRoData(List("fatal error: division or modulo by zero\\n"))
-    val block = 
-        Block (
-            Label(labelString),
-            Some(roData),
-            prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
-        )
+    val block = Block (
+        Label(labelString),
+        Some(roData),
+        prebuiltGenerator.errorExitInstrs(roData(FIRST_LABEL).label)
+    )
 }
 
 /* Prebuilt section for a print call. */
