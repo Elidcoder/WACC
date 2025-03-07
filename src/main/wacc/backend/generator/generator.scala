@@ -1,30 +1,29 @@
 package wacc.backend.generator
 
-import scala.collection.mutable.{Builder, Set}
-
 import wacc.ast._
 import wacc.backend.ir._
 import wacc.backend.Context
 import wacc.semantic.QualifiedName
 import wacc.backend.referencing.referencer.getTypeSize
 
+import scala.collection.mutable.{Builder, Set}
+
 type InstrBuilder = Builder[Instr, List[Instr]]
 
+final val NULL         = 0
+final val FALSE        = 0
 final val EXIT_SUCCESS = 0
-final val NULL = 0
-final val TRUE = 1
-final val FALSE = 0
+final val TRUE         = 1
 final val ASCII_OVERFLOW_MASK = 0xFFFFFF80
-
 
 object generator {
     /* Generate the code for the whole program (delegates to other generates). */
     def generate(prog: Program[QualifiedName, KnownType])(using ctx: Context): List[Block] = {
         given Context = ctx
-        given mainBuilder: InstrBuilder = List.newBuilder[Instr]
         given DataSize = QWORD
-        val blockBuilder: Set[Block] = Set()
-        val mainOffset = ctx.getFuncOff(ctx.mainName)
+        given mainBuilder: InstrBuilder = List.newBuilder[Instr]
+        val blockBuilder: Set[Block]    = Set()
+        val mainOffset                  = ctx.getFuncOff(ctx.mainName)
 
         /* Generate the main function. */
         generateFuncStart(mainOffset)
@@ -40,10 +39,10 @@ object generator {
         prog.funcs.foreach(blockBuilder += generate(_))
         ctx.getPrebuilts().foreach(prebuiltGenerator.generatePrebuiltBlock(_)(using blockBuilder))
         val mainBlock = Block(Label(ctx.mainName.oldName), Some(ctx.getAllRodata()), mainBuilder.result())
-        blockBuilder += mainBlock
-        blockBuilder.toList
+        mainBlock :: blockBuilder.toList
     }
-
+    
+    /* Generate the function label's string following the WACC convention. */
     private def scrambleFuncName(name: QualifiedName): String = s"wacc_${name.oldName}"
     
     /* Generate the code for a function. */
@@ -136,18 +135,18 @@ object generator {
         builder
             += IMov (Reg (PAIR_ELEM_REG), lValOp)
             += ICmp (Reg (PAIR_ELEM_REG), Imm (NULL))
-            += Jmp (Label (label), JumpCond.E)
+            += Jmp (Label (label), JumpCond.Eq)
     }
 
     /* Determines the DestOp (destination/location) of a given lvalue. */
     private def findOp(lVal: LValue[QualifiedName, KnownType])(using ctx: Context, builder: InstrBuilder): DestOp = {
         lVal match {
             case Ident(name) => ctx.getVarRef(name)
-            case ArrayElem(id, exprs) => 
+            case ArrayElem(id, exprs) => {
                 val size = getArraySize(id.t, exprs.size)
                 val label = ctx.addPrebuilt(PbArrRef(size))
                 exprs.reverse match
-                    case ex :: exs => 
+                    case ex :: exs => {
                         generateNestedArrayElem(id, exs)
                         builder += IPush(Reg(RETURN_REG))
                         generate(ex)
@@ -156,13 +155,17 @@ object generator {
                             += IPop (Reg (ARR_REF_RETURN_REG))
                             += ICall (label)
                         Mem(ARR_REF_RETURN_REG)
+                    }
                     case Nil => findOp(id)
-            case First(lVal) => 
+            }
+            case First(lVal) => {
                 loadPairElem(lVal)
                 Mem(PAIR_ELEM_REG)
-            case Second(lVal) => 
+            }
+            case Second(lVal) => {
                 loadPairElem(lVal)
                 Mem(PAIR_ELEM_REG, QWORD.bytes)
+            }
         }
     }
 
@@ -180,7 +183,7 @@ object generator {
             += IPop (Reg (TEMP_REG))
             += IPop (Reg (RETURN_REG))
             += apply((Reg (RETURN_REG)), (Reg (TEMP_REG)))
-            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
+            += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.Overflow)
     }
 
     /* Generate code for division or modulo operation, including a zero check. */
@@ -195,7 +198,7 @@ object generator {
         builder
             += IPop (Reg (TEMP_REG))
             += ICmp (Reg (TEMP_REG), Imm (FALSE))
-            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.E)
+            += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.Eq)
             += ICdq
             += IDiv (Reg (TEMP_REG))
     }
@@ -234,62 +237,65 @@ object generator {
             }
 
             /* Generate code for a binary comparison operator. */
-            case Eq(left, right)        => generateBinCond(left, right, JumpCond.E)
-            case NotEq(left, right)     => generateBinCond(left, right, JumpCond.NE)
-            case Greater(left, right)   => generateBinCond(left, right, JumpCond.G)
-            case GreaterEq(left, right) => generateBinCond(left, right, JumpCond.GE)
-            case Less(left, right)      => generateBinCond(left, right, JumpCond.L)
-            case LessEq(left, right)    => generateBinCond(left, right, JumpCond.LE)
+            case Eq(left, right)        => generateBinCond(left, right, JumpCond.Eq)
+            case NotEq(left, right)     => generateBinCond(left, right, JumpCond.NotEq)
+            case Greater(left, right)   => generateBinCond(left, right, JumpCond.Gr)
+            case GreaterEq(left, right) => generateBinCond(left, right, JumpCond.GrEq)
+            case Less(left, right)      => generateBinCond(left, right, JumpCond.Less)
+            case LessEq(left, right)    => generateBinCond(left, right, JumpCond.LessEq)
             case And(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (afterLabel, JumpCond.NE)
+                    += Jmp (afterLabel, JumpCond.NotEq)
                 generate(right)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
                     += afterLabel
-                    += ISet (Reg (RETURN_REG), JumpCond.E)
+                    += ISet (Reg (RETURN_REG), JumpCond.Eq)
             }
             case Or(left, right) => {
                 val afterLabel = ctx.nextLabel()
                 generate(left)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (afterLabel, JumpCond.E)
+                    += Jmp (afterLabel, JumpCond.Eq)
                 generate(right)
                 builder 
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
                     += afterLabel
-                    += ISet (Reg (RETURN_REG), JumpCond.E)
+                    += ISet (Reg (RETURN_REG), JumpCond.Eq)
             }
 
             /* Generate code for a unary operator. */
-            case Len(expr) => 
+            case Len(expr) => {
                 generate(expr)
                 builder += IMov (Reg (RETURN_REG), Mem (RETURN_REG, -DWORD.bytes))
-            case Ord(expr) => 
+            }
+            case Ord(expr) => {
                 generate(expr)
                 builder += IMovzx (Reg (RETURN_REG), Reg (RETURN_REG), BYTE)
-            case Not(expr) => 
+            }
+            case Not(expr) => {
                 generate(expr)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += ISet (Reg (RETURN_REG), JumpCond.NE)
+                    += ISet (Reg (RETURN_REG), JumpCond.NotEq)
+            }
             case Neg(expr) => {
                 generate(expr)
                 builder 
                 += INeg (Reg (RETURN_REG))
-                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.O)
+                += Jmp (Label(ctx.addPrebuilt(PbErrOverflow)), JumpCond.Overflow)
             }
             case Chr(expr) => {
                 val label = ctx.addPrebuilt(PbErrBadChar)
                 generate(expr)
                 builder
                     += ITest (Reg (RETURN_REG), Imm (ASCII_OVERFLOW_MASK))
-                    += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NE)
-                    += Jmp (Label (label), JumpCond.NE)
+                    += IMov (Reg (SECOND_PARAM_REG), Reg (RETURN_REG), JumpCond.NotEq)
+                    += Jmp (Label (label), JumpCond.NotEq)
             }
 
             /* Generate code for an identifier. */
@@ -350,9 +356,9 @@ object generator {
     private def generateNestedArrayElem(
         id: Ident[QualifiedName, KnownType],
         exprs: List[Expr[QualifiedName, KnownType]]
-    )(using ctx: Context, builder: InstrBuilder): Unit =  exprs match {
+    )(using ctx: Context, builder: InstrBuilder): Unit = exprs match {
         case Nil     => generate(id)
-        case ex::exs =>
+        case ex::exs => {
             given DataSize = QWORD
             val label = ctx.addPrebuilt(PbArrRef(QWORD))
             generateNestedArrayElem(id, exs)
@@ -363,6 +369,7 @@ object generator {
                 += IPop (Reg (ARR_REF_RETURN_REG))
                 += ICall (label)
                 += IMov (Reg (RETURN_REG), Mem (ARR_REF_RETURN_REG))
+        }
     }
 
     /* Generate the code for a statment. */
@@ -453,7 +460,7 @@ object generator {
                 generate(cond)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (ifLabel, JumpCond.E)
+                    += Jmp (ifLabel, JumpCond.Eq)
                 generateStmts(elseStmts)
                 builder
                     += Jmp (endLabel)
@@ -473,7 +480,7 @@ object generator {
                 generate(cond)
                 builder
                     += ICmp (Reg(RETURN_REG), Imm(TRUE))(using BYTE)
-                    += Jmp (bodyLabel, JumpCond.E)
+                    += Jmp (bodyLabel, JumpCond.Eq)
             }
         }
     }

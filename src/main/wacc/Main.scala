@@ -1,10 +1,11 @@
 package wacc
 
-import wacc.error.WaccErr
 import wacc.syntax.parser
+import wacc.error.WaccErr
 import wacc.semantic.rename
 import wacc.syntax.lexer.lexErrBuilder
 import wacc.semantic.typecheck.typechecker
+
 import wacc.backend.generator.generator
 import wacc.backend.referencing.referencer
 import wacc.backend.formatter.formatter.formatBlocks
@@ -51,6 +52,7 @@ def pipeline(file: File): Int = {
             CODE_SYNTAX_ERR
 }
 
+/* Create the name of the assembly file generated from the given file.*/
 private def getAssFile(file: File): File = {
     val baseName = file.getName.stripSuffix(".wacc")
     new File(s"./${baseName}.s")

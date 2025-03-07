@@ -1,9 +1,9 @@
 package wacc.backend
 
+import wacc.semantic.QualifiedName
+import wacc.backend.generator.Prebuilt
 import scala.collection.mutable.{Map, Set}
 import wacc.backend.ir.{Label, DestOp, RoData}
-import wacc.backend.generator.Prebuilt
-import wacc.semantic.QualifiedName
 
 class Context() {
     private val MAIN_UID = -1

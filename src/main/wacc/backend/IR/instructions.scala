@@ -8,8 +8,14 @@ sealed trait Instr {
     def size: DataSize
 }
 
-enum JumpCond {
-    case E, NE, G, GE, L, LE, O
+enum JumpCond(val name: String) {
+    case Eq extends JumpCond("e")
+    case NotEq extends JumpCond("ne")
+    case Gr extends JumpCond("g")
+    case GrEq extends JumpCond("ge")
+    case Less extends JumpCond("l")
+    case LessEq extends JumpCond("le")
+    case Overflow extends JumpCond("o")
 }
 
 case class Reg(reg: Register) extends DestOp, SourceOp

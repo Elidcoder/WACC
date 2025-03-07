@@ -1,7 +1,8 @@
 package wacc.backend.formatter
 
-import java.io.{Writer, BufferedWriter}
 import wacc.backend.ir._
+
+import java.io.{Writer, BufferedWriter}
 
 object formatter {
     /* Output the standard headings for x86 64, control the writer and format the blocks. */
@@ -47,7 +48,7 @@ object formatter {
             case IPop(dest)       => formatUnInstr(dest, "pop")
             case INeg(dest)       => formatUnInstr(dest, "neg")
             case IDiv(dest)       => formatUnInstr(dest, "idiv")
-            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.getOrElse("").toString.toLowerCase}")
+            case ISet(dest, con)  => formatUnInstr(dest, s"set${con.fold("")(_.name)}")
             case IAdd(dest, opR)  => formatBinInstr(dest, opR, "add")
             case ISub(dest, opR)  => formatBinInstr(dest, opR, "sub")
             case IMul(dest, opR)  => formatBinInstr(dest, opR, "imul")
@@ -55,13 +56,15 @@ object formatter {
             case ILea(dest, opR)  => formatBinInstr(dest, opR, "lea")
             case IAnd(dest, opR)  => formatBinInstr(dest, opR, "and")
             case ITest(dest, opR) => formatBinInstr(dest, opR, "test")
-            case IMov(dest, source, con) => 
-                val instr = con.fold("mov")(cond => s"cmov${cond.toString.toLowerCase}")
+            case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size)}")
+            case IMov(dest, source, con) => {
+                val instr = con.fold("mov")(cond => "cmov" + cond.name)
                 formatBinInstr(dest, source, instr)
-            case Jmp(label, con) => 
-                val instr = con.fold("jmp")(cond => s"j${cond.toString.toLowerCase}")
+            }
+            case Jmp(label, con) => {
+                val instr = con.fold("jmp")(cond => "j" + cond.name)
                 writeIndentedLine(s"$instr ${label.name}")
-            case IMovzx(dest, source, size) => writeIndentedLine(s"movzx ${format(dest)}, ${format(source)(using size = size)}")
+            }
         }
 
     /* Format a unary instruction. */
