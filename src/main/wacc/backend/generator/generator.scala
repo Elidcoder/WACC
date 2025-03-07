@@ -195,7 +195,7 @@ object generator {
         generate(left) 
         builder
             += IPop (Reg (TEMP_REG))
-            += ICmp (Reg (TEMP_REG), Imm (FALSE))
+            += ICmp (Reg (TEMP_REG), Imm (0))
             += Jmp (Label (ctx.addPrebuilt(PbDivZero)), JumpCond.Eq)
             += ICdq
             += IDiv (Reg (TEMP_REG))
